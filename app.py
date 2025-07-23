@@ -59,6 +59,20 @@ def health_check():
         }
     })
 
+@app.route('/webhook-test')
+def webhook_test():
+    """Test endpoint to verify Twilio webhook connectivity."""
+    return jsonify({
+        "status": "success",
+        "message": "Webhook endpoint is accessible",
+        "timestamp": str(__import__('datetime').datetime.now()),
+        "endpoints": {
+            "incoming_call": "/incoming-call",
+            "process_speech": "/process-speech",
+            "health": "/health"
+        }
+    })
+
 @app.route('/incoming-call', methods=['GET', 'POST'])
 def handle_incoming_call():
     """Handle incoming call and return TwiML response."""
