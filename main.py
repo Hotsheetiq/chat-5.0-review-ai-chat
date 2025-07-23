@@ -1,5 +1,5 @@
-# Import fixed ConversationRelay app
-from fixed_conversation_app import create_conversation_relay_app
+# Import working Media Stream app with proper Twilio protocol
+from working_media_stream_app import create_conversation_relay_app
 
-# Create the ConversationRelay app with proper WebSocket handling
+# Create app with correct Twilio Media Streams implementation
 app, socketio = create_conversation_relay_app()
