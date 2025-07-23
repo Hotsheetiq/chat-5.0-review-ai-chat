@@ -1,18 +1,14 @@
 """
-Complete ConversationRelay implementation for human-like AI voice interaction.
-This replaces the TTS system with true conversational AI using ElevenLabs voices.
+Simple working ConversationRelay app without async complications
 """
 
 import os
 import json
 import logging
-import asyncio
-from flask import Flask, request
+from flask import Flask, request, render_template
 from flask_socketio import SocketIO, emit
 from twilio.twiml.voice_response import VoiceResponse, Connect
-from openai import AsyncOpenAI
-from rent_manager import RentManagerAPI
-from property_data import PropertyDataManager
+from openai import OpenAI
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -20,16 +16,15 @@ logger = logging.getLogger(__name__)
 
 # Initialize services
 OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY")
-openai_client = AsyncOpenAI(api_key=OPENAI_API_KEY) if OPENAI_API_KEY else None
+openai_client = OpenAI(api_key=OPENAI_API_KEY) if OPENAI_API_KEY else None
 
 # Conversation memory
 conversation_contexts = {}
 
-class MikeAI:
-    """Mike's conversational AI with bubbly personality"""
-    
-    def __init__(self):
-        self.system_prompt = """You are Mike, Grinberg Management's super bubbly, happy, and enthusiastic AI team member! You LOVE helping people and you're genuinely excited about everything you do!
+def generate_mike_response(call_sid, user_message):
+    """Generate Mike's enthusiastic response"""
+    try:
+        system_prompt = """You are Mike, Grinberg Management's super bubbly, happy, and enthusiastic AI team member! You LOVE helping people and you're genuinely excited about everything you do!
 
 Key points about your personality and role:
 - You're REALLY happy and bubbly - use lots of excitement and positive energy!
@@ -46,63 +41,53 @@ If you can't help: Say you'll transfer them to Diane or Janier at (718) 414-6984
 
 IMPORTANT: Keep responses under 150 words for phone conversations. Be natural and conversational."""
 
-    async def generate_response(self, call_sid, user_message):
-        """Generate Mike's enthusiastic response"""
-        try:
-            # Get or create conversation context
-            if call_sid not in conversation_contexts:
-                conversation_contexts[call_sid] = {
-                    'history': [],
-                    'caller_phone': None,
-                    'stage': 'greeting'
-                }
+        # Get or create conversation context
+        if call_sid not in conversation_contexts:
+            conversation_contexts[call_sid] = {'history': []}
+        
+        context = conversation_contexts[call_sid]
+        
+        # Build conversation messages
+        messages = [{"role": "system", "content": system_prompt}]
+        
+        # Add conversation history
+        for msg in context['history']:
+            messages.append(msg)
+        
+        # Add current user message  
+        messages.append({"role": "user", "content": user_message})
+        
+        if openai_client:
+            response = openai_client.chat.completions.create(
+                model="gpt-4o",  # the newest OpenAI model is "gpt-4o" which was released May 13, 2024. do not change this unless explicitly requested by the user
+                messages=messages,
+                max_tokens=150,
+                temperature=0.8
+            )
             
-            context = conversation_contexts[call_sid]
+            ai_response = response.choices[0].message.content
             
-            # Build conversation messages
-            messages = [{"role": "system", "content": self.system_prompt}]
+            # Update conversation history
+            context['history'].append({"role": "user", "content": user_message})
+            context['history'].append({"role": "assistant", "content": ai_response})
             
-            # Add conversation history
-            for msg in context['history']:
-                messages.append(msg)
+            # Keep only last 10 messages
+            if len(context['history']) > 20:
+                context['history'] = context['history'][-20:]
             
-            # Add current user message  
-            messages.append({"role": "user", "content": user_message})
+            return ai_response
+        else:
+            return "I'm super excited to help, but I'm having some technical issues right now! Let me transfer you to our amazing team at (718) 414-6984!"
             
-            if openai_client:
-                response = await openai_client.chat.completions.create(
-                    model="gpt-4o",  # the newest OpenAI model is "gpt-4o" which was released May 13, 2024. do not change this unless explicitly requested by the user
-                    messages=messages,
-                    max_tokens=150,
-                    temperature=0.8
-                )
-                
-                ai_response = response.choices[0].message.content
-                
-                # Update conversation history
-                context['history'].append({"role": "user", "content": user_message})
-                context['history'].append({"role": "assistant", "content": ai_response})
-                
-                # Keep only last 10 messages
-                if len(context['history']) > 20:
-                    context['history'] = context['history'][-20:]
-                
-                return ai_response
-            else:
-                return "I'm super excited to help, but I'm having some technical issues right now! Let me transfer you to our amazing team at (718) 414-6984!"
-                
-        except Exception as e:
-            logger.error(f"Error generating AI response: {e}", exc_info=True)
-            return "I'm having a little technical hiccup, but I'm still excited to help! Let me get you to someone who can assist you right away!"
-
-# Initialize Mike AI
-mike_ai = MikeAI()
+    except Exception as e:
+        logger.error(f"Error generating AI response: {e}", exc_info=True)
+        return "I'm having a little technical hiccup, but I'm still excited to help! Let me get you to someone who can assist you right away!"
 
 def create_conversation_relay_app():
     """Create Flask app with ConversationRelay support"""
     app = Flask(__name__)
     app.secret_key = os.environ.get("SESSION_SECRET", "dev-secret-key")
-    socketio = SocketIO(app, cors_allowed_origins="*", async_mode='threading')
+    socketio = SocketIO(app, cors_allowed_origins="*")
     
     @app.route('/incoming-call', methods=['GET', 'POST'])
     def handle_incoming_call():
@@ -150,26 +135,23 @@ def create_conversation_relay_app():
     @socketio.on('connect')
     def handle_websocket_connect():
         """Handle WebSocket connection for ConversationRelay"""
-        logger.info(f"ConversationRelay WebSocket connected: {request.sid}")
+        logger.info("ConversationRelay WebSocket connected")
         
-        # Send initial setup
+        # Send initial greeting to ConversationRelay
         emit('message', {
-            'event': 'setup',
+            'event': 'initial_message',
+            'text': "It's a great day here at Grinberg Management! My name is Mike. How can I help you?",
             'voice': {
                 'provider': 'elevenlabs',
-                'voice_id': 'pNInz6obpgDQGcFmaJgB',  # ElevenLabs Adam
+                'voice_id': 'pNInz6obpgDQGcFmaJgB',
                 'model': 'eleven_turbo_v2'
-            },
-            'initial_message': "It's a great day here at Grinberg Management! My name is Mike. How can I help you?"
+            }
         })
     
     @socketio.on('disconnect')
     def handle_websocket_disconnect():
         """Handle WebSocket disconnection"""
-        logger.info(f"ConversationRelay WebSocket disconnected: {request.sid}")
-        # Clean up conversation context if needed
-        if request.sid in conversation_contexts:
-            del conversation_contexts[request.sid]
+        logger.info("ConversationRelay WebSocket disconnected")
     
     @socketio.on('message')
     def handle_websocket_message(data):
@@ -184,7 +166,7 @@ def create_conversation_relay_app():
                 message = data
                 
             event_type = message.get('event')
-            call_sid = message.get('callSid', request.sid)
+            call_sid = message.get('callSid', 'default')
             
             if event_type == 'connected':
                 logger.info("ConversationRelay connected successfully")
@@ -195,8 +177,8 @@ def create_conversation_relay_app():
                 if user_text:
                     logger.info(f"User said: {user_text}")
                     
-                    # Generate Mike's response (sync call for now)
-                    ai_response = "That's awesome! I'm Mike and I'm super excited to help you today! How can I assist you with your property needs?"
+                    # Generate Mike's response
+                    ai_response = generate_mike_response(call_sid, user_text)
                     
                     # Send response back to ConversationRelay
                     emit('message', {
@@ -213,7 +195,6 @@ def create_conversation_relay_app():
                     
             elif event_type == 'user-interrupted':
                 logger.info("User interrupted Mike")
-                # Could implement interruption handling here
                 
             elif event_type == 'disconnected':
                 logger.info("ConversationRelay disconnected")
@@ -227,7 +208,6 @@ def create_conversation_relay_app():
     def home():
         """Dashboard showing ConversationRelay status"""
         from datetime import datetime
-        from flask import render_template
         
         # Mock recent calls for demo (would be real data from database)
         recent_calls = [
