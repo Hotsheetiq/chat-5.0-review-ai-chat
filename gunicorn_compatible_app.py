@@ -49,7 +49,7 @@ Key info:
             temperature=0.8
         )
         
-        return response.choices[0].message.content or "Oh my gosh, I'm SO excited to help you! This is fantastic!"
+        return response.choices[0].message.content or "I'm so happy to help you! What can I do for you today?"
         
     except Exception as e:
         logger.error(f"OpenAI error: {e}")
@@ -75,8 +75,12 @@ def get_smart_fallback_response(text_input: str) -> str:
     if any(word in text_lower for word in ['hello', 'hi', 'good morning', 'good afternoon']):
         return "Hi! Oh wow, it's so great to hear from you! I'm having such a wonderful day and I'm super excited to help! What can I do for you?"
     
+    # Office hours and location questions
+    if any(word in text_lower for word in ['office', 'hours', 'open', 'closed', 'location', 'address', 'where']):
+        return "Our office is at thirty one Port Richmond Avenue! We're open Monday through Friday, nine to five Eastern Time. We're closed weekends, but I'm so happy to help however I can!"
+    
     # Default enthusiastic response
-    return "I'm having a tiny technical moment, but I'm still absolutely THRILLED to help you! This is so exciting! How can I make your day fantastic?"
+    return "I'm having a tiny technical moment, but I'm still so happy to help you! What can I do for you today?"
 
 def create_app():
     """Create Flask app compatible with gunicorn"""

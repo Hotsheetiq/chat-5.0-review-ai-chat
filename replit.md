@@ -106,7 +106,7 @@ The application is designed for cloud deployment with the following consideratio
 - **Context-Rich Memory System**: Sarah remembers conversation topics to avoid repetition while maintaining natural flow
 - **Emergency Response Protocol**: Immediate priority handling for urgent maintenance with proper escalation
 - **Correct Office Information**: All responses use accurate 31 Port Richmond Ave address with proper Eastern Time office hours
-- **Intelligent Fallback**: When OpenAI quota limits are reached, Sarah uses smart keyword detection to answer common questions like "Are you real?" with enthusiastic, appropriate responses
+- **Intelligent Fallback System**: When OpenAI is unavailable, Sarah uses keyword detection to answer office hours, location, maintenance, and other common questions with accurate information instead of generic error messages
 - **Character Consistency**: Sarah's personality is helpful, friendly, and natural - no artificial enthusiasm or robotic patterns
 - **Speech Recognition System**: Implemented Twilio's speech gathering with conversational AI responses - no WebSocket errors
 - **Call Flow Fixed**: Calls no longer disconnect immediately - Sarah greets callers and processes speech input properly
