@@ -101,6 +101,57 @@ def handle_incoming_call():
         response.say("I'm sorry, we're experiencing technical difficulties. Please try calling back later.")
         return str(response)
 
+@app.route('/fallback-call', methods=['POST'])
+def fallback_call():
+    """Fallback handler in case primary webhook fails."""
+    try:
+        logger.warning("Fallback handler activated")
+        response = VoiceResponse()
+        
+        # Professional fallback message
+        response.say("Thank you for calling our property management office. "
+                    "We're experiencing temporary technical difficulties. "
+                    "Please call back in a few minutes, or leave a detailed message "
+                    "after the beep including your name, phone number, and reason for calling.")
+        
+        # Record message for follow-up
+        response.record(
+            timeout=60,
+            max_length=300,
+            transcribe=True,
+            transcribe_callback=f"{request.host_url}transcription"
+        )
+        
+        response.say("Thank you for your message. We'll get back to you as soon as possible.")
+        
+        return str(response)
+        
+    except Exception as e:
+        logger.error(f"Error in fallback handler: {e}")
+        # Absolute last resort
+        response = VoiceResponse()
+        response.say("We apologize for the inconvenience. Please call back later.")
+        return str(response)
+
+@app.route('/transcription', methods=['POST'])
+def handle_transcription():
+    """Handle transcription callbacks from recorded messages."""
+    try:
+        transcription_text = request.form.get('TranscriptionText', '')
+        caller_phone = request.form.get('From', 'Unknown')
+        recording_url = request.form.get('RecordingUrl', '')
+        
+        logger.info(f"Transcription received from {caller_phone}: {transcription_text}")
+        
+        # In production, you'd store this for follow-up
+        # For now, just log it
+        
+        return 'Transcription received', 200
+        
+    except Exception as e:
+        logger.error(f"Error handling transcription: {e}")
+        return 'Error', 500
+
 @app.route('/process-speech', methods=['POST'])
 def process_speech():
     """Process speech input from caller."""
