@@ -87,3 +87,15 @@ The application is designed for cloud deployment with the following consideratio
 - Load balancer for handling multiple concurrent calls  
 - Environment variable management for sensitive credentials
 - Health check endpoints for container orchestration
+
+## Recent Changes
+
+### July 23, 2025 - Sarah Voice Assistant Optimization
+- **Voice Enhancement**: Replaced robotic SSML tags with natural Polly.Kimberly-Neural American accent
+- **Intelligent Conversation System**: Implemented conversation memory to eliminate repetitive responses
+- **Context-Aware Responses**: Added smart fallback system that adapts based on caller questions and conversation history
+- **Natural Language Processing**: Responses now use conversational patterns instead of formal business language
+- **Greeting Standardization**: Implemented exact requested greeting: "It's a great day at Grinberg Management, this is Sarah! How can I help you today?"
+- **AI Identity Handling**: Natural responses when asked about being human/AI, including recognition of "Siri" references
+- **Maintenance Workflow**: Enhanced maintenance request processing with specific issue categorization (plumbing, electrical, HVAC)
+- **Leasing Support**: Improved apartment inquiry handling with size and move-in date collection
