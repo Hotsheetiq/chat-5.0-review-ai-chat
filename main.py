@@ -1,5 +1,5 @@
-# Import working ConversationRelay app
-from simple_conversation_app import create_conversation_relay_app
+# Import fixed ConversationRelay app
+from fixed_conversation_app import create_conversation_relay_app
 
-# Create the ConversationRelay app with human-like AI conversation
+# Create the ConversationRelay app with proper WebSocket handling
 app, socketio = create_conversation_relay_app()
