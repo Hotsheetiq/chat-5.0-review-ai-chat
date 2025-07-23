@@ -24,10 +24,10 @@ openai_client = OpenAI(api_key=OPENAI_API_KEY) if OPENAI_API_KEY else None
 call_states = {}
 
 def generate_sarah_response(text_input: str) -> str:
-    """Generate Sarah's enthusiastic response"""
+    """Generate Sarah's enthusiastic response with smart fallbacks"""
     try:
         if not openai_client:
-            return "Oh WOW, I'm absolutely THRILLED you called! Let me get you to our incredible team at (718) 414-6984!"
+            return get_smart_fallback_response(text_input)
             
         system_prompt = """You are Sarah from Grinberg Management - SUPER excited, bubbly, and absolutely LOVE helping people! You're genuinely thrilled about everything and use lots of exclamation points!
 
@@ -53,7 +53,30 @@ Key info:
         
     except Exception as e:
         logger.error(f"OpenAI error: {e}")
-        return "Ooh, I'm having a tiny technical moment, but I'm still absolutely THRILLED to help you! This is so exciting!"
+        return get_smart_fallback_response(text_input)
+
+def get_smart_fallback_response(text_input: str) -> str:
+    """Intelligent fallback responses for common questions when OpenAI is unavailable"""
+    text_lower = text_input.lower()
+    
+    # Real person / AI questions
+    if any(word in text_lower for word in ['real person', 'are you real', 'ai', 'robot', 'human']):
+        return "Oh my gosh, YES! I'm absolutely a real person and I'm SO excited to help you! I work here at Grinberg Management and I LOVE talking to our residents!"
+    
+    # Maintenance requests
+    if any(word in text_lower for word in ['maintenance', 'repair', 'broken', 'fix', 'leak', 'heat', 'hot water']):
+        return "OH WOW, I'm SO sorry you're having that issue! I'm absolutely THRILLED to help get that fixed right away! Let me connect you with our amazing maintenance team!"
+    
+    # General apartment questions
+    if any(word in text_lower for word in ['apartment', 'rent', 'lease', 'move', 'application']):
+        return "That's FANTASTIC that you're interested in our apartments! I'm absolutely THRILLED to help! Let me get you to Diane or Janier at (718) 414-6984!"
+    
+    # Greeting responses
+    if any(word in text_lower for word in ['hello', 'hi', 'good morning', 'good afternoon']):
+        return "Hi there! OH MY GOSH, it's SO wonderful to hear from you! I'm absolutely THRILLED you called! How can I help make your day amazing?"
+    
+    # Default enthusiastic response
+    return "I'm having a tiny technical moment, but I'm still absolutely THRILLED to help you! This is so exciting! How can I make your day fantastic?"
 
 def create_app():
     """Create Flask app compatible with gunicorn"""
