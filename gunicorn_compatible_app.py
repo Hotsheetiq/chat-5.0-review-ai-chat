@@ -20,16 +20,22 @@ OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY")
 ELEVENLABS_API_KEY = os.environ.get("ELEVENLABS_API_KEY")
 openai_client = OpenAI(api_key=OPENAI_API_KEY) if OPENAI_API_KEY else None
 
-# Call state tracking
+# Call state tracking with conversation memory
 call_states = {}
+conversation_memory = {}  # Track what Sarah has already said to each caller
 
-def generate_sarah_response(text_input: str) -> str:
-    """Generate Sarah's enthusiastic response with smart fallbacks"""
+def generate_sarah_response(text_input: str, caller_id: str = None) -> str:
+    """Generate Sarah's enthusiastic response with smart fallbacks and no repetition"""
     try:
         if not openai_client:
-            return get_smart_fallback_response(text_input)
+            return get_smart_fallback_response(text_input, caller_id)
+        
+        # Build conversation context to avoid repetition
+        conversation_context = ""
+        if caller_id and caller_id in conversation_memory:
+            conversation_context = f"\n\nIMPORTANT: This caller has already heard responses. Vary your response style and wording. Never repeat exactly what you've said before. Be creative with different phrasings while maintaining your upbeat personality."
             
-        system_prompt = """You are Sarah from Grinberg Management - naturally happy, upbeat, and genuinely love helping people! You're cheerful and positive but sound like a real person having a good day!
+        system_prompt = f"""You are Sarah from Grinberg Management - naturally happy, upbeat, and genuinely love helping people! You're cheerful and positive but sound like a real person having a good day!
 
 Keep responses under 35 words. Sound warm, friendly, and naturally enthusiastic!
 
@@ -37,7 +43,8 @@ Key info:
 - Office: 31 Port Richmond Ave, hours 9-5 Monday-Friday Eastern Time  
 - For transfers: "Let me get you to Diane or Janier at seven one eight, four one four, six nine eight four!"
 - Use words like "great," "wonderful," "happy," "love," but sound natural
-- Be genuinely upbeat without being over-the-top!"""
+- Be genuinely upbeat without being over-the-top!
+- NEVER repeat responses - always vary your wording and approach{conversation_context}"""
 
         response = openai_client.chat.completions.create(
             model="gpt-4o",  # the newest OpenAI model is "gpt-4o" which was released May 13, 2024. do not change this unless explicitly requested by the user
@@ -46,41 +53,102 @@ Key info:
                 {"role": "user", "content": text_input}
             ],
             max_tokens=60,
-            temperature=0.8
+            temperature=0.9  # Higher temperature for more variation
         )
         
-        return response.choices[0].message.content or "I'm so happy to help you! What can I do for you today?"
+        ai_response = response.choices[0].message.content or "I'm so happy to help you! What can I do for you today?"
+        
+        # Track AI responses to avoid repetition
+        if caller_id:
+            if caller_id not in conversation_memory:
+                conversation_memory[caller_id] = set()
+            conversation_memory[caller_id].add(f"ai:{hash(ai_response)}")
+        
+        return ai_response
         
     except Exception as e:
         logger.error(f"OpenAI error: {e}")
-        return get_smart_fallback_response(text_input)
+        return get_smart_fallback_response(text_input, caller_id)
 
-def get_smart_fallback_response(text_input: str) -> str:
-    """Intelligent fallback responses for common questions when OpenAI is unavailable"""
+def get_smart_fallback_response(text_input: str, caller_id: str = None) -> str:
+    """Intelligent fallback responses with variation to avoid repetition"""
     text_lower = text_input.lower()
+    
+    # Initialize conversation memory for this caller
+    if caller_id and caller_id not in conversation_memory:
+        conversation_memory[caller_id] = set()
+    
+    def get_varied_response(category: str, responses: list) -> str:
+        """Return a response that hasn't been used before for this caller"""
+        if not caller_id:
+            return responses[0]
+        
+        used_responses = conversation_memory[caller_id]
+        
+        # Find unused responses
+        available = [r for r in responses if f"{category}:{hash(r)}" not in used_responses]
+        
+        # If all responses used, reset and use first one
+        if not available:
+            conversation_memory[caller_id] = {key for key in used_responses if not key.startswith(f"{category}:")}
+            available = responses
+        
+        selected = available[0]
+        conversation_memory[caller_id].add(f"{category}:{hash(selected)}")
+        return selected
     
     # Real person / AI questions
     if any(word in text_lower for word in ['real person', 'are you real', 'ai', 'robot', 'human']):
-        return "Yes! I'm totally real! I'm Sarah and I work right here at Grinberg Management! I absolutely love helping everyone and I'm so happy you called today!"
+        responses = [
+            "Yes! I'm totally real! I'm Sarah and I work right here at Grinberg Management! I absolutely love helping everyone and I'm so happy you called today!",
+            "Absolutely! I'm a real person! My name is Sarah and I'm here at the office right now! I love talking with our residents and helping however I can!",
+            "Oh yes, I'm definitely real! I'm Sarah, and I work here at Grinberg Management! I'm having such a great day helping everyone who calls!"
+        ]
+        return get_varied_response("real_person", responses)
     
     # Maintenance requests
     if any(word in text_lower for word in ['maintenance', 'repair', 'broken', 'fix', 'leak', 'heat', 'hot water']):
-        return "Oh no! I'm so sorry you're dealing with that! But don't worry, I'm super excited to help get that fixed for you right away! Let me get you to our fantastic maintenance team!"
+        responses = [
+            "Oh no! I'm so sorry you're dealing with that! But don't worry, I'm super excited to help get that fixed for you right away! Let me get you to our fantastic maintenance team!",
+            "I'm really sorry that's happening! Let me help you get that taken care of immediately! I'll connect you with our amazing maintenance team right now!",
+            "That sounds frustrating! I'm here to help though! Let me get you connected with our maintenance experts who can fix that for you today!"
+        ]
+        return get_varied_response("maintenance", responses)
     
     # General apartment questions
     if any(word in text_lower for word in ['apartment', 'rent', 'lease', 'move', 'application']):
-        return "That's so exciting that you're interested in our apartments! I love helping with that! Let me connect you with Diane or Janier at seven one eight, four one four, six nine eight four!"
+        responses = [
+            "That's so exciting that you're interested in our apartments! I love helping with that! Let me connect you with Diane or Janier at seven one eight, four one four, six nine eight four!",
+            "How wonderful that you're looking at our apartments! I'd be happy to help! Let me get you to Diane or Janier who can assist with all the details!",
+            "That's fantastic! I'm so happy you're interested in living here! Let me connect you with our leasing team right away!"
+        ]
+        return get_varied_response("apartment", responses)
     
     # Greeting responses
     if any(word in text_lower for word in ['hello', 'hi', 'good morning', 'good afternoon']):
-        return "Hi! Oh wow, it's so great to hear from you! I'm having such a wonderful day and I'm super excited to help! What can I do for you?"
+        responses = [
+            "Hi! Oh wow, it's so great to hear from you! I'm having such a wonderful day and I'm super excited to help! What can I do for you?",
+            "Hello there! Thanks so much for calling! I'm Sarah and I'm having a fantastic day! How can I help make your day better?",
+            "Hi! It's so nice to hear from you! I'm here and ready to help with whatever you need! What's going on?"
+        ]
+        return get_varied_response("greeting", responses)
     
     # Office hours and location questions
     if any(word in text_lower for word in ['office', 'hours', 'open', 'closed', 'location', 'address', 'where']):
-        return "Our office is at thirty one Port Richmond Avenue! We're open Monday through Friday, nine to five Eastern Time. We're closed weekends, but I'm so happy to help however I can!"
+        responses = [
+            "Our office is at thirty one Port Richmond Avenue! We're open Monday through Friday, nine to five Eastern Time. We're closed weekends, but I'm so happy to help however I can!",
+            "We're located at thirty one Port Richmond Avenue! Our hours are nine to five, Monday through Friday. Even though we're closed weekends, I'm here to help you right now!",
+            "You can find us at thirty one Port Richmond Avenue! We're open weekdays from nine to five Eastern Time. We're closed on weekends, but I'm still happy to assist you!"
+        ]
+        return get_varied_response("office", responses)
     
-    # Default enthusiastic response
-    return "I'm having a tiny technical moment, but I'm still so happy to help you! What can I do for you today?"
+    # Default responses with variation
+    default_responses = [
+        "I'm having a tiny technical moment, but I'm still so happy to help you! What can I do for you today?",
+        "I'm experiencing a small technical hiccup, but I'm here and ready to help! How can I assist you?",
+        "There's a little technical issue on my end, but I'm still excited to help you! What do you need?"
+    ]
+    return get_varied_response("default", default_responses)
 
 def create_app():
     """Create Flask app compatible with gunicorn"""
@@ -156,8 +224,8 @@ def create_app():
                 response.dial('(718) 414-6984')
                 return str(response)
             
-            # Generate Sarah's response
-            ai_response = generate_sarah_response(speech_result)
+            # Generate Sarah's response with caller tracking
+            ai_response = generate_sarah_response(speech_result, call_sid)
             logger.info(f"Sarah's response: {ai_response}")
             
             response.say(ai_response, voice='Polly.Joanna-Neural')

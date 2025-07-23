@@ -103,7 +103,7 @@ The application is designed for cloud deployment with the following consideratio
 - **Smart Transfer Logic**: Any unrecognized requests or human transfer requests automatically route to Diane or Janier  
 - **Naturally Upbeat Personality**: Sarah is genuinely happy and cheerful with natural enthusiasm that sounds like a real person having a great day, not over-the-top artificial energy  
 - **Natural Conversation Style**: Sarah speaks like an enthusiastic, helpful friend who's thrilled to assist with anything
-- **Context-Rich Memory System**: Sarah remembers conversation topics to avoid repetition while maintaining natural flow
+- **Anti-Repetition System**: Sarah tracks all responses and never repeats the same answer twice, using varied phrasings and approaches while maintaining her personality
 - **Emergency Response Protocol**: Immediate priority handling for urgent maintenance with proper escalation
 - **Correct Office Information**: All responses use accurate 31 Port Richmond Ave address with proper Eastern Time office hours
 - **Intelligent Fallback System**: When OpenAI is unavailable, Sarah uses keyword detection to answer office hours, location, maintenance, and other common questions with accurate information instead of generic error messages
