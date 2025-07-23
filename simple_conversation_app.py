@@ -16,6 +16,7 @@ logger = logging.getLogger(__name__)
 
 # Initialize services
 OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY")
+ELEVENLABS_API_KEY = os.environ.get("ELEVENLABS_API_KEY")
 openai_client = OpenAI(api_key=OPENAI_API_KEY) if OPENAI_API_KEY else None
 
 # Conversation memory
@@ -225,6 +226,7 @@ def create_conversation_relay_app():
         
         return render_template('dashboard.html', 
                              openai_connected=bool(OPENAI_API_KEY),
+                             elevenlabs_connected=bool(ELEVENLABS_API_KEY),
                              recent_calls=recent_calls)
     
     return app, socketio

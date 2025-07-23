@@ -50,8 +50,8 @@
                                     <strong>OpenAI:</strong> {{ 'Connected' if openai_connected else 'No API Key' }}
                                 </p>
                                 <p class="mb-1">
-                                    <span class="status-indicator status-warning"></span>
-                                    <strong>ElevenLabs Voice:</strong> Configured
+                                    <span class="status-indicator {{ 'status-ok' if elevenlabs_connected else 'status-warning' }}"></span>
+                                    <strong>ElevenLabs Voice:</strong> {{ 'Connected' if elevenlabs_connected else 'Fallback Mode' }}
                                 </p>
                             </div>
                             <div class="col-md-6">
@@ -156,12 +156,12 @@
 
         <div class="row mt-4">
             <div class="col-12">
-                <div class="alert alert-info">
-                    <h6>🎉 ConversationRelay Successfully Implemented!</h6>
+                <div class="alert alert-success">
+                    <h6>🎉 ElevenLabs ConversationRelay Successfully Integrated!</h6>
                     <p class="mb-0">
-                        This system now uses true conversational AI with ElevenLabs voice synthesis 
+                        This system now uses true conversational AI with ElevenLabs Adam voice 
                         instead of robotic text-to-speech. Mike will sound genuinely human with 
-                        natural conversation flow and authentic voice quality.
+                        natural conversation flow and premium voice quality. Your ElevenLabs API key is active!
                     </p>
                 </div>
             </div>

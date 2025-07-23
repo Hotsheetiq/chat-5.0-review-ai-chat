@@ -54,7 +54,8 @@ The application is built with Flask and Flask-SocketIO to provide a comprehensiv
 - **Rent Manager**: Property management software for tenant data and service tracking
 
 ### Environment Configuration
-- `OPENAI_API_KEY`: Authentication for OpenAI services
+- `OPENAI_API_KEY`: Authentication for OpenAI GPT-4o conversational AI
+- `ELEVENLABS_API_KEY`: ElevenLabs API key for human-like voice synthesis
 - `RENT_MANAGER_API_KEY`: API access token for tenant data
 - `TWILIO_ACCOUNT_SID` & `TWILIO_AUTH_TOKEN`: Twilio service credentials
 - `PORT`: Application server port (defaults to 5000)
@@ -94,7 +95,7 @@ The application is designed for cloud deployment with the following consideratio
 ### July 23, 2025 - Mike Implementation with True ConversationRelay AI
 - **Mike Character Introduction**: Completely reimagined assistant as Mike with natural conversational personality  
 - **Architecture Breakthrough**: Successfully implemented Twilio ConversationRelay for true human-like conversation
-- **ElevenLabs Integration**: Now using ElevenLabs Adam voice (pNInz6obpgDQGcFmaJgB) for genuine human-like quality
+- **ElevenLabs Integration**: Now using ElevenLabs Adam voice (pNInz6obpgDQGcFmaJgB) with API key for genuine human-like quality
 - **Conversational AI System**: WebSocket-based real-time interaction replaces text-to-speech entirely
 - **True Human-Like Voice**: No more robotic TTS - this is authentic conversational AI with natural voice generation
 - **Perfect Greeting**: "It's a great day here at Grinberg Management! My name is Mike. How can I help you?" - friendly, helpful, complete
