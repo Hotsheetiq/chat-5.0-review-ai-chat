@@ -331,8 +331,12 @@ Keep responses under 25 words but sound completely natural and conversational. U
         except Exception as e:
             logger.error(f"Call handler error: {e}", exc_info=True)
             response = VoiceResponse()
-            response.say("I'm sorry, we're having technical issues. Please call back in a moment.",
-                        voice='Polly.Matthew-Neural')
+            error_text = "I'm sorry, we're having technical issues. Please call back in a moment."
+            audio_url = generate_elevenlabs_audio(error_text)
+            if audio_url:
+                response.play(f"https://{request.host}{audio_url}")
+            else:
+                response.say(error_text, voice='Polly.Matthew-Neural')
             return str(response)
     
     @app.route('/handle-speech/<call_sid>', methods=['POST'])
