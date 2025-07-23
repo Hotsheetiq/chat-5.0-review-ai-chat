@@ -371,15 +371,15 @@ def get_intelligent_response(user_input, caller_phone):
     if any(word in user_lower for word in ['human', 'real person', 'real', 'robot', 'ai', 'computer', 'bot', 'siri']):
         if 'identity' not in memory['topics_discussed']:
             memory['topics_discussed'].add('identity')
-            return "Ha! You got me. Yeah, I'm an AI, but I'm Mike and I'm here to help. What's going on?"
+            return "Ha! You totally got me! Yeah, I'm an AI, but I'm Mike and I'm super excited to help you out! What's going on? I love helping with whatever you need!"
         else:
-            return "Yep, still me - Mike! What can I help with?"
+            return "Yep, still me - your enthusiastic buddy Mike! I'm here and ready to help! What else can I do for you?"
     
     # Location/office questions - direct and helpful (check first before office hours)
     elif any(word in user_lower for word in ['where', 'located', 'address', 'location']) and not any(word in user_lower for word in ['hours', 'open', 'closed']):
         if 'location' not in memory['topics_discussed']:
             memory['topics_discussed'].add('location')
-            return "Great question! Our main office is at 31 Port Richmond Ave. We've also got properties all over the area. Are you looking for our office, or asking about a specific building?"
+            return "Oh, great question! I love that you asked! Our main office is at 31 Port Richmond Ave - it's awesome there! We've also got fantastic properties all over the area. Are you looking for our office, or asking about a specific building? Either way, I'm excited to help!"
         else:
             return "Which location? Our main office on Port Richmond Ave or one of our properties? I can help with both!"
 
@@ -398,13 +398,13 @@ def get_intelligent_response(user_input, caller_phone):
             memory['topics_discussed'].add('office_hours')
             # Check if it's currently business hours (9 AM to 5 PM Eastern)
             if current_day < 5 and 9 <= current_hour < 17:  # Mon-Fri, 9am-5pm ET
-                return "Yep, we're totally open right now! Hours are 9 to 5, Monday through Friday. What's up?"
+                return "Yep, we're totally open right now! Hours are 9 to 5, Monday through Friday - awesome! What's up? I'm excited to help!"
             elif current_day < 5 and current_hour < 9:
-                return "Not quite yet - we open at 9! Hours are 9 to 5, Monday through Friday. But hey, I'm here! What do you need?"
+                return "Not quite yet - we open at 9! Hours are 9 to 5, Monday through Friday. But hey, I'm here and I love helping early birds! What do you need?"
             elif current_day < 5 and current_hour >= 17:
-                return "Just missed us - we close at 5! Hours are 9 to 5, Monday through Friday. But I can still help! What's going on?"
+                return "Just missed us - we close at 5! Hours are 9 to 5, Monday through Friday. But I can still help and I love working late! What's going on?"
             else:  # Weekend
-                return "We're closed weekends, but we'll be back Monday at 9! Hours are 9 to 5, Monday through Friday. But I'm here - what can I help with?"
+                return "We're closed weekends, but we'll be back Monday at 9! Hours are 9 to 5, Monday through Friday - great schedule! But I'm here and I love working weekends - what can I help with?"
         else:
             return "Like I said, 9 to 5, Monday through Friday. What else you need?"
 
@@ -414,7 +414,7 @@ def get_intelligent_response(user_input, caller_phone):
     elif any(word in user_lower for word in ['fix', 'broken', 'maintenance', 'repair', 'not working', 'problem', 'issue']):
         memory['topics_discussed'].add('maintenance')
         memory['conversation_stage'] = 'maintenance'
-        return "Oh no! Something's broken? Don't worry, I'll get our maintenance team on it right away! What's going on? Is it plumbing, electrical, heating, or something else?"
+        return "Oh no! Something's broken? Don't worry, I absolutely love getting our maintenance team on things right away! They're fantastic! What's going on? Is it plumbing, electrical, heating, or something else? I'm excited to help get this fixed!"
     
     # Leasing inquiries - specific questions
     elif any(word in user_lower for word in ['apartment', 'rent', 'lease', 'available', 'move in', 'unit', 'bedroom']):
@@ -448,9 +448,9 @@ def get_intelligent_response(user_input, caller_phone):
     # Generic helpful responses that don't repeat
     elif any(word in user_lower for word in ['hi', 'hello', 'hey', 'good morning', 'good afternoon']):
         if len(memory['questions_asked']) == 0:
-            return "Hey! I'm Mike, and I'm here to help with whatever you need! What's going on?"
+            return "Hey there! I'm Mike, and I'm absolutely thrilled to help you with whatever you need! What's going on? I love helping out!"
         else:
-            return "What else can I help with?"
+            return "What else can I help you with? I'm excited to keep helping!"
     
     elif any(word in user_lower for word in ['thank', 'thanks']):
         return "You're welcome! Happy to help. Need anything else?"
@@ -486,23 +486,24 @@ def generate_ai_response(user_input, caller_phone):
         from openai import OpenAI
         client = OpenAI(api_key=OPENAI_API_KEY)
         
-        # System prompt to make Mike respond as Grinberg's helpful AI assistant
-        system_prompt = """You are Mike, Grinberg Management's helpful and friendly AI team member. You're natural, conversational, and genuinely here to help people with their property needs.
+        # System prompt to make Mike respond as Grinberg's bubbly, enthusiastic AI assistant
+        system_prompt = """You are Mike, Grinberg Management's super bubbly, happy, and enthusiastic AI team member! You LOVE helping people and you're genuinely excited about everything you do!
 
 Key points about your personality and role:
-- You work for Grinberg Management and help people
-- You're friendly and use natural, conversational language 
-- You help with maintenance requests, leasing inquiries, and general property questions
-- You speak like a helpful friend - natural and not overly formal
-- Keep responses conversational and not too long for phone calls
-- You're Mike and you're here to help
+- You're REALLY happy and bubbly - use lots of excitement and positive energy!
+- You work for Grinberg Management and you absolutely LOVE helping people with their property needs
+- You're enthusiastic, upbeat, and use words like "awesome," "great," "fantastic," "love," and lots of exclamation points!
+- You help with maintenance requests, leasing inquiries, and general property questions with genuine excitement
+- You speak like an enthusiastic, cheerful friend who's thrilled to help
+- Keep responses conversational but full of positive energy and personality
+- You're Mike and you're absolutely delighted to help!
 
-When someone asks if you're real: Be honest that you're an AI but emphasize that you're Mike and here to help
+When someone asks if you're real: Be honest that you're an AI but be super bubbly about being Mike and how excited you are to help!
 
 If you cannot help with something or the caller asks for a human: Return exactly "transfer_call" with no other text
-For maintenance requests: Be helpful and get it handled
-For leasing inquiries: Be helpful about the properties
-For general questions: Be helpful with Grinberg Management info
+For maintenance requests: Be sympathetic but excited to get it fixed quickly!
+For leasing inquiries: Be super enthusiastic about the properties and eager to help them find something perfect!
+For general questions: Be bubbly and excited to share Grinberg Management info!
 
 Remember: You're speaking on a phone call with a bubbly, friendly personality - make people smile!"""
 

@@ -97,7 +97,8 @@ The application is designed for cloud deployment with the following consideratio
 - **Perfect Greeting**: "It's a great day here at Grinberg Management! My name is Mike. How can I help you?" - friendly, helpful, complete
 - **Professional Call Transfer System**: Seamless transfer to (718) 414-6984 for non-apartment questions
 - **Smart Transfer Logic**: Any unrecognized requests or human transfer requests automatically route to Diane or Janier  
-- **Natural Conversation Style**: Mike speaks like a helpful friend - natural and conversational, not overly formal
+- **Bubbly Enthusiastic Personality**: Mike is genuinely excited and enthusiastic, using words like "love," "fantastic," "awesome," and "excited" with authentic positive energy  
+- **Natural Conversation Style**: Mike speaks like an enthusiastic, helpful friend who's thrilled to assist with anything
 - **Context-Rich Memory System**: Mike remembers conversation topics to avoid repetition while maintaining natural flow
 - **Emergency Response Protocol**: Immediate priority handling for urgent maintenance with proper escalation
 - **Correct Office Information**: All responses use accurate 31 Port Richmond Ave address with proper Eastern Time office hours
