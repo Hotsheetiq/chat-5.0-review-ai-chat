@@ -1,2 +1,3 @@
-# Import gunicorn-compatible app (no WebSockets needed)
-from gunicorn_compatible_app import app
+# Import conversational AI app with true intelligence
+from conversational_ai_app import create_app
+app = create_app()

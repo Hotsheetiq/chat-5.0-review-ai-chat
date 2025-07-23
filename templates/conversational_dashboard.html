@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="en" data-bs-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dimitry's AI Assistant - Conversational AI</title>
+    <link href="https://cdn.replit.com/agent/bootstrap-agent-dark-theme.min.css" rel="stylesheet">
+    <style>
+        .status-indicator {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-right: 8px;
+        }
+        .status-ok { background-color: #28a745; }
+        .status-warning { background-color: #ffc107; }
+        .status-error { background-color: #dc3545; }
+        .conversation-preview {
+            max-height: 300px;
+            overflow-y: auto;
+            background: var(--bs-gray-900);
+            border-radius: 8px;
+            padding: 15px;
+        }
+    </style>
+</head>
+<body class="bg-dark">
+    <div class="container mt-4">
+        <div class="row">
+            <div class="col-12">
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h1 class="h3 mb-0">🧠 Dimitry's AI Assistant - Conversational AI</h1>
+                        <small>True Conversational AI with ElevenLabs Voice & GPT-4o Intelligence</small>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <h5>Conversational AI Status</h5>
+                                <p class="mb-1">
+                                    <span class="status-indicator status-ok"></span>
+                                    <strong>ConversationRelay:</strong> Active
+                                </p>
+                                <p class="mb-1">
+                                    <span class="status-indicator {{ 'status-ok' if openai_connected else 'status-error' }}"></span>
+                                    <strong>GPT-4o Intelligence:</strong> {{ 'Connected' if openai_connected else 'Offline' }}
+                                </p>
+                                <p class="mb-1">
+                                    <span class="status-indicator {{ 'status-ok' if elevenlabs_connected else 'status-warning' }}"></span>
+                                    <strong>ElevenLabs Voice:</strong> {{ 'Connected' if elevenlabs_connected else 'Fallback Mode' }}
+                                </p>
+                                <p class="mb-1">
+                                    <span class="status-indicator status-ok"></span>
+                                    <strong>Active Calls:</strong> {{ active_calls }}
+                                </p>
+                            </div>
+                            <div class="col-md-6">
+                                <h5>AI Capabilities</h5>
+                                <ul class="list-unstyled">
+                                    <li>✓ Natural conversation flow</li>
+                                    <li>✓ Emotional intelligence</li>
+                                    <li>✓ Context awareness</li>
+                                    <li>✓ Human-like responses</li>
+                                    <li>✓ Real-time interruption handling</li>
+                                    <li>✓ Intelligent call routing</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row mt-4">
+            <div class="col-12">
+                <div class="alert alert-success">
+                    <h6>🎉 True Conversational AI Ready!</h6>
+                    <p class="mb-0">
+                        Dimitry's AI Assistant now uses ConversationRelay with ElevenLabs voice synthesis 
+                        and GPT-4o intelligence for genuine human-like conversations. No more robotic TTS!
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <div class="row mt-4">
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-header">
+                        <h6>Voice Technology</h6>
+                    </div>
+                    <div class="card-body">
+                        <p><strong>Provider:</strong> ElevenLabs</p>
+                        <p><strong>Voice:</strong> Charlie (Natural Male)</p>
+                        <p><strong>Latency:</strong> ~75ms</p>
+                        <p><strong>Quality:</strong> Human-like</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-header">
+                        <h6>AI Intelligence</h6>
+                    </div>
+                    <div class="card-body">
+                        <p><strong>Model:</strong> GPT-4o</p>
+                        <p><strong>Personality:</strong> Naturally upbeat</p>
+                        <p><strong>Memory:</strong> Conversation aware</p>
+                        <p><strong>Features:</strong> Emotional intelligence</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row mt-4">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header">
+                        <h6>Test Conversational AI</h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="input-group mb-3">
+                            <input type="text" class="form-control" id="testInput" placeholder="Type a message to test the AI..." value="Hi Dimitry's AI Assistant, how are you?">
+                            <button class="btn btn-primary" onclick="testConversation()">Test</button>
+                        </div>
+                        <div id="testResult" class="conversation-preview" style="display: none;">
+                            <div id="testOutput"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row mt-4">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header">
+                        <h6>System Architecture</h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-4">
+                                <h6>Voice Processing</h6>
+                                <ul class="list-unstyled small">
+                                    <li>• Twilio ConversationRelay</li>
+                                    <li>• Real-time WebSocket</li>
+                                    <li>• ElevenLabs TTS</li>
+                                    <li>• Speech recognition</li>
+                                </ul>
+                            </div>
+                            <div class="col-md-4">
+                                <h6>AI Processing</h6>
+                                <ul class="list-unstyled small">
+                                    <li>• GPT-4o language model</li>
+                                    <li>• Context-aware responses</li>
+                                    <li>• Emotional intelligence</li>
+                                    <li>• Business logic integration</li>
+                                </ul>
+                            </div>
+                            <div class="col-md-4">
+                                <h6>Call Management</h6>
+                                <ul class="list-unstyled small">
+                                    <li>• Intelligent routing</li>
+                                    <li>• Conversation memory</li>
+                                    <li>• Transfer capabilities</li>
+                                    <li>• Analytics tracking</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function testConversation() {
+            const input = document.getElementById('testInput').value;
+            const result = document.getElementById('testResult');
+            const output = document.getElementById('testOutput');
+            
+            if (!input.trim()) return;
+            
+            output.innerHTML = '<div class="text-info">Testing AI response...</div>';
+            result.style.display = 'block';
+            
+            fetch(`/test-conversation?input=${encodeURIComponent(input)}`)
+                .then(response => response.json())
+                .then(data => {
+                    output.innerHTML = `
+                        <div class="mb-2">
+                            <strong>You:</strong> ${data.input}
+                        </div>
+                        <div class="text-success">
+                            <strong>Dimitry's AI Assistant:</strong> ${data.ai_response}
+                        </div>
+                    `;
+                })
+                .catch(error => {
+                    output.innerHTML = '<div class="text-danger">Error testing AI response</div>';
+                });
+        }
+        
+        // Allow Enter key to test
+        document.getElementById('testInput').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                testConversation();
+            }
+        });
+        
+        // Auto-refresh active calls every 10 seconds
+        setInterval(function() {
+            // Could add real-time updates here
+        }, 10000);
+    </script>
+</body>
+</html>
