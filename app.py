@@ -111,8 +111,8 @@ def handle_incoming_call():
             response.record(timeout=30, transcribe=False)
             return str(response)
         
-        # Genuinely happy, enthusiastic greeting with natural emotion
-        greeting = "Hi! Oh my gosh, it's such a beautiful day here at Grinberg Management! This is Sarah, and I'm so excited to help you today! What can I do for you?"
+        # Warm, casual greeting like a helpful friend
+        greeting = "Hey there! This is Sarah from Grinberg Management. How can I help you today?"
         response.say(greeting, voice='Polly.Joanna-Neural', language='en-US')
         
         # Use speech gathering instead of media streaming for better reliability
@@ -124,8 +124,8 @@ def handle_incoming_call():
             method='POST'
         )
         
-        # Fallback if no speech detected - bubbly and encouraging  
-        response.say("Oops! I totally missed that! Could you say it again? I'm all ears!",
+        # Fallback if no speech detected - casual and friendly  
+        response.say("Sorry, I didn't catch that. Could you say it again?",
                     voice='Polly.Joanna-Neural', language='en-US')
         
         logger.info(f"Returning TwiML response for {caller_phone}")
@@ -251,7 +251,7 @@ def process_speech():
             method='POST'
         )
         
-        response.say("Thanks so much for calling! You have the most amazing day ever, okay? Bye!", voice='Polly.Joanna-Neural', language='en-US')
+        response.say("Thanks for calling! Have a great day!", voice='Polly.Joanna-Neural', language='en-US')
         
         return str(response)
         
@@ -283,14 +283,22 @@ def get_intelligent_response(user_input, caller_phone):
     if any(word in user_lower for word in ['human', 'real person', 'real', 'robot', 'ai', 'computer', 'bot', 'siri']):
         if 'identity' not in memory['topics_discussed']:
             memory['topics_discussed'].add('identity')
-            return "Haha, you totally caught me! I'm Sarah and I'm actually an AI, but I'm like, super enthusiastic about helping people! I absolutely love dealing with maintenance stuff, apartment hunting, and basically anything property-related here at Grinberg! So what's up? What can I help you with?"
+            return "Ha! You got me! I'm Sarah and yep, I'm an AI. But I'm super friendly and I love helping with apartments and maintenance stuff. What's going on? How can I help?"
         else:
-            return "Yep, still me - your super cheerful AI buddy Sarah! So what awesome thing can I help you with today?"
+            return "Yep, still me - your friendly AI Sarah! What can I help with?"
     
-    # Office hours and availability - smart time-aware responses
-    elif any(word in user_lower for word in ['office', 'hours', 'open', 'closed', 'time']):
-        import datetime
-        now = datetime.datetime.now()
+    # Location/office questions - direct and helpful (check first before office hours)
+    elif any(word in user_lower for word in ['where', 'located', 'address', 'location']) and not any(word in user_lower for word in ['hours', 'open', 'closed']):
+        if 'location' not in memory['topics_discussed']:
+            memory['topics_discussed'].add('location')
+            return "Great question! Our main office is at 123 Main Street in downtown. We've also got properties all over the area. Are you looking for our office or asking about a specific building?"
+        else:
+            return "Which location? Our main office on Main Street or one of our properties? I can help with both!"
+
+    # Office hours and availability - casual, accurate responses  
+    elif any(word in user_lower for word in ['hours', 'open', 'closed', 'time']) or (any(word in user_lower for word in ['office']) and any(word in user_lower for word in ['hours', 'open', 'closed'])):
+        from datetime import datetime
+        now = datetime.now()
         current_hour = now.hour
         current_day = now.weekday()  # Monday = 0, Sunday = 6
         
@@ -298,46 +306,40 @@ def get_intelligent_response(user_input, caller_phone):
             memory['topics_discussed'].add('office_hours')
             # Check if it's currently business hours
             if current_day < 5 and 9 <= current_hour < 17:  # Mon-Fri, 9am-5pm
-                return "Yes, we're open right now! Our office hours are Monday through Friday, 9 AM to 5 PM. What can I help you with today?"
+                return "Yep, we're totally open right now! Hours are 9 to 5, Monday through Friday. What's up?"
             elif current_day < 5 and current_hour < 9:
-                return "We'll be opening at 9 AM this morning! Our office hours are Monday through Friday, 9 AM to 5 PM. But I'm here now - what can I help you with?"
+                return "Not quite yet - we open at 9! Hours are 9 to 5, Monday through Friday. But hey, I'm here! What do you need?"
             elif current_day < 5 and current_hour >= 17:
-                return "We're closed for the day, but we'll be back tomorrow at 9 AM! Our office hours are Monday through Friday, 9 AM to 5 PM. I'm still here though - what do you need help with?"
+                return "Just missed us - we close at 5! Hours are 9 to 5, Monday through Friday. But I can still help! What's going on?"
             else:  # Weekend
-                return "We're closed for the weekend, but we'll be back Monday at 9 AM! Our office hours are Monday through Friday, 9 AM to 5 PM. I'm available though - what can I help you with?"
+                return "We're closed weekends, but we'll be back Monday at 9! Hours are 9 to 5, Monday through Friday. But I'm here - what can I help with?"
         else:
-            return "Like I mentioned, we're open 9 to 5, Monday through Friday. What else can I help you with?"
+            return "Like I said, 9 to 5, Monday through Friday. What else you need?"
 
-    # Location/office questions with enthusiastic help
-    elif any(word in user_lower for word in ['where', 'located', 'address', 'location']):
-        if 'location' not in memory['topics_discussed']:
-            memory['topics_discussed'].add('location')
-            return "Oh awesome question! We have so many amazing properties all over the area! Are you one of our current tenants, or are you looking to find a new place? That'll help me point you in exactly the right direction!"
-        else:
-            return "Which specific location are you asking about? Our main leasing office or one of our property addresses? I'm excited to help!"
+
     
     # Maintenance requests - genuinely caring and enthusiastic
     elif any(word in user_lower for word in ['fix', 'broken', 'maintenance', 'repair', 'not working', 'problem', 'issue']):
         memory['topics_discussed'].add('maintenance')
         memory['conversation_stage'] = 'maintenance'
-        return "Oh my goodness, something's giving you trouble? I am so sorry about that! But don't you worry one bit - I'm gonna get our absolutely amazing maintenance team on this right away! Tell me what's going on - is it plumbing, electrical, heating, or something else? I want to make sure we get this fixed for you super fast!"
+        return "Oh no! Something's broken? Don't worry, I'll get our maintenance team on it right away. What's going on? Is it plumbing, electrical, heating, or something else?"
     
     # Leasing inquiries - specific questions
     elif any(word in user_lower for word in ['apartment', 'rent', 'lease', 'available', 'move in', 'unit', 'bedroom']):
         memory['topics_discussed'].add('leasing')
         memory['conversation_stage'] = 'leasing'
-        return "Perfect! I can help you find a place. What size apartment do you need, and when do you want to move in?"
+        return "Cool! I can help you find a place. What size apartment do you need? And when do you wanna move in?"
     
     # Follow-up responses based on conversation stage
     elif memory['conversation_stage'] == 'maintenance':
         if any(word in user_lower for word in ['water', 'plumbing', 'toilet', 'sink', 'leak']):
-            return "Oh my goodness, a plumbing issue! I can totally understand how stressful that must be! Don't worry though - I'm getting our amazing plumbing team on this right away as a priority! What's your apartment number? And what's the best phone number for you? They're gonna call you within just a couple hours and get this all sorted out for you!"
+            return "Ugh, plumbing problems are the worst! Don't worry though - marking this as urgent right now. What's your apartment number? And your phone number? Our team will call you within a couple hours."
         elif any(word in user_lower for word in ['heat', 'cold', 'hot', 'ac', 'air', 'temperature']):
-            return "Oh no, temperature problems are seriously the worst! I feel so bad for you! But hey, don't worry one bit - I'm sending this straight to our incredible HVAC team right now as urgent! What's your unit number? We're gonna have someone out there today to get you all cozy and comfortable again!"
+            return "Oh no! Temperature problems are seriously the worst! Sending this to our HVAC team as urgent right now. What's your unit number? We'll have someone out today to get you comfortable again."
         elif any(word in user_lower for word in ['electric', 'power', 'light', 'outlet']):
-            return "Electrical issues can be super scary, so we take those really seriously! I'm marking this as our highest priority right now! What's your unit number? Our fantastic maintenance team is gonna get someone out there super fast to make sure everything's totally safe for you!"
+            return "Electrical stuff can be scary, so we take it super seriously. Marking this as highest priority! What's your unit number? Our team will get someone out there fast to make sure everything's safe."
         else:
-            return "Perfect! I'm setting up a maintenance request for you right this second! What's your apartment number and the best phone number to reach you? Our awesome team is gonna take care of this so quickly for you!"
+            return "Got it! Setting up a maintenance request right now. What's your apartment number and phone number? Our team will take care of this quickly!"
     
     elif memory['conversation_stage'] == 'leasing':
         if any(word in user_lower for word in ['one', '1', 'studio']):
@@ -350,24 +352,24 @@ def get_intelligent_response(user_input, caller_phone):
     # Generic helpful responses that don't repeat
     elif any(word in user_lower for word in ['hi', 'hello', 'hey', 'good morning', 'good afternoon']):
         if len(memory['questions_asked']) == 0:
-            return "Hi there! I'm Sarah, and I'm absolutely thrilled to help you with whatever you need today! What's going on? I'm super excited to help!"
+            return "Hey! I'm Sarah, and I'm here to help with whatever you need. What's going on?"
         else:
-            return "What else can I help you with? I'm all ears and ready to help!"
+            return "What else can I help with?"
     
     elif any(word in user_lower for word in ['thank', 'thanks']):
-        return "Aww, you're so welcome! I'm just happy I could help! Is there anything else you need today? I'm here for you!"
+        return "You're welcome! Happy to help. Need anything else?"
     
     # Payment and rent questions - helpful information
     elif any(word in user_lower for word in ['rent', 'payment', 'pay', 'bill', 'due', 'portal']):
-        return "Oh great question about payments! You can totally use our super convenient online portal, or you can call our main office - they're absolutely amazing! Do you need help getting into your account, or is there something specific about payments I can help you with? I'm here to make this as easy as possible for you!"
+        return "For payments, you can use our online portal or call the main office. Need help with your account or have a specific payment question?"
     
     # Emergency maintenance - prioritize
     elif any(word in user_lower for word in ['emergency', 'urgent', 'flooding', 'no heat', 'no power']):
-        return "Oh my gosh, that sounds super urgent! For serious emergencies like flooding, no heat, or power outages, I'm marking this as our absolute highest priority right now! What's your unit number? I'm getting our emergency maintenance team on this immediately - they're incredible and they'll take such good care of you!"
+        return "That sounds urgent! For emergencies like flooding, no heat, or power outages, I'm marking this as highest priority. What's your unit number? Getting our emergency team on this right now!"
     
     # Property amenities and features
     elif any(word in user_lower for word in ['amenities', 'pool', 'gym', 'parking', 'laundry', 'pet']):
-        return "Ooh, I love talking about our amenities! We have so many awesome features! Each property has different amazing things. Are you asking about a specific building, or are you thinking about moving in and want to know all the cool stuff that's available? I'm so excited to tell you about everything!"
+        return "Great question about amenities! Each property has different features. Are you asking about a specific building, or are you looking to move in and want to know what's available?"
     
     # Smart default that asks for clarification
     else:
