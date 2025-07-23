@@ -251,8 +251,8 @@ Keep responses under 25 words but sound completely natural and conversational. U
             # Intelligent greeting from Dimitry's AI Assistant
             greeting = "Hi there! It's a beautiful day here at Grinberg Management! I'm Dimitry's AI Assistant, and I'm so happy you called! How can I help you today?"
             
-            # Use best available voice (Google Neural2-J is most natural)
-            response.say(greeting, voice='Google.en-US-Neural2-J')
+            # Use most natural male voice - Polly Matthew Neural sounds much more human
+            response.say(greeting, voice='Polly.Matthew-Neural')
             
             # Gather input for intelligent conversation
             response.gather(
@@ -265,7 +265,7 @@ Keep responses under 25 words but sound completely natural and conversational. U
             
             # Fallback if no speech detected
             response.say("I'm sorry, I didn't catch that. Let me connect you with our wonderful team at (718) 414-6984!",
-                        voice='Google.en-US-Neural2-J')
+                        voice='Polly.Matthew-Neural')
             response.dial('(718) 414-6984')
             
             logger.info(f"Intelligent conversation initiated for {caller_phone}")
@@ -275,7 +275,7 @@ Keep responses under 25 words but sound completely natural and conversational. U
             logger.error(f"Call handler error: {e}", exc_info=True)
             response = VoiceResponse()
             response.say("I'm sorry, we're having technical issues. Please call back in a moment.",
-                        voice='Google.en-US-Neural2-J')
+                        voice='Polly.Matthew-Neural')
             return str(response)
     
     @app.route('/handle-speech/<call_sid>', methods=['POST'])
@@ -289,7 +289,7 @@ Keep responses under 25 words but sound completely natural and conversational. U
             
             if not speech_result:
                 response.say("I didn't quite catch that. Let me connect you with our amazing team at (718) 414-6984!",
-                            voice='Google.en-US-Neural2-J')
+                            voice='Polly.Matthew-Neural')
                 response.dial('(718) 414-6984')
                 return str(response)
             
@@ -297,13 +297,13 @@ Keep responses under 25 words but sound completely natural and conversational. U
             ai_response = generate_intelligent_response(speech_result, call_sid)
             logger.info(f"Intelligent AI response: {ai_response}")
             
-            # Speak the intelligent response
-            response.say(ai_response, voice='Google.en-US-Neural2-J')
+            # Speak the intelligent response with natural human voice
+            response.say(ai_response, voice='Polly.Matthew-Neural')
             
             # Check if this needs transfer based on AI response or user request
             if any(word in speech_result.lower() for word in ['transfer', 'human', 'person', 'manager', 'speak to someone']):
                 response.say("Perfect! I'm connecting you with Diane or Janier right now!",
-                            voice='Google.en-US-Neural2-J')
+                            voice='Polly.Matthew-Neural')
                 response.dial('(718) 414-6984')
             elif any(word in ai_response.lower() for word in ['transfer', '414-6984', 'connect you']):
                 response.dial('(718) 414-6984')
@@ -319,7 +319,7 @@ Keep responses under 25 words but sound completely natural and conversational. U
                 
                 # Only say goodbye if they haven't responded for a while
                 response.say("I'm still here if you need anything else! Or I can connect you with our team at (718) 414-6984.",
-                            voice='Google.en-US-Neural2-J')
+                            voice='Polly.Matthew-Neural')
                 
                 # Give one more chance to continue
                 response.gather(
@@ -332,7 +332,7 @@ Keep responses under 25 words but sound completely natural and conversational. U
                 
                 # Final fallback
                 response.say("Thank you for calling Grinberg Management! Have a wonderful day!",
-                            voice='Google.en-US-Neural2-J')
+                            voice='Polly.Matthew-Neural')
             
             return str(response)
             
@@ -340,7 +340,7 @@ Keep responses under 25 words but sound completely natural and conversational. U
             logger.error(f"Speech handler error: {e}", exc_info=True)
             response = VoiceResponse()
             response.say("Let me connect you with our team at (718) 414-6984!",
-                        voice='Google.en-US-Neural2-J')
+                        voice='Polly.Matthew-Neural')
             response.dial('(718) 414-6984')
             return str(response)
     
