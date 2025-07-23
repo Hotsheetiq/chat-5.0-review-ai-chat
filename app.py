@@ -78,9 +78,9 @@ def handle_incoming_call():
             response.record(timeout=30, transcribe=False)
             return str(response)
         
-        # Natural, warm greeting with conversational flow
+        # Natural, warm greeting with conversational flow using best quality voice
         greeting = "Hey there! It's a great day at Grinberg Management, this is Sarah. How can I help you today?"
-        response.say(greeting, voice='Polly.Joanna-Neural', language='en-US')
+        response.say(greeting, voice='Polly.Ruth-Neural', language='en-US')
         
         # Use speech gathering instead of media streaming for better reliability
         gather = response.gather(
@@ -93,7 +93,7 @@ def handle_incoming_call():
         
         # Fallback if no speech detected - warm and natural
         response.say("Sorry, I didn't catch that. Could you say that again?",
-                    voice='Polly.Joanna-Neural', language='en-US')
+                    voice='Polly.Ruth-Neural', language='en-US')
         
         return str(response)
         
@@ -168,7 +168,7 @@ def process_speech():
         
         if not speech_result:
             response.say("Sorry, I missed that. What did you say?",
-                        voice='Polly.Joanna-Neural', language='en-US')
+                        voice='Polly.Ruth-Neural', language='en-US')
             response.gather(
                 input='speech',
                 timeout=10,
@@ -181,31 +181,12 @@ def process_speech():
         # Use OpenAI for intelligent response generation
         try:
             ai_response = generate_ai_response(speech_result, caller_phone)
-            create_natural_say(response, ai_response)
+            response.say(ai_response, voice='Polly.Ruth-Neural', language='en-US')
         except Exception as ai_error:
             logger.error(f"OpenAI error: {ai_error}")
-            # Fallback to basic keyword processing with natural voice
-            speech_lower = speech_result.lower()
-            
-            if any(word in speech_lower for word in ['maintenance', 'repair', 'broken', 'fix']):
-                create_natural_say(response, "Oh no! I'm so sorry you're having that issue! "
-                            "I'm creating a service ticket for you right now - our awesome maintenance team "
-                            "will take care of you within 24 hours! Anything else I can help with?")
-                            
-            elif any(word in speech_lower for word in ['lease', 'rent', 'available', 'apartment']):
-                create_natural_say(response, "That's so exciting! I'd love to help you find a great place! "
-                            "I'm setting up a follow-up for our leasing team - they'll reach out within one business day "
-                            "with all the info about our available units! What else can I help you with?")
-                            
-            elif any(word in speech_lower for word in ['hours', 'office', 'contact']):
-                hours_info = property_data.get_office_hours()
-                create_natural_say(response, f"Great question! Our Grinberg Management office hours are {hours_info}. "
-                            "Anything else I can help you with today?")
-                            
-            else:
-                create_natural_say(response, "Thanks so much for calling Grinberg Management! I've totally got this covered - "
-                            "someone from our awesome team will follow up with you super soon! "
-                            "Anything else I can help you with today?")
+            # Fallback to intelligent keyword processing using our smart response system
+            fallback_response = get_intelligent_response(speech_result, caller_phone)
+            response.say(fallback_response, voice='Polly.Ruth-Neural', language='en-US')
         
         # Give option to continue or end call
         response.gather(
@@ -216,7 +197,7 @@ def process_speech():
             method='POST'
         )
         
-        create_natural_say(response, "Thank you for calling. Have a great day!")
+        response.say("Thank you for calling. Have a great day!", voice='Polly.Ruth-Neural', language='en-US')
         
         return str(response)
         
@@ -252,8 +233,29 @@ def get_intelligent_response(user_input, caller_phone):
         else:
             return "Yep, still your friendly AI Sarah! So what can I actually help you out with today?"
     
+    # Office hours and availability - smart time-aware responses
+    elif any(word in user_lower for word in ['office', 'hours', 'open', 'closed', 'time']):
+        import datetime
+        now = datetime.datetime.now()
+        current_hour = now.hour
+        current_day = now.weekday()  # Monday = 0, Sunday = 6
+        
+        if 'office_hours' not in memory['topics_discussed']:
+            memory['topics_discussed'].add('office_hours')
+            # Check if it's currently business hours
+            if current_day < 5 and 9 <= current_hour < 17:  # Mon-Fri, 9am-5pm
+                return "Yes, we're open right now! Our office hours are Monday through Friday, 9 AM to 5 PM. What can I help you with today?"
+            elif current_day < 5 and current_hour < 9:
+                return "We'll be opening at 9 AM this morning! Our office hours are Monday through Friday, 9 AM to 5 PM. But I'm here now - what can I help you with?"
+            elif current_day < 5 and current_hour >= 17:
+                return "We're closed for the day, but we'll be back tomorrow at 9 AM! Our office hours are Monday through Friday, 9 AM to 5 PM. I'm still here though - what do you need help with?"
+            else:  # Weekend
+                return "We're closed for the weekend, but we'll be back Monday at 9 AM! Our office hours are Monday through Friday, 9 AM to 5 PM. I'm available though - what can I help you with?"
+        else:
+            return "Like I mentioned, we're open 9 to 5, Monday through Friday. What else can I help you with?"
+
     # Location/office questions with specific help
-    elif any(word in user_lower for word in ['where', 'located', 'address', 'office', 'location']):
+    elif any(word in user_lower for word in ['where', 'located', 'address', 'location']):
         if 'location' not in memory['topics_discussed']:
             memory['topics_discussed'].add('location')
             return "We have properties all over the area. Are you a current tenant or looking to rent? That helps me point you to the right place."
@@ -301,6 +303,18 @@ def get_intelligent_response(user_input, caller_phone):
     elif any(word in user_lower for word in ['thank', 'thanks']):
         return "You're very welcome! Is there anything else you need help with today?"
     
+    # Payment and rent questions - helpful information
+    elif any(word in user_lower for word in ['rent', 'payment', 'pay', 'bill', 'due', 'portal']):
+        return "For rent payments, you can use our online portal or call our main office. Do you need help with accessing your account, or is there a specific payment question I can help with?"
+    
+    # Emergency maintenance - prioritize
+    elif any(word in user_lower for word in ['emergency', 'urgent', 'flooding', 'no heat', 'no power']):
+        return "Oh wow, that sounds urgent! For emergencies like flooding, no heat, or power outages, I'm marking this as priority one. What's your unit number? I'm getting our emergency maintenance team on this right now!"
+    
+    # Property amenities and features
+    elif any(word in user_lower for word in ['amenities', 'pool', 'gym', 'parking', 'laundry', 'pet']):
+        return "Great question about our amenities! Each property has different features. Are you asking about a specific building, or are you looking at moving in and want to know what's available?"
+    
     # Smart default that asks for clarification
     else:
         memory['questions_asked'].append(user_input)
@@ -311,8 +325,8 @@ def get_intelligent_response(user_input, caller_phone):
 
 def create_natural_say(response_obj, text):
     """Helper function to add warm, conversational American voice."""
-    # Use natural punctuation and word choice for conversational flow
-    return response_obj.say(text, voice='Polly.Joanna-Neural', language='en-US')
+    # Use Ruth-Neural for most natural, expressive American voice
+    return response_obj.say(text, voice='Polly.Ruth-Neural', language='en-US')
 
 def generate_ai_response(user_input, caller_phone):
     """Generate AI response using OpenAI with Sarah's personality."""
