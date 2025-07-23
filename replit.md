@@ -90,10 +90,10 @@ The application is designed for cloud deployment with the following consideratio
 
 ## Recent Changes
 
-### July 23, 2025 - Mike Implementation with Natural Male Voice
-- **Mike Character Introduction**: Completely reimagined assistant as Mike with natural male voice using Twilio's 'man' voice parameter
-- **Natural Male Voice**: Replaced previous voice attempts with consistent `voice="man", language="en-US"` for all responses
-- **Perfect Greeting**: "It's a great day here at Grinberg Management! My name is Mike." - friendly, natural, non-menu-like
+### July 23, 2025 - Mike Implementation with Natural Voice
+- **Mike Character Introduction**: Completely reimagined assistant as Mike with natural conversational personality
+- **Natural Voice Solution**: Discovered Twilio's default voice (no voice parameter) sounds more natural than named voices
+- **Perfect Greeting**: "It's a great day here at Grinberg Management! My name is Mike. How can I help you?" - friendly, helpful, complete
 - **Professional Call Transfer System**: Seamless transfer to (718) 414-6984 for non-apartment questions
 - **Smart Transfer Logic**: Any unrecognized requests or human transfer requests automatically route to Diane or Janier  
 - **Natural Conversation Style**: Mike speaks like a helpful friend - natural and conversational, not overly formal

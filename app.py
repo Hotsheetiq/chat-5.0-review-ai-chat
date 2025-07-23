@@ -111,9 +111,9 @@ def handle_incoming_call():
             response.record(timeout=30, transcribe=False)
             return str(response)
         
-        # Natural male voice greeting for Mike
-        greeting = "It's a great day here at Grinberg Management! My name is Mike."
-        response.say(greeting, voice='man', language='en-US')
+        # Natural greeting for Mike with how can I help
+        greeting = "It's a great day here at Grinberg Management! My name is Mike. How can I help you?"
+        response.say(greeting)
         
         # Use speech gathering with barge-in enabled so callers can interrupt
         gather = response.gather(
@@ -126,7 +126,7 @@ def handle_incoming_call():
         )
         
         # Fallback if no speech detected - warm and encouraging
-        response.say("I didn't hear anything. Could you say that again?", voice='man', language='en-US')
+        response.say("I didn't hear anything. Could you say that again?")
         
         logger.info(f"Returning TwiML response for {caller_phone}")
         return str(response)
@@ -134,7 +134,7 @@ def handle_incoming_call():
     except Exception as e:
         logger.error(f"Error handling incoming call: {e}", exc_info=True)
         response = VoiceResponse()
-        response.say("Sorry, I'm having some technical trouble right now. Could you try calling back in a few minutes?", voice='man', language='en-US')
+        response.say("Sorry, I'm having some technical trouble right now. Could you try calling back in a few minutes?")
         return str(response)
 
 @app.route('/fallback-call', methods=['POST'])
@@ -146,7 +146,7 @@ def fallback_call():
         logger.info(f"Fallback call from: {caller_phone}")
         
         response = VoiceResponse()
-        response.say("It's a great day here at Grinberg Management! My name is Mike.", voice='man', language='en-US')
+        response.say("It's a great day here at Grinberg Management! My name is Mike. How can I help you?")
         
         response.gather(
             input='speech',
@@ -156,7 +156,7 @@ def fallback_call():
             method='POST'
         )
         
-        response.say("I didn't catch that. Could you repeat it?", voice='man', language='en-US')
+        response.say("I didn't catch that. Could you repeat it?")
         
         return str(response)
         response = VoiceResponse()
@@ -218,7 +218,7 @@ def process_speech():
         response = VoiceResponse()
         
         if not speech_result:
-            response.say("Sorry, I didn't catch that. Could you repeat what you said?", voice='man', language='en-US')
+            response.say("Sorry, I didn't catch that. Could you repeat what you said?")
             response.gather(
                 input='speech',
                 timeout=20,
@@ -233,22 +233,22 @@ def process_speech():
             ai_response = generate_ai_response(speech_result, caller_phone)
             if ai_response == "transfer_call":
                 transfer_msg = "Let me connect you with someone who can help you better. I'm transferring you to Diane or Janier now."
-                response.say(transfer_msg, voice='man', language='en-US')
+                response.say(transfer_msg)
                 response.dial("+17184146984")
                 return str(response)
             else:
-                response.say(ai_response, voice='man', language='en-US')
+                response.say(ai_response)
         except Exception as ai_error:
             logger.error(f"OpenAI error: {ai_error}")
             # Fallback to intelligent keyword processing using our smart response system
             fallback_response = get_intelligent_response(speech_result, caller_phone)
             if fallback_response == "transfer_call":
                 fallback_transfer = "I'm not sure about that one, but let me get you to someone who can definitely help. Connecting you now."
-                response.say(fallback_transfer, voice='man', language='en-US')
+                response.say(fallback_transfer)
                 response.dial("+17184146984")
                 return str(response)
             else:
-                response.say(fallback_response, voice='man', language='en-US')
+                response.say(fallback_response)
         
         # Give option to continue or end call with interruption enabled
         response.gather(
@@ -260,7 +260,7 @@ def process_speech():
             finish_on_key='#'  # Allow interruption
         )
         
-        response.say("Thanks for calling! Have a great day!", voice='man', language='en-US')
+        response.say("Thanks for calling! Have a great day!")
         
         return str(response)
         
