@@ -111,8 +111,8 @@ def handle_incoming_call():
             response.record(timeout=30, transcribe=False)
             return str(response)
         
-        # Warm, expressive greeting with personality - allow interruption
-        greeting = "Hey there! This is Sarah from Grinberg Management, and I'm having such a great day! How can I help you?"
+        # More natural, expressive greeting with personality
+        greeting = "Hi there! This is Sarah from Grinberg Management. I'm here to help with apartments, maintenance, or I can get you to someone who knows way more than me! What's going on?"
         response.say(greeting, voice='Polly.Joanna-Neural', language='en-US')
         
         # Use speech gathering with barge-in enabled so callers can interrupt
@@ -236,12 +236,24 @@ def process_speech():
         # Use OpenAI for intelligent response generation
         try:
             ai_response = generate_ai_response(speech_result, caller_phone)
-            response.say(ai_response, voice='Polly.Joanna-Neural', language='en-US')
+            if ai_response == "transfer_call":
+                response.say("You know what, let me get you to someone who can help you better! I'm going to try to connect you with Diane or Janier. Hold on just a sec!", 
+                           voice='Polly.Joanna-Neural', language='en-US')
+                response.dial("+17184146984")
+                return str(response)
+            else:
+                response.say(ai_response, voice='Polly.Joanna-Neural', language='en-US')
         except Exception as ai_error:
             logger.error(f"OpenAI error: {ai_error}")
             # Fallback to intelligent keyword processing using our smart response system
             fallback_response = get_intelligent_response(speech_result, caller_phone)
-            response.say(fallback_response, voice='Polly.Joanna-Neural', language='en-US')
+            if fallback_response == "transfer_call":
+                response.say("I'm not sure how to help with that, but let me get you to someone who definitely can! I'm connecting you with Diane or Janier now!", 
+                           voice='Polly.Joanna-Neural', language='en-US')
+                response.dial("+17184146984")
+                return str(response)
+            else:
+                response.say(fallback_response, voice='Polly.Joanna-Neural', language='en-US')
         
         # Give option to continue or end call with interruption enabled
         response.gather(
@@ -355,6 +367,10 @@ def get_intelligent_response(user_input, caller_phone):
         else:
             return "I can definitely help you find something that fits your needs. What size space works best for you, and when would you ideally like to move in?"
     
+    # Handle requests for real person or transfer
+    elif any(phrase in user_lower for phrase in ['real person', 'human', 'transfer', 'speak to someone', 'talk to someone', 'get someone else', 'manager', 'supervisor']):
+        return "transfer_call"
+    
     # Generic helpful responses that don't repeat
     elif any(word in user_lower for word in ['hi', 'hello', 'hey', 'good morning', 'good afternoon']):
         if len(memory['questions_asked']) == 0:
@@ -383,7 +399,7 @@ def get_intelligent_response(user_input, caller_phone):
         if len(memory['questions_asked']) == 1:
             return "I want to make sure I help you with exactly what you need. Are you calling about maintenance, looking for an apartment, or do you have questions about your current lease?"
         else:
-            return "I'm not quite sure how to help with that. Could you tell me a bit more about what you need? I can assist with maintenance requests, apartment availability, or general property questions."
+            return "transfer_call"
 
 def create_natural_say(response_obj, text):
     """Helper function to add genuinely happy, enthusiastic American voice."""
@@ -409,6 +425,8 @@ Key points about your personality and role:
 - Always sound excited to help with whatever they need
 
 When someone asks if you're real: Be honest that you're an AI but emphasize how much you love helping
+
+If you cannot help with something or the caller asks for a human: Return exactly "transfer_call" with no other text
 For maintenance requests: Sound sympathetic and excited to get it fixed quickly
 For leasing inquiries: Be enthusiastic about the properties and eager to help
 For general questions: Be bubbly and helpful with Grinberg Management info
