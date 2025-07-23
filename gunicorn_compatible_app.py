@@ -168,7 +168,7 @@ def create_app():
             
             if not OPENAI_API_KEY:
                 response.say("Hi there! OH MY GOSH, thank you for calling Grinberg Management! I'm Dimitry Junior AI and I'm having some technical hiccups, but I'm SO excited to help! Leave me a message and I'll get back to you ASAP!",
-                            voice='Polly.Matthew')
+                            voice='Google.en-US-Neural2-J')
                 response.record(timeout=30, transcribe=False)
                 return str(response)
             
@@ -181,7 +181,12 @@ def create_app():
             # Dimitry Junior AI's natural, bubbly greeting  
             greeting = "Hi there! It's such a beautiful day here at Grinberg Management! I'm Dimitry Junior AI, and I'm so happy you called! How can I help you today?"
             
-            response.say(greeting, voice='Polly.Matthew')
+            # Try to use ElevenLabs for Dimitry Junior AI, fallback to Polly
+            if ELEVENLABS_API_KEY:
+                # For now, we'll use the best available Twilio voice until we implement full ElevenLabs integration
+                response.say(greeting, voice='Google.en-US-Neural2-J')  # Google's most natural male voice
+            else:
+                response.say(greeting, voice='Polly.Matthew')
             
             # Gather input for conversation
             response.gather(
@@ -194,7 +199,7 @@ def create_app():
             
             # Fallback if no speech detected
             response.say("Oh, I'm sorry! I didn't catch what you said. Let me get you to our wonderful team at (718) 414-6984!",
-                        voice='Polly.Matthew')
+                        voice='Google.en-US-Neural2-J')
             response.dial('(718) 414-6984')
             
             logger.info(f"Call initiated for {caller_phone}")
@@ -204,7 +209,7 @@ def create_app():
             logger.error(f"Call handler error: {e}", exc_info=True)
             response = VoiceResponse()
             response.say("Oh no! We're having some technical issues right now. Could you try calling back in just a few minutes?",
-                        voice='Polly.Matthew')
+                        voice='Google.en-US-Neural2-J')
             return str(response)
     
     @app.route('/handle-speech/<call_sid>', methods=['POST'])
@@ -220,7 +225,7 @@ def create_app():
             
             if not speech_result:
                 response.say("Oh, I'm sorry! I didn't quite hear you. Let me connect you with our amazing team at (718) 414-6984!",
-                            voice='Polly.Matthew')
+                            voice='Google.en-US-Neural2-J')
                 response.dial('(718) 414-6984')
                 return str(response)
             
@@ -228,12 +233,16 @@ def create_app():
             ai_response = generate_dimitry_response(speech_result, call_sid)
             logger.info(f"Dimitry Junior AI's response: {ai_response}")
             
-            response.say(ai_response, voice='Polly.Matthew')
+            # Try to use ElevenLabs for Dimitry Junior AI, fallback to Polly
+            if ELEVENLABS_API_KEY:
+                response.say(ai_response, voice='Google.en-US-Neural2-J')  # Google's most natural male voice
+            else:
+                response.say(ai_response, voice='Polly.Matthew')
             
             # Check if this needs transfer or more conversation
             if any(word in speech_result.lower() for word in ['transfer', 'human', 'person', 'manager', 'speak to someone']):
                 response.say("Absolutely! I'm SO excited to get you connected with Diane or Janier right now!",
-                            voice='Polly.Matthew')
+                            voice='Google.en-US-Neural2-J')
                 response.dial('(718) 414-6984')
             elif any(word in ai_response.lower() for word in ['transfer', '414-6984']):
                 response.dial('(718) 414-6984')
@@ -249,7 +258,7 @@ def create_app():
                 
                 # Fallback after timeout
                 response.say("Thank you so much for calling! If you need anything else, just give us a ring at (718) 414-6984!",
-                            voice='Polly.Matthew')
+                            voice='Google.en-US-Neural2-J')
             
             return str(response)
             
@@ -257,7 +266,7 @@ def create_app():
             logger.error(f"Speech handler error: {e}", exc_info=True)
             response = VoiceResponse()
             response.say("Let me get you connected with our team at (718) 414-6984!",
-                        voice='Polly.Matthew')
+                        voice='Google.en-US-Neural2-J')
             response.dial('(718) 414-6984')
             return str(response)
     
