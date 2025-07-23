@@ -10,6 +10,8 @@ from twilio.twiml.voice_response import VoiceResponse
 from openai import OpenAI
 import json
 from datetime import datetime
+import requests
+import base64
 
 # Configure logging
 logging.basicConfig(level=logging.DEBUG)
@@ -29,6 +31,50 @@ conversation_history = {}
 def create_app():
     app = Flask(__name__)
     app.secret_key = os.environ.get("SESSION_SECRET", "dev-secret-key")
+    
+    def generate_elevenlabs_audio(text, voice_id="pNInz6obpgDQGcFmaJgB"):
+        """Generate audio using ElevenLabs API with Tony voice"""
+        try:
+            if not ELEVENLABS_API_KEY:
+                logger.warning("No ElevenLabs API key available")
+                return None
+                
+            url = f"https://api.elevenlabs.io/v1/text-to-speech/{voice_id}"
+            headers = {
+                "Accept": "audio/mpeg",
+                "Content-Type": "application/json",
+                "xi-api-key": ELEVENLABS_API_KEY
+            }
+            
+            data = {
+                "text": text,
+                "model_id": "eleven_monolingual_v1",
+                "voice_settings": {
+                    "stability": 0.5,
+                    "similarity_boost": 0.8,
+                    "style": 0.2,
+                    "use_speaker_boost": True
+                }
+            }
+            
+            response = requests.post(url, json=data, headers=headers)
+            if response.status_code == 200:
+                # Save audio file and return URL
+                audio_filename = f"audio_{hash(text)}.mp3"
+                audio_path = f"static/{audio_filename}"
+                os.makedirs("static", exist_ok=True)
+                
+                with open(audio_path, "wb") as f:
+                    f.write(response.content)
+                
+                return f"/static/{audio_filename}"
+            else:
+                logger.error(f"ElevenLabs API error: {response.status_code} - {response.text}")
+                return None
+                
+        except Exception as e:
+            logger.error(f"ElevenLabs generation error: {e}")
+            return None
     
     def generate_intelligent_response(user_input, call_sid=None):
         """Generate intelligent AI response using GPT-4o"""
@@ -253,8 +299,13 @@ Keep responses under 25 words but sound completely natural and conversational. U
             # Cheerful greeting from Tony
             greeting = "Grinberg Management, this is Tony! How can I help you today?"
             
-            # Use most natural male voice - Polly Matthew Neural sounds much more human
-            response.say(greeting, voice='Polly.Matthew-Neural')
+            # Use ElevenLabs for natural human voice
+            audio_url = generate_elevenlabs_audio(greeting)
+            if audio_url:
+                response.play(f"https://{request.host}{audio_url}")
+            else:
+                # Fallback to Twilio voice if ElevenLabs fails
+                response.say(greeting, voice='Polly.Matthew-Neural')
             
             # Gather input for intelligent conversation
             response.gather(
@@ -265,9 +316,13 @@ Keep responses under 25 words but sound completely natural and conversational. U
                 speech_timeout='auto'
             )
             
-            # Fallback if no speech detected
-            response.say("I'm sorry, I didn't catch that. Let me connect you with our wonderful team at (718) 414-6984!",
-                        voice='Polly.Matthew-Neural')
+            # Fallback if no speech detected  
+            fallback_text = "I'm sorry, I didn't catch that. Let me connect you with our wonderful team at (718) 414-6984!"
+            audio_url = generate_elevenlabs_audio(fallback_text)
+            if audio_url:
+                response.play(f"https://{request.host}{audio_url}")
+            else:
+                response.say(fallback_text, voice='Polly.Matthew-Neural')
             response.dial('(718) 414-6984')
             
             logger.info(f"Intelligent conversation initiated for {caller_phone}")
@@ -290,8 +345,12 @@ Keep responses under 25 words but sound completely natural and conversational. U
             response = VoiceResponse()
             
             if not speech_result:
-                response.say("I didn't quite catch that. Let me connect you with our amazing team at (718) 414-6984!",
-                            voice='Polly.Matthew-Neural')
+                no_speech_text = "I didn't quite catch that. Let me connect you with our amazing team at (718) 414-6984!"
+                audio_url = generate_elevenlabs_audio(no_speech_text)
+                if audio_url:
+                    response.play(f"https://{request.host}{audio_url}")
+                else:
+                    response.say(no_speech_text, voice='Polly.Matthew-Neural')
                 response.dial('(718) 414-6984')
                 return str(response)
             
@@ -299,13 +358,22 @@ Keep responses under 25 words but sound completely natural and conversational. U
             ai_response = generate_intelligent_response(speech_result, call_sid)
             logger.info(f"Intelligent AI response: {ai_response}")
             
-            # Speak the intelligent response with natural human voice
-            response.say(ai_response, voice='Polly.Matthew-Neural')
+            # Use ElevenLabs for Tony's natural voice
+            audio_url = generate_elevenlabs_audio(ai_response)
+            if audio_url:
+                response.play(f"https://{request.host}{audio_url}")
+            else:
+                # Fallback to Twilio voice
+                response.say(ai_response, voice='Polly.Matthew-Neural')
             
             # Check if this needs transfer based on AI response or user request
             if any(word in speech_result.lower() for word in ['transfer', 'human', 'person', 'manager', 'speak to someone']):
-                response.say("Perfect! I'm connecting you with Diane or Janier right now!",
-                            voice='Polly.Matthew-Neural')
+                transfer_text = "Perfect! I'm connecting you with Diane or Janier right now!"
+                audio_url = generate_elevenlabs_audio(transfer_text)
+                if audio_url:
+                    response.play(f"https://{request.host}{audio_url}")
+                else:
+                    response.say(transfer_text, voice='Polly.Matthew-Neural')
                 response.dial('(718) 414-6984')
             elif any(word in ai_response.lower() for word in ['transfer', '414-6984', 'connect you']):
                 response.dial('(718) 414-6984')
@@ -320,8 +388,12 @@ Keep responses under 25 words but sound completely natural and conversational. U
                 )
                 
                 # Only say goodbye if they haven't responded for a while
-                response.say("I'm still here if you need anything else! Or I can connect you with our team at (718) 414-6984.",
-                            voice='Polly.Matthew-Neural')
+                still_here_text = "I'm still here if you need anything else! Or I can connect you with our team at (718) 414-6984."
+                audio_url = generate_elevenlabs_audio(still_here_text)
+                if audio_url:
+                    response.play(f"https://{request.host}{audio_url}")
+                else:
+                    response.say(still_here_text, voice='Polly.Matthew-Neural')
                 
                 # Give one more chance to continue
                 response.gather(
@@ -333,18 +405,32 @@ Keep responses under 25 words but sound completely natural and conversational. U
                 )
                 
                 # Final fallback
-                response.say("Thank you for calling Grinberg Management! Have a wonderful day!",
-                            voice='Polly.Matthew-Neural')
+                goodbye_text = "Thank you for calling Grinberg Management! Have a wonderful day!"
+                audio_url = generate_elevenlabs_audio(goodbye_text)
+                if audio_url:
+                    response.play(f"https://{request.host}{audio_url}")
+                else:
+                    response.say(goodbye_text, voice='Polly.Matthew-Neural')
             
             return str(response)
             
         except Exception as e:
             logger.error(f"Speech handler error: {e}", exc_info=True)
             response = VoiceResponse()
-            response.say("Let me connect you with our team at (718) 414-6984!",
-                        voice='Polly.Matthew-Neural')
+            error_text = "Let me connect you with our team at (718) 414-6984!"
+            audio_url = generate_elevenlabs_audio(error_text)
+            if audio_url:
+                response.play(f"https://{request.host}{audio_url}")
+            else:
+                response.say(error_text, voice='Polly.Matthew-Neural')
             response.dial('(718) 414-6984')
             return str(response)
+    
+    @app.route('/static/<filename>')
+    def serve_audio(filename):
+        """Serve generated audio files"""
+        from flask import send_from_directory
+        return send_from_directory('static', filename)
     
     @app.route('/')
     def dashboard():
