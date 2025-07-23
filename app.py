@@ -111,18 +111,21 @@ def handle_incoming_call():
             response.record(timeout=30, transcribe=False)
             return str(response)
         
-        # Try different voice approaches for more natural sound
+        # Use ElevenLabs for the most natural voice possible
         greeting = "It's a great day here at Grinberg Management! My name is Mike. How can I help you?"
-        # Try Google's natural voices first
+        # Try ElevenLabs first for the most natural voice
         try:
-            response.say(greeting, voice='Google.en-US-Neural2-J')
+            response.say(greeting, voice='ElevenLabs.Adam')
         except:
-            # Fallback to Polly neural if Google not available
+            # Fallback to Google Neural if ElevenLabs not available
             try:
-                response.say(greeting, voice='Polly.Matthew-Neural')
+                response.say(greeting, voice='Google.en-US-Neural2-J')
             except:
-                # Final fallback to basic voice
-                response.say(greeting, voice='alice')
+                # Final fallback to Polly neural
+                try:
+                    response.say(greeting, voice='Polly.Matthew-Neural')
+                except:
+                    response.say(greeting, voice='alice')
         
         # Use speech gathering with barge-in enabled so callers can interrupt
         gather = response.gather(
@@ -135,14 +138,17 @@ def handle_incoming_call():
         )
         
         # Fallback if no speech detected - warm and encouraging
-        # Natural voice for timeout messages
+        # ElevenLabs voice for timeout messages
         try:
-            response.say("I didn't hear anything. Could you say that again?", voice='Google.en-US-Neural2-J')
+            response.say("I didn't hear anything. Could you say that again?", voice='ElevenLabs.Adam')
         except:
             try:
-                response.say("I didn't hear anything. Could you say that again?", voice='Polly.Matthew-Neural')
+                response.say("I didn't hear anything. Could you say that again?", voice='Google.en-US-Neural2-J')
             except:
-                response.say("I didn't hear anything. Could you say that again?", voice='alice')
+                try:
+                    response.say("I didn't hear anything. Could you say that again?", voice='Polly.Matthew-Neural')
+                except:
+                    response.say("I didn't hear anything. Could you say that again?", voice='alice')
         
         logger.info(f"Returning TwiML response for {caller_phone}")
         return str(response)
@@ -150,14 +156,17 @@ def handle_incoming_call():
     except Exception as e:
         logger.error(f"Error handling incoming call: {e}", exc_info=True)
         response = VoiceResponse()
-        # Natural voice for error conditions
+        # ElevenLabs voice for error conditions
         try:
-            response.say("Sorry, I'm having some technical trouble right now. Could you try calling back in a few minutes?", voice='Google.en-US-Neural2-J')
+            response.say("Sorry, I'm having some technical trouble right now. Could you try calling back in a few minutes?", voice='ElevenLabs.Adam')
         except:
             try:
-                response.say("Sorry, I'm having some technical trouble right now. Could you try calling back in a few minutes?", voice='Polly.Matthew-Neural')
+                response.say("Sorry, I'm having some technical trouble right now. Could you try calling back in a few minutes?", voice='Google.en-US-Neural2-J')
             except:
-                response.say("Sorry, I'm having some technical trouble right now. Could you try calling back in a few minutes?", voice='alice')
+                try:
+                    response.say("Sorry, I'm having some technical trouble right now. Could you try calling back in a few minutes?", voice='Polly.Matthew-Neural')
+                except:
+                    response.say("Sorry, I'm having some technical trouble right now. Could you try calling back in a few minutes?", voice='alice')
         return str(response)
 
 @app.route('/fallback-call', methods=['POST'])
@@ -169,14 +178,17 @@ def fallback_call():
         logger.info(f"Fallback call from: {caller_phone}")
         
         response = VoiceResponse()
-        # Natural voice for fallback route  
+        # ElevenLabs voice for fallback route  
         try:
-            response.say("It's a great day here at Grinberg Management! My name is Mike. How can I help you?", voice='Google.en-US-Neural2-J')
+            response.say("It's a great day here at Grinberg Management! My name is Mike. How can I help you?", voice='ElevenLabs.Adam')
         except:
             try:
-                response.say("It's a great day here at Grinberg Management! My name is Mike. How can I help you?", voice='Polly.Matthew-Neural')
+                response.say("It's a great day here at Grinberg Management! My name is Mike. How can I help you?", voice='Google.en-US-Neural2-J')
             except:
-                response.say("It's a great day here at Grinberg Management! My name is Mike. How can I help you?", voice='alice')
+                try:
+                    response.say("It's a great day here at Grinberg Management! My name is Mike. How can I help you?", voice='Polly.Matthew-Neural')
+                except:
+                    response.say("It's a great day here at Grinberg Management! My name is Mike. How can I help you?", voice='alice')
         
         response.gather(
             input='speech',
@@ -186,14 +198,17 @@ def fallback_call():
             method='POST'
         )
         
-        # Natural voice for fallback errors
+        # ElevenLabs voice for fallback errors
         try:
-            response.say("I didn't catch that. Could you repeat it?", voice='Google.en-US-Neural2-J')
+            response.say("I didn't catch that. Could you repeat it?", voice='ElevenLabs.Adam')
         except:
             try:
-                response.say("I didn't catch that. Could you repeat it?", voice='Polly.Matthew-Neural')
+                response.say("I didn't catch that. Could you repeat it?", voice='Google.en-US-Neural2-J')
             except:
-                response.say("I didn't catch that. Could you repeat it?", voice='alice')
+                try:
+                    response.say("I didn't catch that. Could you repeat it?", voice='Polly.Matthew-Neural')
+                except:
+                    response.say("I didn't catch that. Could you repeat it?", voice='alice')
         
         return str(response)
         response = VoiceResponse()
@@ -255,14 +270,17 @@ def process_speech():
         response = VoiceResponse()
         
         if not speech_result:
-            # Natural voice for error messages
+            # ElevenLabs voice for error messages
             try:
-                response.say("Sorry, I didn't catch that. Could you repeat what you said?", voice='Google.en-US-Neural2-J')
+                response.say("Sorry, I didn't catch that. Could you repeat what you said?", voice='ElevenLabs.Adam')
             except:
                 try:
-                    response.say("Sorry, I didn't catch that. Could you repeat what you said?", voice='Polly.Matthew-Neural')
+                    response.say("Sorry, I didn't catch that. Could you repeat what you said?", voice='Google.en-US-Neural2-J')
                 except:
-                    response.say("Sorry, I didn't catch that. Could you repeat what you said?", voice='alice')
+                    try:
+                        response.say("Sorry, I didn't catch that. Could you repeat what you said?", voice='Polly.Matthew-Neural')
+                    except:
+                        response.say("Sorry, I didn't catch that. Could you repeat what you said?", voice='alice')
             response.gather(
                 input='speech',
                 timeout=20,
@@ -277,50 +295,62 @@ def process_speech():
             ai_response = generate_ai_response(speech_result, caller_phone)
             if ai_response == "transfer_call":
                 transfer_msg = "Let me connect you with someone who can help you better. I'm transferring you to Diane or Janier now."
-                # Natural voice for transfers
+                # ElevenLabs voice for transfers
                 try:
-                    response.say(transfer_msg, voice='Google.en-US-Neural2-J')
+                    response.say(transfer_msg, voice='ElevenLabs.Adam')
                 except:
                     try:
-                        response.say(transfer_msg, voice='Polly.Matthew-Neural')
+                        response.say(transfer_msg, voice='Google.en-US-Neural2-J')
                     except:
-                        response.say(transfer_msg, voice='alice')
+                        try:
+                            response.say(transfer_msg, voice='Polly.Matthew-Neural')
+                        except:
+                            response.say(transfer_msg, voice='alice')
                 response.dial("+17184146984")
                 return str(response)
             else:
-                # Use consistent natural voice for responses
+                # Use consistent ElevenLabs voice for responses
                 try:
-                    response.say(ai_response, voice='Google.en-US-Neural2-J')
+                    response.say(ai_response, voice='ElevenLabs.Adam')
                 except:
                     try:
-                        response.say(ai_response, voice='Polly.Matthew-Neural')
+                        response.say(ai_response, voice='Google.en-US-Neural2-J')
                     except:
-                        response.say(ai_response, voice='alice')
+                        try:
+                            response.say(ai_response, voice='Polly.Matthew-Neural')
+                        except:
+                            response.say(ai_response, voice='alice')
         except Exception as ai_error:
             logger.error(f"OpenAI error: {ai_error}")
             # Fallback to intelligent keyword processing using our smart response system
             fallback_response = get_intelligent_response(speech_result, caller_phone)
             if fallback_response == "transfer_call":
                 fallback_transfer = "I'm not sure about that one, but let me get you to someone who can definitely help. Connecting you now."
-                # Natural voice for fallback transfers
+                # ElevenLabs voice for fallback transfers
                 try:
-                    response.say(fallback_transfer, voice='Google.en-US-Neural2-J')
+                    response.say(fallback_transfer, voice='ElevenLabs.Adam')
                 except:
                     try:
-                        response.say(fallback_transfer, voice='Polly.Matthew-Neural')
+                        response.say(fallback_transfer, voice='Google.en-US-Neural2-J')
                     except:
-                        response.say(fallback_transfer, voice='alice')
+                        try:
+                            response.say(fallback_transfer, voice='Polly.Matthew-Neural')
+                        except:
+                            response.say(fallback_transfer, voice='alice')
                 response.dial("+17184146984")
                 return str(response)
             else:
-                # Natural voice for fallback responses  
+                # ElevenLabs voice for fallback responses  
                 try:
-                    response.say(fallback_response, voice='Google.en-US-Neural2-J')
+                    response.say(fallback_response, voice='ElevenLabs.Adam')
                 except:
                     try:
-                        response.say(fallback_response, voice='Polly.Matthew-Neural')
+                        response.say(fallback_response, voice='Google.en-US-Neural2-J')
                     except:
-                        response.say(fallback_response, voice='alice')
+                        try:
+                            response.say(fallback_response, voice='Polly.Matthew-Neural')
+                        except:
+                            response.say(fallback_response, voice='alice')
         
         # Give option to continue or end call with interruption enabled
         response.gather(
@@ -332,14 +362,17 @@ def process_speech():
             finish_on_key='#'  # Allow interruption
         )
         
-        # Natural voice for ending messages
+        # ElevenLabs voice for ending messages
         try:
-            response.say("Thanks for calling! Have a great day!", voice='Google.en-US-Neural2-J')
+            response.say("Thanks for calling! Have a great day!", voice='ElevenLabs.Adam')
         except:
             try:
-                response.say("Thanks for calling! Have a great day!", voice='Polly.Matthew-Neural')
+                response.say("Thanks for calling! Have a great day!", voice='Google.en-US-Neural2-J')
             except:
-                response.say("Thanks for calling! Have a great day!", voice='alice')
+                try:
+                    response.say("Thanks for calling! Have a great day!", voice='Polly.Matthew-Neural')
+                except:
+                    response.say("Thanks for calling! Have a great day!", voice='alice')
         
         return str(response)
         
