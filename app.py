@@ -66,12 +66,30 @@ def webhook_test():
         "status": "success",
         "message": "Webhook endpoint is accessible",
         "timestamp": str(__import__('datetime').datetime.now()),
+        "app_url": request.host_url,
         "endpoints": {
             "incoming_call": "/incoming-call",
-            "process_speech": "/process-speech",
+            "process_speech": "/process-speech", 
             "health": "/health"
+        },
+        "environment": {
+            "openai_configured": bool(OPENAI_API_KEY),
+            "twilio_configured": bool(TWILIO_ACCOUNT_SID and TWILIO_AUTH_TOKEN)
         }
     })
+
+@app.route('/twilio-test', methods=['POST'])
+def twilio_test():
+    """Minimal test endpoint that mimics Twilio webhook structure."""
+    try:
+        logger.info(f"Twilio test request: {dict(request.values)}")
+        response = VoiceResponse()
+        response.say("This is a test call from Sarah at Grinberg Management. The webhook is working correctly!",
+                    voice='Polly.Ruth-Neural', language='en-US')
+        return str(response)
+    except Exception as e:
+        logger.error(f"Twilio test error: {e}")
+        return "Error in webhook", 500
 
 @app.route('/incoming-call', methods=['GET', 'POST'])
 def handle_incoming_call():
@@ -79,8 +97,10 @@ def handle_incoming_call():
     try:
         # Get caller information from Twilio
         caller_phone = request.values.get('From', 'Unknown')
+        call_sid = request.values.get('CallSid', 'Unknown')
         
-        logger.info(f"Incoming call from: {caller_phone}")
+        logger.info(f"Incoming call from: {caller_phone}, CallSid: {call_sid}")
+        logger.info(f"Twilio request data: {dict(request.values)}")
         
         response = VoiceResponse()
         
@@ -88,7 +108,8 @@ def handle_incoming_call():
         if not OPENAI_API_KEY:
             response.say("Thank you for calling our property management office. "
                         "Our AI assistant is currently unavailable for maintenance. "
-                        "Please call back later or leave a message after the beep.")
+                        "Please call back later or leave a message after the beep.",
+                        voice='Polly.Ruth-Neural', language='en-US')
             response.record(timeout=30, transcribe=False)
             return str(response)
         
@@ -109,12 +130,14 @@ def handle_incoming_call():
         response.say("Sorry, I didn't catch that. Could you say that again?",
                     voice='Polly.Ruth-Neural', language='en-US')
         
+        logger.info(f"Returning TwiML response for {caller_phone}")
         return str(response)
         
     except Exception as e:
-        logger.error(f"Error handling incoming call: {e}")
+        logger.error(f"Error handling incoming call: {e}", exc_info=True)
         response = VoiceResponse()
-        response.say("I'm sorry, we're experiencing technical difficulties. Please try calling back later.")
+        response.say("I'm sorry, we're experiencing technical difficulties. Please try calling back later.",
+                    voice='Polly.Ruth-Neural', language='en-US')
         return str(response)
 
 @app.route('/fallback-call', methods=['POST'])
@@ -122,6 +145,25 @@ def fallback_call():
     """Fallback handler in case primary webhook fails."""
     try:
         logger.warning("Fallback handler activated")
+        caller_phone = request.values.get('From', 'Unknown')
+        logger.info(f"Fallback call from: {caller_phone}")
+        
+        response = VoiceResponse()
+        response.say("Hey there! It's a great day at Grinberg Management, this is Sarah. How can I help you today?",
+                    voice='Polly.Ruth-Neural', language='en-US')
+        
+        response.gather(
+            input='speech',
+            timeout=10,
+            speech_timeout='auto',
+            action='/process-speech',
+            method='POST'
+        )
+        
+        response.say("Sorry, I didn't catch that. Could you say that again?",
+                    voice='Polly.Ruth-Neural', language='en-US')
+        
+        return str(response)
         response = VoiceResponse()
         
         # Bubbly fallback message from Sarah
