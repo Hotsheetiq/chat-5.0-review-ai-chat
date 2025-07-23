@@ -78,9 +78,9 @@ def handle_incoming_call():
             response.record(timeout=30, transcribe=False)
             return str(response)
         
-        # Bubbly greeting with Sarah introduction
-        response.say("Hey! Thanks for calling Grinberg Management, this is Sarah! How can I help you today?",
-                    voice='Polly.Amy-Neural', language='en-US')
+        # Happy American greeting with Sarah
+        response.say("It's a great day at Grinberg Management, this is Sarah! How can I help you today?",
+                    voice='Polly.Kimberly-Neural', language='en-US')
         
         # Use speech gathering instead of media streaming for better reliability
         gather = response.gather(
@@ -91,9 +91,9 @@ def handle_incoming_call():
             method='POST'
         )
         
-        # Fallback if no speech detected - bubbly voice
+        # Fallback if no speech detected - happy American voice
         response.say("Oops! I didn't catch that. Give me a call back and try again!",
-                    voice='Polly.Amy-Neural', language='en-US')
+                    voice='Polly.Kimberly-Neural', language='en-US')
         
         return str(response)
         
@@ -168,7 +168,7 @@ def process_speech():
         
         if not speech_result:
             response.say("I didn't catch that. Could you please repeat your request?",
-                        voice='Polly.Joanna-Neural', language='en-US')
+                        voice='Polly.Kimberly-Neural', language='en-US')
             response.gather(
                 input='speech',
                 timeout=10,
@@ -228,8 +228,8 @@ def process_speech():
         return str(response)
 
 def create_natural_say(response_obj, text):
-    """Helper function to add bubbly natural voice to all responses."""
-    return response_obj.say(text, voice='Polly.Amy-Neural', language='en-US')
+    """Helper function to add happy American voice to all responses."""
+    return response_obj.say(text, voice='Polly.Kimberly-Neural', language='en-US')
 
 def generate_ai_response(user_input, caller_phone):
     """Generate AI response using OpenAI with Sarah's personality."""
@@ -270,9 +270,10 @@ Remember: You're speaking on a phone call with a bubbly, friendly personality - 
         
     except Exception as e:
         logger.error(f"OpenAI API error: {e}")
-        # Fallback response in Sarah's voice
-        return ("I'm sorry, I'm having a small technical issue right now. "
-                "But I'm still here to help! Could you repeat what you need assistance with?")
+        # Fallback response when OpenAI is unavailable - Sarah identifies herself properly
+        return ("I'm actually an AI assistant, but I'm totally here to help you! "
+                "I love helping with maintenance, leasing, and anything else you need at Grinberg Management! "
+                "What can I do for you today?")
 
 # WebSocket handler for media streams
 @socketio.on('connect', namespace='/media-stream')
