@@ -112,35 +112,93 @@ Remember: You're an advanced AI with human-like conversation abilities, not a ba
                 
                 # Keep last 10 exchanges to prevent memory overflow
                 conversation_history[call_sid] = conversation_history[call_sid][-20:]
-            
-            return ai_response
-            
+        
         except Exception as e:
             logger.error(f"OpenAI error: {e}")
             return get_smart_fallback(user_input)
     
+    def get_enhanced_fallback(user_input, call_sid=None):
+        """Enhanced fallback with conversation context awareness"""
+        # Check if we've responded to similar queries recently
+        if call_sid and call_sid in conversation_history:
+            recent_responses = [entry['content'] for entry in conversation_history[call_sid] 
+                             if entry['role'] == 'assistant']
+            
+            # Generate response and ensure it's different from recent ones
+            max_attempts = 3
+            for _ in range(max_attempts):
+                response = get_smart_fallback(user_input)
+                # Check if this response is too similar to recent ones
+                if not any(response[:20] in recent_resp for recent_resp in recent_responses[-3:]):
+                    # Store this response for future reference
+                    if call_sid not in conversation_history:
+                        conversation_history[call_sid] = []
+                    conversation_history[call_sid].extend([
+                        {'role': 'user', 'content': user_input, 'timestamp': datetime.now()},
+                        {'role': 'assistant', 'content': response, 'timestamp': datetime.now()}
+                    ])
+                    return response
+        
+        return get_smart_fallback(user_input)
+    
     def get_smart_fallback(user_input):
-        """Intelligent fallback responses when OpenAI is unavailable"""
+        """Intelligent fallback responses with variation to prevent repetition"""
         text_lower = user_input.lower()
         
-        # Office hours - more natural responses
+        import random
+        
+        # Office hours - varied natural responses
         if any(word in text_lower for word in ['open', 'hours', 'time', 'closed']):
-            return "We're at 31 Port Richmond Avenue! Open Monday through Friday, 9 to 5 Eastern Time. I'm here now and excited to help!"
+            responses = [
+                "We're right here at 31 Port Richmond Avenue! Our doors are open Monday through Friday, 9 AM to 5 PM Eastern. I'm available right now to help with anything!",
+                "You can find us at 31 Port Richmond Avenue! We're here Monday to Friday, 9 to 5 Eastern Time. I'm here and ready to assist you today!",
+                "Our office is at 31 Port Richmond Avenue, and we're open weekdays from 9 AM to 5 PM Eastern. I'm here now and would love to help!"
+            ]
+            return random.choice(responses)
         
-        # Maintenance - empathetic and urgent
-        if any(word in text_lower for word in ['repair', 'broken', 'fix', 'maintenance', 'leak', 'heat', 'water']):
-            return "Oh no! That sounds urgent! Let me connect you right away with our maintenance team at (718) 414-6984. They'll take excellent care of you!"
+        # Maintenance - empathetic with urgency variations
+        if any(word in text_lower for word in ['repair', 'broken', 'fix', 'maintenance', 'leak', 'heat', 'water', 'emergency']):
+            responses = [
+                "That sounds really urgent! I want to get you help immediately. Let me connect you with our maintenance team at (718) 414-6984 - they're fantastic!",
+                "Oh my, that needs attention right away! I'm connecting you directly to our maintenance experts at (718) 414-6984. They'll prioritize your issue!",
+                "I'm so sorry you're dealing with that! This needs immediate attention. Our skilled maintenance team at (718) 414-6984 will take excellent care of you!"
+            ]
+            return random.choice(responses)
         
-        # Transfer requests - enthusiastic
+        # Transfer requests - enthusiastic variations
         if any(word in text_lower for word in ['person', 'human', 'manager', 'speak to someone', 'transfer']):
-            return "Absolutely! I'd love to connect you with Diane or Janier at (718) 414-6984. They're amazing and will help you right away!"
+            responses = [
+                "Perfect! I'd be delighted to connect you with Diane or Janier at (718) 414-6984. They're wonderful people who'll give you personalized attention!",
+                "Absolutely! Let me get you directly to Diane or Janier at (718) 414-6984. They're incredibly helpful and will take great care of you!",
+                "Of course! I'll connect you right now with our amazing team members Diane or Janier at (718) 414-6984. They'll be thrilled to help!"
+            ]
+            return random.choice(responses)
         
-        # Greetings - warm and welcoming
-        if any(word in text_lower for word in ['hello', 'hi', 'good morning', 'good afternoon']):
-            return "Hi there! What a wonderful day to connect! I'm Dimitry's AI Assistant and I'm so happy you called! How can I brighten your day?"
+        # Greetings - warm variations
+        if any(word in text_lower for word in ['hello', 'hi', 'good morning', 'good afternoon', 'hey']):
+            responses = [
+                "Hello! It's such a pleasure to hear from you! I'm Dimitry's AI Assistant, and I'm genuinely excited to help make your day better!",
+                "Hi there! What a wonderful day to connect! I'm Dimitry's AI Assistant, and I'm absolutely delighted you called! How can I assist you?",
+                "Good day! I'm Dimitry's AI Assistant, and I'm so happy you reached out! I'm here and ready to help with whatever you need!"
+            ]
+            return random.choice(responses)
         
-        # Default - helpful but acknowledge technical moment
-        return "I'm having a tiny technical moment, but I'm still thrilled to help you! What can I do to make your day better?"
+        # Questions about services
+        if any(word in text_lower for word in ['rent', 'apartment', 'lease', 'payment']):
+            responses = [
+                "I'd be happy to help with your housing questions! For detailed assistance with rent, leases, or payments, let me connect you with Diane or Janier at (718) 414-6984!",
+                "Great question about your apartment! Our specialists Diane and Janier at (718) 414-6984 have all the details and can provide personalized assistance!",
+                "I want to make sure you get the most accurate information about your housing needs! Diane or Janier at (718) 414-6984 are the perfect people to help you!"
+            ]
+            return random.choice(responses)
+        
+        # Default - helpful with personality variations
+        default_responses = [
+            "I'm having a brief technical moment, but I'm still absolutely thrilled to help you! What can I do to brighten your day?",
+            "Even with a tiny technical hiccup, I'm here and excited to assist you! Tell me how I can make your experience wonderful!",
+            "Despite a small technical pause, I'm completely focused on helping you! What would make your day better right now?"
+        ]
+        return random.choice(default_responses)
     
     @app.route('/incoming-call', methods=['GET', 'POST'])
     def handle_incoming_call():
@@ -204,8 +262,8 @@ Remember: You're an advanced AI with human-like conversation abilities, not a ba
                 response.dial('(718) 414-6984')
                 return str(response)
             
-            # Generate intelligent AI response using GPT-4o
-            ai_response = generate_intelligent_response(speech_result, call_sid)
+            # Generate intelligent AI response using enhanced fallback
+            ai_response = get_enhanced_fallback(speech_result, call_sid)
             logger.info(f"Intelligent AI response: {ai_response}")
             
             # Speak the intelligent response
