@@ -307,12 +307,25 @@ Remember: You are a full GPT-4o AI assistant, not a simple chatbot. Use your com
                     input='speech',
                     action=f'/handle-speech/{call_sid}',
                     method='POST',
-                    timeout=10,
+                    timeout=15,  # Longer timeout for natural conversation
                     speech_timeout='auto'
                 )
                 
-                # Fallback after timeout
-                response.say("Thank you so much for calling! If you need anything else, just call us at (718) 414-6984!",
+                # Only say goodbye if they haven't responded for a while
+                response.say("I'm still here if you need anything else! Or I can connect you with our team at (718) 414-6984.",
+                            voice='Google.en-US-Neural2-J')
+                
+                # Give one more chance to continue
+                response.gather(
+                    input='speech',
+                    action=f'/handle-speech/{call_sid}',
+                    method='POST',
+                    timeout=8,
+                    speech_timeout='auto'
+                )
+                
+                # Final fallback
+                response.say("Thank you for calling Grinberg Management! Have a wonderful day!",
                             voice='Google.en-US-Neural2-J')
             
             return str(response)
