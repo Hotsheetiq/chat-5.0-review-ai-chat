@@ -90,10 +90,11 @@ The application is designed for cloud deployment with the following consideratio
 
 ## Recent Changes
 
-### July 23, 2025 - Mike Implementation with ElevenLabs Voice
+### July 23, 2025 - Mike Implementation with Best Available TTS Voices
 - **Mike Character Introduction**: Completely reimagined assistant as Mike with natural conversational personality
-- **ElevenLabs Voice Breakthrough**: Implemented ElevenLabs.Adam for the most natural, human-like speech synthesis available
-- **Advanced Voice Fallback System**: Primary ElevenLabs Adam, secondary Google Neural, tertiary Polly Matthew Neural, quaternary Alice for maximum compatibility
+- **Voice Quality Reality Check**: Discovered ElevenLabs requires ConversationRelay architecture, not standard TwiML
+- **Best TTS Voice System**: Using Generative voices (Polly.Matthew-Generative, Google Chirp3-HD) for most natural speech
+- **Advanced Voice Fallback**: Primary Generative, secondary Neural2, tertiary Neural, quaternary Alice for maximum compatibility
 - **Perfect Greeting**: "It's a great day here at Grinberg Management! My name is Mike. How can I help you?" - friendly, helpful, complete
 - **Professional Call Transfer System**: Seamless transfer to (718) 414-6984 for non-apartment questions
 - **Smart Transfer Logic**: Any unrecognized requests or human transfer requests automatically route to Diane or Janier  

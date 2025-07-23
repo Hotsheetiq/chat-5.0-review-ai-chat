@@ -111,21 +111,28 @@ def handle_incoming_call():
             response.record(timeout=30, transcribe=False)
             return str(response)
         
-        # Use ElevenLabs for the most natural voice possible
+        # Use the best available Twilio TTS voices (ElevenLabs requires ConversationRelay)
         greeting = "It's a great day here at Grinberg Management! My name is Mike. How can I help you?"
-        # Try ElevenLabs first for the most natural voice
+        # Use the best available voices for standard Twilio TTS
+        # Note: ElevenLabs requires ConversationRelay, not standard Say
         try:
-            response.say(greeting, voice='ElevenLabs.Adam')
+            # Try the newest Generative voices (2025) - most natural available
+            response.say(greeting, voice='Polly.Matthew-Generative')
         except:
-            # Fallback to Google Neural if ElevenLabs not available
             try:
-                response.say(greeting, voice='Google.en-US-Neural2-J')
+                # Try Google's Generative voice
+                response.say(greeting, voice='Google.en-US-Chirp3-HD-Aoede')
             except:
-                # Final fallback to Polly neural
                 try:
-                    response.say(greeting, voice='Polly.Matthew-Neural')
+                    # Fallback to best neural voice
+                    response.say(greeting, voice='Google.en-US-Neural2-J')
                 except:
-                    response.say(greeting, voice='alice')
+                    try:
+                        # Amazon neural fallback
+                        response.say(greeting, voice='Polly.Matthew-Neural')
+                    except:
+                        # Final fallback
+                        response.say(greeting, voice='alice')
         
         # Use speech gathering with barge-in enabled so callers can interrupt
         gather = response.gather(
@@ -309,15 +316,15 @@ def process_speech():
                 response.dial("+17184146984")
                 return str(response)
             else:
-                # Use consistent ElevenLabs voice for responses
+                # Use the best actual Twilio-supported voices
                 try:
-                    response.say(ai_response, voice='ElevenLabs.Adam')
+                    response.say(ai_response, voice='Google.en-US-Neural2-J')
                 except:
                     try:
-                        response.say(ai_response, voice='Google.en-US-Neural2-J')
+                        response.say(ai_response, voice='Polly.Matthew-Neural')
                     except:
                         try:
-                            response.say(ai_response, voice='Polly.Matthew-Neural')
+                            response.say(ai_response, voice='Google.en-US-WaveNet-J')
                         except:
                             response.say(ai_response, voice='alice')
         except Exception as ai_error:
