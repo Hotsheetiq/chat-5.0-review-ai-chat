@@ -78,9 +78,9 @@ def handle_incoming_call():
             response.record(timeout=30, transcribe=False)
             return str(response)
         
-        # Happy American greeting - natural and conversational
-        greeting = "It's a great day at Grinberg Management, this is Sarah! How can I help you today?"
-        response.say(greeting, voice='Polly.Kimberly-Neural', language='en-US')
+        # Natural, warm greeting with conversational flow
+        greeting = "Hey there! It's a great day at Grinberg Management, this is Sarah. How can I help you today?"
+        response.say(greeting, voice='Polly.Joanna-Neural', language='en-US')
         
         # Use speech gathering instead of media streaming for better reliability
         gather = response.gather(
@@ -91,9 +91,9 @@ def handle_incoming_call():
             method='POST'
         )
         
-        # Fallback if no speech detected - natural and friendly
-        response.say("I didn't catch that. Could you try again?",
-                    voice='Polly.Kimberly-Neural', language='en-US')
+        # Fallback if no speech detected - warm and natural
+        response.say("Sorry, I didn't catch that. Could you say that again?",
+                    voice='Polly.Joanna-Neural', language='en-US')
         
         return str(response)
         
@@ -167,8 +167,8 @@ def process_speech():
         response = VoiceResponse()
         
         if not speech_result:
-            response.say("I didn't catch that. Could you please repeat your request?",
-                        voice='Polly.Kimberly-Neural', language='en-US')
+            response.say("Sorry, I missed that. What did you say?",
+                        voice='Polly.Joanna-Neural', language='en-US')
             response.gather(
                 input='speech',
                 timeout=10,
@@ -244,13 +244,13 @@ def get_intelligent_response(user_input, caller_phone):
     
     memory = conversation_memory[caller_phone]
     
-    # AI/Human identity questions - vary responses
+    # AI/Human identity questions - natural, conversational responses
     if any(word in user_lower for word in ['human', 'real person', 'real', 'robot', 'ai', 'computer', 'bot', 'siri']):
         if 'identity' not in memory['topics_discussed']:
             memory['topics_discussed'].add('identity')
-            return "I'm Sarah, an AI assistant here at Grinberg Management. I'm here to help you with maintenance, leasing, or any questions you have. What can I do for you?"
+            return "Ha, you got me! I'm Sarah, and I'm actually an AI assistant. But hey, I'm really good at helping with maintenance issues, apartment stuff, and anything else you need here at Grinberg. What's going on?"
         else:
-            return "Yep, still me - your AI assistant Sarah. What do you need help with?"
+            return "Yep, still your friendly AI Sarah! So what can I actually help you out with today?"
     
     # Location/office questions with specific help
     elif any(word in user_lower for word in ['where', 'located', 'address', 'office', 'location']):
@@ -260,11 +260,11 @@ def get_intelligent_response(user_input, caller_phone):
         else:
             return "Which location specifically? Our leasing office or a property address?"
     
-    # Maintenance requests - get specific
+    # Maintenance requests - warm and helpful
     elif any(word in user_lower for word in ['fix', 'broken', 'maintenance', 'repair', 'not working', 'problem', 'issue']):
         memory['topics_discussed'].add('maintenance')
         memory['conversation_stage'] = 'maintenance'
-        return "I'll get that fixed for you. What's going on exactly? Is it plumbing, electrical, heating, or something else?"
+        return "Oh no, something's acting up? Don't worry, I'll get our maintenance team right on it. Tell me what's happening - is it something with plumbing, electrical, heating, or what?"
     
     # Leasing inquiries - specific questions
     elif any(word in user_lower for word in ['apartment', 'rent', 'lease', 'available', 'move in', 'unit', 'bedroom']):
@@ -275,13 +275,13 @@ def get_intelligent_response(user_input, caller_phone):
     # Follow-up responses based on conversation stage
     elif memory['conversation_stage'] == 'maintenance':
         if any(word in user_lower for word in ['water', 'plumbing', 'toilet', 'sink', 'leak']):
-            return "Got it, plumbing issue. I'm creating a priority service request for you right now. Can you give me your apartment number and a good callback number? Our maintenance team will contact you within 2 hours."
+            return "Oh wow, a plumbing issue! That's definitely urgent. I'm getting a priority request over to our maintenance team right now. What's your apartment number? And the best number to reach you at? They'll be calling you within a couple hours to get this sorted."
         elif any(word in user_lower for word in ['heat', 'cold', 'hot', 'ac', 'air', 'temperature']):
-            return "Temperature issue - that's definitely a priority! I'm putting in an urgent request. What's your unit number? We'll have someone out to check your HVAC system today."
+            return "Ugh, heating and cooling problems are the worst! Don't worry though - this is going straight to our HVAC team as urgent. What's your unit number? We'll have someone out there today to get you comfortable again."
         elif any(word in user_lower for word in ['electric', 'power', 'light', 'outlet']):
-            return "Electrical problems can be serious. I'm marking this as urgent. What's your unit number? Our maintenance team will prioritize this and get someone out as soon as possible."
+            return "Electrical stuff can be tricky, so we take that seriously. I'm marking this as urgent priority. What's your unit number? Our maintenance team will get someone out there ASAP to make sure everything's safe."
         else:
-            return "I'm creating a maintenance request for that issue. Can you give me your unit number and the best phone number to reach you? We'll get this taken care of quickly."
+            return "Alright, I'm getting a maintenance request set up for you right now. What's your apartment number and the best way to reach you? We'll have someone take care of this super quick."
     
     elif memory['conversation_stage'] == 'leasing':
         if any(word in user_lower for word in ['one', '1', 'studio']):
@@ -294,9 +294,9 @@ def get_intelligent_response(user_input, caller_phone):
     # Generic helpful responses that don't repeat
     elif any(word in user_lower for word in ['hi', 'hello', 'hey', 'good morning', 'good afternoon']):
         if len(memory['questions_asked']) == 0:
-            return "Hi there! I'm Sarah. How can I help you today?"
+            return "Hey! I'm Sarah, and I'm here to help with whatever you need. What's going on?"
         else:
-            return "What else can I help you with?"
+            return "What else can I help you out with?"
     
     elif any(word in user_lower for word in ['thank', 'thanks']):
         return "You're very welcome! Is there anything else you need help with today?"
@@ -310,9 +310,9 @@ def get_intelligent_response(user_input, caller_phone):
             return "I'm not quite sure how to help with that. Could you tell me a bit more about what you need? I can assist with maintenance requests, apartment availability, or general property questions."
 
 def create_natural_say(response_obj, text):
-    """Helper function to add happy American voice with natural speech patterns."""
+    """Helper function to add warm, conversational American voice."""
     # Use natural punctuation and word choice for conversational flow
-    return response_obj.say(text, voice='Polly.Kimberly-Neural', language='en-US')
+    return response_obj.say(text, voice='Polly.Joanna-Neural', language='en-US')
 
 def generate_ai_response(user_input, caller_phone):
     """Generate AI response using OpenAI with Sarah's personality."""
