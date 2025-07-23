@@ -78,11 +78,12 @@ def handle_incoming_call():
             response.record(timeout=30, transcribe=False)
             return str(response)
         
-        # Professional greeting with Sarah introduction
+        # Professional greeting with Sarah introduction - using natural voice
         response.say("Hello, and thank you for calling Grinberg Properties. "
                     "My name is Sarah, and I'm Grinberg's newest addition to our AI team. "
                     "I can help with maintenance requests, leasing information, and general property questions. "
-                    "Please tell me how I can help you today.")
+                    "Please tell me how I can help you today.",
+                    voice='Polly.Joanna-Neural', language='en-US')
         
         # Use speech gathering instead of media streaming for better reliability
         gather = response.gather(
@@ -93,8 +94,9 @@ def handle_incoming_call():
             method='POST'
         )
         
-        # Fallback if no speech detected
-        response.say("I didn't hear anything. Please call back and try again.")
+        # Fallback if no speech detected - natural voice
+        response.say("I didn't hear anything. Please call back and try again.",
+                    voice='Polly.Joanna-Neural', language='en-US')
         
         return str(response)
         
@@ -111,8 +113,8 @@ def fallback_call():
         logger.warning("Fallback handler activated")
         response = VoiceResponse()
         
-        # Professional fallback message from Sarah
-        response.say("Thank you for calling Grinberg Properties. "
+        # Professional fallback message from Sarah with natural voice
+        create_natural_say(response, "Thank you for calling Grinberg Properties. "
                     "This is Sarah, and we're experiencing temporary technical difficulties. "
                     "Please call back in a few minutes, or leave a detailed message "
                     "after the beep including your name, phone number, and reason for calling.")
@@ -125,7 +127,7 @@ def fallback_call():
             transcribe_callback=f"{request.host_url}transcription"
         )
         
-        response.say("Thank you for your message. We'll get back to you as soon as possible.")
+        create_natural_say(response, "Thank you for your message. We'll get back to you as soon as possible.")
         
         return str(response)
         
@@ -168,7 +170,8 @@ def process_speech():
         response = VoiceResponse()
         
         if not speech_result:
-            response.say("I didn't catch that. Could you please repeat your request?")
+            response.say("I didn't catch that. Could you please repeat your request?",
+                        voice='Polly.Joanna-Neural', language='en-US')
             response.gather(
                 input='speech',
                 timeout=10,
@@ -181,20 +184,20 @@ def process_speech():
         # Use OpenAI for intelligent response generation
         try:
             ai_response = generate_ai_response(speech_result, caller_phone)
-            response.say(ai_response)
+            create_natural_say(response, ai_response)
         except Exception as ai_error:
             logger.error(f"OpenAI error: {ai_error}")
-            # Fallback to basic keyword processing
+            # Fallback to basic keyword processing with natural voice
             speech_lower = speech_result.lower()
             
             if any(word in speech_lower for word in ['maintenance', 'repair', 'broken', 'fix']):
-                response.say("I understand you have a maintenance request. "
+                create_natural_say(response, "I understand you have a maintenance request. "
                             "I'm creating a service ticket for you right now with Grinberg Properties. "
                             "Our maintenance team will follow up within 24 hours. "
                             "Is there anything else I can help you with?")
                             
             elif any(word in speech_lower for word in ['lease', 'rent', 'available', 'apartment']):
-                response.say("Thank you for your interest in Grinberg Properties. "
+                create_natural_say(response, "Thank you for your interest in Grinberg Properties. "
                             "I'm creating a follow-up task for our leasing team. "
                             "Someone will contact you within one business day with "
                             "information about available units. "
@@ -202,11 +205,11 @@ def process_speech():
                             
             elif any(word in speech_lower for word in ['hours', 'office', 'contact']):
                 hours_info = property_data.get_office_hours()
-                response.say(f"Our Grinberg Properties office hours are {hours_info}. "
+                create_natural_say(response, f"Our Grinberg Properties office hours are {hours_info}. "
                             "Is there anything else I can help you with?")
                             
             else:
-                response.say("Thank you for calling Grinberg Properties. I've made a note of your request "
+                create_natural_say(response, "Thank you for calling Grinberg Properties. I've made a note of your request "
                             "and someone from our team will follow up with you shortly. "
                             "Is there anything else I can help you with?")
         
@@ -219,7 +222,7 @@ def process_speech():
             method='POST'
         )
         
-        response.say("Thank you for calling. Have a great day!")
+        create_natural_say(response, "Thank you for calling. Have a great day!")
         
         return str(response)
         
@@ -229,6 +232,10 @@ def process_speech():
         response.say("I'm sorry, I had trouble processing your request. "
                     "Please call back and try again.")
         return str(response)
+
+def create_natural_say(response_obj, text):
+    """Helper function to add natural voice to all responses."""
+    return response_obj.say(text, voice='Polly.Joanna-Neural', language='en-US')
 
 def generate_ai_response(user_input, caller_phone):
     """Generate AI response using OpenAI with Sarah's personality."""
