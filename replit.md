@@ -98,7 +98,7 @@ The application is designed for cloud deployment with the following consideratio
 - **ElevenLabs Integration**: Now using ElevenLabs Adam voice (pNInz6obpgDQGcFmaJgB) with API key for genuine human-like quality
 - **Gunicorn-Compatible Implementation**: Switched from WebSocket-based to HTTP speech gathering that works with gunicorn server
 - **True Human-Like Voice**: No more robotic TTS - this is authentic conversational AI with natural voice generation
-- **Dimitry Junior AI's Natural Voice**: Uses dima voice for warm, bubbly conversation - "Hi there! I'm Dimitry Junior AI!"
+- **Dimitry Junior AI's Natural Voice**: Uses Polly.Matthew voice for natural male conversation - "Hi there! I'm Dimitry Junior AI!"
 - **Professional Call Transfer System**: Seamless transfer to (718) 414-6984 for non-apartment questions
 - **Smart Transfer Logic**: Any unrecognized requests or human transfer requests automatically route to Diane or Janier  
 - **Naturally Upbeat Personality**: Dimitry Junior AI is genuinely happy and cheerful with natural enthusiasm that sounds like a real person having a great day, not over-the-top artificial energy  
