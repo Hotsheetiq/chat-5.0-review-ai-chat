@@ -78,10 +78,10 @@ def handle_incoming_call():
             response.record(timeout=30, transcribe=False)
             return str(response)
         
-        # Professional greeting with speech gathering for now
-        response.say("Hello, and thank you for calling our property management office. "
-                    "I'm your AI assistant and I can help with maintenance requests, "
-                    "leasing information, and general property questions. "
+        # Professional greeting with Sarah introduction
+        response.say("Hello, and thank you for calling Grinberg Properties. "
+                    "My name is Sarah, and I'm Grinberg's newest addition to our AI team. "
+                    "I can help with maintenance requests, leasing information, and general property questions. "
                     "Please tell me how I can help you today.")
         
         # Use speech gathering instead of media streaming for better reliability
@@ -111,9 +111,9 @@ def fallback_call():
         logger.warning("Fallback handler activated")
         response = VoiceResponse()
         
-        # Professional fallback message
-        response.say("Thank you for calling our property management office. "
-                    "We're experiencing temporary technical difficulties. "
+        # Professional fallback message from Sarah
+        response.say("Thank you for calling Grinberg Properties. "
+                    "This is Sarah, and we're experiencing temporary technical difficulties. "
                     "Please call back in a few minutes, or leave a detailed message "
                     "after the beep including your name, phone number, and reason for calling.")
         
@@ -189,12 +189,12 @@ def process_speech():
             
             if any(word in speech_lower for word in ['maintenance', 'repair', 'broken', 'fix']):
                 response.say("I understand you have a maintenance request. "
-                            "I'm creating a service ticket for you right now. "
+                            "I'm creating a service ticket for you right now with Grinberg Properties. "
                             "Our maintenance team will follow up within 24 hours. "
                             "Is there anything else I can help you with?")
                             
             elif any(word in speech_lower for word in ['lease', 'rent', 'available', 'apartment']):
-                response.say("Thank you for your interest in our property. "
+                response.say("Thank you for your interest in Grinberg Properties. "
                             "I'm creating a follow-up task for our leasing team. "
                             "Someone will contact you within one business day with "
                             "information about available units. "
@@ -202,11 +202,11 @@ def process_speech():
                             
             elif any(word in speech_lower for word in ['hours', 'office', 'contact']):
                 hours_info = property_data.get_office_hours()
-                response.say(f"Our office hours are {hours_info}. "
+                response.say(f"Our Grinberg Properties office hours are {hours_info}. "
                             "Is there anything else I can help you with?")
                             
             else:
-                response.say("Thank you for your call. I've made a note of your request "
+                response.say("Thank you for calling Grinberg Properties. I've made a note of your request "
                             "and someone from our team will follow up with you shortly. "
                             "Is there anything else I can help you with?")
         
@@ -229,6 +229,47 @@ def process_speech():
         response.say("I'm sorry, I had trouble processing your request. "
                     "Please call back and try again.")
         return str(response)
+
+def generate_ai_response(user_input, caller_phone):
+    """Generate AI response using OpenAI with Sarah's personality."""
+    try:
+        from openai import OpenAI
+        client = OpenAI(api_key=OPENAI_API_KEY)
+        
+        # System prompt to make Sarah respond as Grinberg's AI assistant
+        system_prompt = """You are Sarah, Grinberg Properties' newest AI team member. You are friendly, professional, and knowledgeable about property management.
+
+Key points about your role:
+- You work for Grinberg Properties, a professional property management company
+- You help with maintenance requests, leasing inquiries, and general property questions
+- You can create service tickets, schedule follow-ups, and provide property information
+- You're personable but professional - speak naturally like a helpful team member
+- Keep responses concise and actionable for phone conversations
+- Always offer to help with additional questions
+
+For maintenance requests: Create a service ticket and give a timeline
+For leasing inquiries: Gather contact info and schedule follow-up
+For general questions: Provide helpful information about Grinberg Properties
+
+Remember: You're speaking on a phone call, so keep responses conversational and not too long."""
+
+        response = client.chat.completions.create(
+            model="gpt-4o",
+            messages=[
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": f"Caller says: {user_input}"}
+            ],
+            max_tokens=150,
+            temperature=0.7
+        )
+        
+        return response.choices[0].message.content.strip()
+        
+    except Exception as e:
+        logger.error(f"OpenAI API error: {e}")
+        # Fallback response in Sarah's voice
+        return ("I'm sorry, I'm having a small technical issue right now. "
+                "But I'm still here to help! Could you repeat what you need assistance with?")
 
 # WebSocket handler for media streams
 @socketio.on('connect', namespace='/media-stream')
