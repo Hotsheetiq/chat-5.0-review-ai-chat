@@ -111,9 +111,9 @@ def handle_incoming_call():
             response.record(timeout=30, transcribe=False)
             return str(response)
         
-        # Use the most natural-sounding voice available - woman's voice
-        greeting = "Hi! This is Sarah from Grinberg Management. I can help with apartments and maintenance, or connect you with someone else if needed. What can I help you with?"
-        response.say(greeting)
+        # Natural male voice greeting for Mike
+        greeting = "It's a great day here at Grinberg Management! My name is Mike."
+        response.say(greeting, voice='man', language='en-US')
         
         # Use speech gathering with barge-in enabled so callers can interrupt
         gather = response.gather(
@@ -126,7 +126,7 @@ def handle_incoming_call():
         )
         
         # Fallback if no speech detected - warm and encouraging
-        response.say("I didn't hear anything. Could you say that again?")
+        response.say("I didn't hear anything. Could you say that again?", voice='man', language='en-US')
         
         logger.info(f"Returning TwiML response for {caller_phone}")
         return str(response)
@@ -134,7 +134,7 @@ def handle_incoming_call():
     except Exception as e:
         logger.error(f"Error handling incoming call: {e}", exc_info=True)
         response = VoiceResponse()
-        response.say("Sorry, I'm having some technical trouble right now. Could you try calling back in a few minutes?")
+        response.say("Sorry, I'm having some technical trouble right now. Could you try calling back in a few minutes?", voice='man', language='en-US')
         return str(response)
 
 @app.route('/fallback-call', methods=['POST'])
@@ -146,7 +146,7 @@ def fallback_call():
         logger.info(f"Fallback call from: {caller_phone}")
         
         response = VoiceResponse()
-        response.say("Hi! This is Sarah from Grinberg Management. What can I help you with today?")
+        response.say("It's a great day here at Grinberg Management! My name is Mike.", voice='man', language='en-US')
         
         response.gather(
             input='speech',
@@ -156,7 +156,7 @@ def fallback_call():
             method='POST'
         )
         
-        response.say("I didn't catch that. Could you repeat it?")
+        response.say("I didn't catch that. Could you repeat it?", voice='man', language='en-US')
         
         return str(response)
         response = VoiceResponse()
@@ -218,7 +218,7 @@ def process_speech():
         response = VoiceResponse()
         
         if not speech_result:
-            response.say("Sorry, I didn't catch that. Could you repeat what you said?")
+            response.say("Sorry, I didn't catch that. Could you repeat what you said?", voice='man', language='en-US')
             response.gather(
                 input='speech',
                 timeout=20,
@@ -233,22 +233,22 @@ def process_speech():
             ai_response = generate_ai_response(speech_result, caller_phone)
             if ai_response == "transfer_call":
                 transfer_msg = "Let me connect you with someone who can help you better. I'm transferring you to Diane or Janier now."
-                response.say(transfer_msg)
+                response.say(transfer_msg, voice='man', language='en-US')
                 response.dial("+17184146984")
                 return str(response)
             else:
-                response.say(ai_response)
+                response.say(ai_response, voice='man', language='en-US')
         except Exception as ai_error:
             logger.error(f"OpenAI error: {ai_error}")
             # Fallback to intelligent keyword processing using our smart response system
             fallback_response = get_intelligent_response(speech_result, caller_phone)
             if fallback_response == "transfer_call":
                 fallback_transfer = "I'm not sure about that one, but let me get you to someone who can definitely help. Connecting you now."
-                response.say(fallback_transfer)
+                response.say(fallback_transfer, voice='man', language='en-US')
                 response.dial("+17184146984")
                 return str(response)
             else:
-                response.say(fallback_response)
+                response.say(fallback_response, voice='man', language='en-US')
         
         # Give option to continue or end call with interruption enabled
         response.gather(
@@ -260,7 +260,7 @@ def process_speech():
             finish_on_key='#'  # Allow interruption
         )
         
-        response.say("Thanks for calling! Have a great day!")
+        response.say("Thanks for calling! Have a great day!", voice='man', language='en-US')
         
         return str(response)
         
@@ -292,9 +292,9 @@ def get_intelligent_response(user_input, caller_phone):
     if any(word in user_lower for word in ['human', 'real person', 'real', 'robot', 'ai', 'computer', 'bot', 'siri']):
         if 'identity' not in memory['topics_discussed']:
             memory['topics_discussed'].add('identity')
-            return "Ha! You got me. Yeah, I'm an AI, but I'm pretty good at helping with apartment stuff and maintenance requests. What do you need help with?"
+            return "Ha! You got me. Yeah, I'm an AI, but I'm Mike and I'm here to help. What's going on?"
         else:
-            return "Yep, still me - your friendly AI Sarah! What can I help with?"
+            return "Yep, still me - Mike! What can I help with?"
     
     # Location/office questions - direct and helpful (check first before office hours)
     elif any(word in user_lower for word in ['where', 'located', 'address', 'location']) and not any(word in user_lower for word in ['hours', 'open', 'closed']):
@@ -369,7 +369,7 @@ def get_intelligent_response(user_input, caller_phone):
     # Generic helpful responses that don't repeat
     elif any(word in user_lower for word in ['hi', 'hello', 'hey', 'good morning', 'good afternoon']):
         if len(memory['questions_asked']) == 0:
-            return "Hey! I'm Sarah, and I'm here to help with whatever you need! What's going on?"
+            return "Hey! I'm Mike, and I'm here to help with whatever you need! What's going on?"
         else:
             return "What else can I help with?"
     
@@ -407,24 +407,23 @@ def generate_ai_response(user_input, caller_phone):
         from openai import OpenAI
         client = OpenAI(api_key=OPENAI_API_KEY)
         
-        # System prompt to make Sarah respond as Grinberg's bubbly AI assistant
-        system_prompt = """You are Sarah, Grinberg Management's bubbly and friendly AI team member. You're enthusiastic, upbeat, and genuinely excited to help people with their property needs.
+        # System prompt to make Mike respond as Grinberg's helpful AI assistant
+        system_prompt = """You are Mike, Grinberg Management's helpful and friendly AI team member. You're natural, conversational, and genuinely here to help people with their property needs.
 
 Key points about your personality and role:
-- You work for Grinberg Management and love helping people
-- You're bubbly, enthusiastic, and use casual friendly language 
+- You work for Grinberg Management and help people
+- You're friendly and use natural, conversational language 
 - You help with maintenance requests, leasing inquiries, and general property questions
-- You speak like a cheerful, helpful friend - not overly formal
-- Use words like "awesome," "great," "totally," and exclamation points in your tone
-- Keep responses conversational, upbeat, and not too long for phone calls
-- Always sound excited to help with whatever they need
+- You speak like a helpful friend - natural and not overly formal
+- Keep responses conversational and not too long for phone calls
+- You're Mike and you're here to help
 
-When someone asks if you're real: Be honest that you're an AI but emphasize how much you love helping
+When someone asks if you're real: Be honest that you're an AI but emphasize that you're Mike and here to help
 
 If you cannot help with something or the caller asks for a human: Return exactly "transfer_call" with no other text
-For maintenance requests: Sound sympathetic and excited to get it fixed quickly
-For leasing inquiries: Be enthusiastic about the properties and eager to help
-For general questions: Be bubbly and helpful with Grinberg Management info
+For maintenance requests: Be helpful and get it handled
+For leasing inquiries: Be helpful about the properties
+For general questions: Be helpful with Grinberg Management info
 
 Remember: You're speaking on a phone call with a bubbly, friendly personality - make people smile!"""
 
