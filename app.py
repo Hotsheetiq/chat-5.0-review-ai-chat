@@ -93,7 +93,7 @@ def twilio_test():
 
 @app.route('/incoming-call', methods=['GET', 'POST'])
 def handle_incoming_call():
-    """Handle incoming call and return TwiML response."""
+    """Handle incoming call with ConversationRelay for human-like AI interaction."""
     try:
         # Get caller information from Twilio
         caller_phone = request.values.get('From', 'Unknown')
@@ -106,74 +106,29 @@ def handle_incoming_call():
         
         # Check if OpenAI API key is available
         if not OPENAI_API_KEY:
-            response.say("Hi there! Thanks so much for calling Grinberg Management! I'm Sarah, but I'm having some technical hiccups right now. I'm super sorry about that! Please leave me a message after the beep and I'll make sure our amazing team gets right back to you!",
+            response.say("Hi there! Thanks so much for calling Grinberg Management! I'm having some technical hiccups right now. Please leave a message after the beep!",
                         voice='Polly.Joanna-Neural', language='en-US')
             response.record(timeout=30, transcribe=False)
             return str(response)
         
-        # Use the best available Twilio TTS voices (ElevenLabs requires ConversationRelay)
-        greeting = "It's a great day here at Grinberg Management! My name is Mike. How can I help you?"
-        # Use the best available voices for standard Twilio TTS
-        # Note: ElevenLabs requires ConversationRelay, not standard Say
-        try:
-            # Try the newest Generative voices (2025) - most natural available
-            response.say(greeting, voice='Polly.Matthew-Generative')
-        except:
-            try:
-                # Try Google's Generative voice
-                response.say(greeting, voice='Google.en-US-Chirp3-HD-Aoede')
-            except:
-                try:
-                    # Fallback to best neural voice
-                    response.say(greeting, voice='Google.en-US-Neural2-J')
-                except:
-                    try:
-                        # Amazon neural fallback
-                        response.say(greeting, voice='Polly.Matthew-Neural')
-                    except:
-                        # Final fallback
-                        response.say(greeting, voice='alice')
-        
-        # Use speech gathering with barge-in enabled so callers can interrupt
-        gather = response.gather(
-            input='speech',
-            timeout=20,
-            speech_timeout='auto',
-            action='/process-speech',
-            method='POST',
-            finish_on_key='#'  # Allow interruption
+        # Use ConversationRelay for true human-like AI conversation with ElevenLabs voice
+        # This connects to our WebSocket server for real-time AI interaction
+        connect = Connect()
+        connect.conversation_relay(
+            url="wss://your-replit-domain.replit.app/websocket-relay",
+            voice="pNInz6obpgDQGcFmaJgB",  # ElevenLabs Adam voice ID
+            tts_provider="elevenlabs"
         )
+        response.append(connect)
         
-        # Fallback if no speech detected - warm and encouraging
-        # ElevenLabs voice for timeout messages
-        try:
-            response.say("I didn't hear anything. Could you say that again?", voice='ElevenLabs.Adam')
-        except:
-            try:
-                response.say("I didn't hear anything. Could you say that again?", voice='Google.en-US-Neural2-J')
-            except:
-                try:
-                    response.say("I didn't hear anything. Could you say that again?", voice='Polly.Matthew-Neural')
-                except:
-                    response.say("I didn't hear anything. Could you say that again?", voice='alice')
-        
-        logger.info(f"Returning TwiML response for {caller_phone}")
+        logger.info(f"ConversationRelay initiated for {caller_phone}")
         return str(response)
         
     except Exception as e:
         logger.error(f"Error handling incoming call: {e}", exc_info=True)
         response = VoiceResponse()
-        # ElevenLabs voice for error conditions
-        try:
-            response.say("Sorry, I'm having some technical trouble right now. Could you try calling back in a few minutes?", voice='ElevenLabs.Adam')
-        except:
-            try:
-                response.say("Sorry, I'm having some technical trouble right now. Could you try calling back in a few minutes?", voice='Google.en-US-Neural2-J')
-            except:
-                try:
-                    response.say("Sorry, I'm having some technical trouble right now. Could you try calling back in a few minutes?", voice='Polly.Matthew-Neural')
-                except:
-                    response.say("Sorry, I'm having some technical trouble right now. Could you try calling back in a few minutes?", voice='alice')
+        response.say("Sorry, I'm having some technical trouble right now. Could you try calling back in a few minutes?",
+                    voice='Polly.Matthew-Neural')
         return str(response)
 
 @app.route('/fallback-call', methods=['POST'])
