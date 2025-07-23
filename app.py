@@ -111,17 +111,18 @@ def handle_incoming_call():
             response.record(timeout=30, transcribe=False)
             return str(response)
         
-        # Warm, expressive greeting - Joanna-Neural voice is naturally expressive
+        # Warm, expressive greeting with personality - allow interruption
         greeting = "Hey there! This is Sarah from Grinberg Management, and I'm having such a great day! How can I help you?"
         response.say(greeting, voice='Polly.Joanna-Neural', language='en-US')
         
-        # Use speech gathering with longer timeout so callers don't get cut off
+        # Use speech gathering with barge-in enabled so callers can interrupt
         gather = response.gather(
             input='speech',
             timeout=20,
             speech_timeout='auto',
             action='/process-speech',
-            method='POST'
+            method='POST',
+            finish_on_key='#'  # Allow interruption
         )
         
         # Fallback if no speech detected - warm and encouraging
@@ -242,13 +243,14 @@ def process_speech():
             fallback_response = get_intelligent_response(speech_result, caller_phone)
             response.say(fallback_response, voice='Polly.Joanna-Neural', language='en-US')
         
-        # Give option to continue or end call with longer timeout
+        # Give option to continue or end call with interruption enabled
         response.gather(
             input='speech',
             timeout=15,
             speech_timeout='auto',
             action='/process-speech',
-            method='POST'
+            method='POST',
+            finish_on_key='#'  # Allow interruption
         )
         
         response.say("Thanks for calling! Have an amazing day!", voice='Polly.Joanna-Neural', language='en-US')
@@ -291,21 +293,25 @@ def get_intelligent_response(user_input, caller_phone):
     elif any(word in user_lower for word in ['where', 'located', 'address', 'location']) and not any(word in user_lower for word in ['hours', 'open', 'closed']):
         if 'location' not in memory['topics_discussed']:
             memory['topics_discussed'].add('location')
-            return "Great question! Our main office is at 123 Main Street in downtown. We've also got properties all over the area! Are you looking for our office, or asking about a specific building?"
+            return "Great question! Our main office is at 31 Port Richmond Ave. We've also got properties all over the area! Are you looking for our office, or asking about a specific building?"
         else:
-            return "Which location? Our main office on Main Street or one of our properties? I can help with both!"
+            return "Which location? Our main office on Port Richmond Ave or one of our properties? I can help with both!"
 
-    # Office hours and availability - casual, accurate responses  
+    # Office hours and availability - using Eastern Time Zone 
     elif any(word in user_lower for word in ['hours', 'open', 'closed', 'time']) or (any(word in user_lower for word in ['office']) and any(word in user_lower for word in ['hours', 'open', 'closed'])):
         from datetime import datetime
-        now = datetime.now()
-        current_hour = now.hour
-        current_day = now.weekday()  # Monday = 0, Sunday = 6
+        import pytz
+        
+        # Use Eastern Time Zone for accurate office hours
+        eastern = pytz.timezone('US/Eastern')
+        now_eastern = datetime.now(eastern)
+        current_hour = now_eastern.hour
+        current_day = now_eastern.weekday()  # Monday = 0, Sunday = 6
         
         if 'office_hours' not in memory['topics_discussed']:
             memory['topics_discussed'].add('office_hours')
-            # Check if it's currently business hours
-            if current_day < 5 and 9 <= current_hour < 17:  # Mon-Fri, 9am-5pm
+            # Check if it's currently business hours (9 AM to 5 PM Eastern)
+            if current_day < 5 and 9 <= current_hour < 17:  # Mon-Fri, 9am-5pm ET
                 return "Yep, we're totally open right now! Hours are 9 to 5, Monday through Friday. What's up?"
             elif current_day < 5 and current_hour < 9:
                 return "Not quite yet - we open at 9! Hours are 9 to 5, Monday through Friday. But hey, I'm here! What do you need?"
