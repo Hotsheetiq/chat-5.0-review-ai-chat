@@ -78,9 +78,9 @@ def handle_incoming_call():
             response.record(timeout=30, transcribe=False)
             return str(response)
         
-        # Happy American greeting with Sarah
-        response.say("It's a great day at Grinberg Management, this is Sarah! How can I help you today?",
-                    voice='Polly.Kimberly-Neural', language='en-US')
+        # Happy American greeting with natural speech patterns
+        greeting = "It's a great day at Grinberg Management,<break time='0.4s'/> this is Sarah!<break time='0.3s'/> How can I help you today?"
+        response.say(greeting, voice='Polly.Kimberly-Neural', language='en-US')
         
         # Use speech gathering instead of media streaming for better reliability
         gather = response.gather(
@@ -228,8 +228,13 @@ def process_speech():
         return str(response)
 
 def create_natural_say(response_obj, text):
-    """Helper function to add happy American voice to all responses."""
-    return response_obj.say(text, voice='Polly.Kimberly-Neural', language='en-US')
+    """Helper function to add happy American voice with natural speech patterns."""
+    # Add natural pauses and emphasis to make speech less robotic
+    natural_text = text.replace('!', '<break time="0.3s"/>!')
+    natural_text = natural_text.replace('?', '<break time="0.4s"/>?')
+    natural_text = natural_text.replace('. ', '.<break time="0.5s"/> ')
+    
+    return response_obj.say(natural_text, voice='Polly.Kimberly-Neural', language='en-US')
 
 def generate_ai_response(user_input, caller_phone):
     """Generate AI response using OpenAI with Sarah's personality."""
@@ -270,10 +275,32 @@ Remember: You're speaking on a phone call with a bubbly, friendly personality - 
         
     except Exception as e:
         logger.error(f"OpenAI API error: {e}")
-        # Fallback response when OpenAI is unavailable - Sarah identifies herself properly
-        return ("I'm actually an AI assistant, but I'm totally here to help you! "
-                "I love helping with maintenance, leasing, and anything else you need at Grinberg Management! "
-                "What can I do for you today?")
+        # Smart fallback responses based on common questions - natural and conversational
+        user_lower = user_input.lower()
+        
+        # Respond naturally to "are you human/real person" questions
+        if any(word in user_lower for word in ['human', 'real person', 'real', 'robot', 'ai', 'computer']):
+            return ("Ha! You caught me - I'm actually an AI, but honestly? I absolutely love helping folks here at Grinberg Management! I'm like your super enthusiastic digital assistant who's here 24/7. So what's going on? Need help with maintenance, looking at apartments, or got questions?")
+        
+        # Location questions
+        elif any(word in user_lower for word in ['where', 'located', 'address', 'office']):
+            return ("Oh great question! So we've got properties all over, but if you're asking about our main office, I can totally help you figure out which location you need! Are you a current tenant with a maintenance issue, or are you looking to check out some apartments?")
+        
+        # Maintenance requests
+        elif any(word in user_lower for word in ['fix', 'broken', 'maintenance', 'repair', 'not working', 'problem']):
+            return ("Oh no! Something's giving you trouble? Don't worry, we'll get that sorted out super quick! Tell me what's going on and I'll get our awesome maintenance team on it right away!")
+        
+        # Leasing/apartment inquiries
+        elif any(word in user_lower for word in ['apartment', 'rent', 'lease', 'available', 'move in']):
+            return ("That's so exciting! Looking for a new place? I'd love to help you find something perfect! What kind of space are you thinking about, and do you have a preferred area in mind?")
+        
+        # General greeting responses
+        elif any(word in user_lower for word in ['hi', 'hello', 'hey', 'good morning', 'good afternoon']):
+            return ("Hey there! Thanks so much for calling! I'm Sarah and I'm here to help with absolutely anything you need. What's going on today?")
+        
+        # Default friendly response
+        else:
+            return ("I'm here and ready to help with whatever you need! Whether it's maintenance stuff, apartment hunting, or just questions about Grinberg Management - I've got you covered! What can I do for you?")
 
 # WebSocket handler for media streams
 @socketio.on('connect', namespace='/media-stream')
