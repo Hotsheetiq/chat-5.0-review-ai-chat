@@ -27,17 +27,17 @@ def generate_sarah_response(text_input: str) -> str:
     """Generate Sarah's enthusiastic response"""
     try:
         if not openai_client:
-            return "I'm super excited to help! Let me transfer you to our amazing team at (718) 414-6984!"
+            return "Oh WOW, I'm absolutely THRILLED you called! Let me get you to our incredible team at (718) 414-6984!"
             
-        system_prompt = """You are Sarah from Grinberg Management - super bubbly, happy, and naturally conversational! You're a real person who genuinely loves helping people with their apartment needs!
+        system_prompt = """You are Sarah from Grinberg Management - SUPER excited, bubbly, and absolutely LOVE helping people! You're genuinely thrilled about everything and use lots of exclamation points!
 
-Keep responses under 50 words. Sound natural and conversational, not like you're reading a script!
+Keep responses under 40 words but pack them with energy! Sound like you just had the best coffee ever!
 
 Key info:
 - Office: 31 Port Richmond Ave, hours 9-5 Monday-Friday Eastern Time  
-- For transfers: "Let me get you to Diane or Janier at (718) 414-6984!"
-- Be warm, friendly, and speak like you're talking to a friend
-- Use natural speech patterns with contractions and casual phrases"""
+- For transfers: "I'd love to get you to Diane or Janier at (718) 414-6984!"
+- Use words like "awesome," "fantastic," "amazing," "love," "excited"
+- Sound like you're bouncing with enthusiasm!"""
 
         response = openai_client.chat.completions.create(
             model="gpt-4o",  # the newest OpenAI model is "gpt-4o" which was released May 13, 2024. do not change this unless explicitly requested by the user
@@ -49,11 +49,11 @@ Key info:
             temperature=0.8
         )
         
-        return response.choices[0].message.content or "I'm so excited to help you!"
+        return response.choices[0].message.content or "Oh my gosh, I'm SO excited to help you! This is fantastic!"
         
     except Exception as e:
         logger.error(f"OpenAI error: {e}")
-        return "I'm having a little technical hiccup, but I'm still super excited to help!"
+        return "Ooh, I'm having a tiny technical moment, but I'm still absolutely THRILLED to help you! This is so exciting!"
 
 def create_app():
     """Create Flask app compatible with gunicorn"""
@@ -72,7 +72,7 @@ def create_app():
             response = VoiceResponse()
             
             if not OPENAI_API_KEY:
-                response.say("Hi! Thanks for calling Grinberg Management! I'm having technical issues right now, but I'd love to help! Please leave a message after the beep and we'll get back to you super quickly!",
+                response.say("Hi there! OH MY GOSH, thank you for calling Grinberg Management! I'm Sarah and I'm having some technical hiccups, but I'm SO excited to help! Leave me a message and I'll get back to you ASAP!",
                             voice='Polly.Joanna-Neural')
                 response.record(timeout=30, transcribe=False)
                 return str(response)
@@ -137,7 +137,7 @@ def create_app():
             
             # Check if this needs transfer or more conversation
             if any(word in speech_result.lower() for word in ['transfer', 'human', 'person', 'manager', 'speak to someone']):
-                response.say("Of course! Let me connect you with Diane or Janier right now!",
+                response.say("Absolutely! I'm SO excited to get you connected with Diane or Janier right now!",
                             voice='Polly.Joanna-Neural')
                 response.dial('(718) 414-6984')
             elif any(word in ai_response.lower() for word in ['transfer', '414-6984']):

@@ -101,7 +101,7 @@ The application is designed for cloud deployment with the following consideratio
 - **Sarah's Natural Voice**: Uses Polly.Joanna-Neural for warm, bubbly female voice - "Hi there! I'm Sarah!"
 - **Professional Call Transfer System**: Seamless transfer to (718) 414-6984 for non-apartment questions
 - **Smart Transfer Logic**: Any unrecognized requests or human transfer requests automatically route to Diane or Janier  
-- **Bubbly Enthusiastic Personality**: Sarah is genuinely excited and enthusiastic, using words like "love," "fantastic," "awesome," and "excited" with authentic positive energy  
+- **Super High-Energy Personality**: Sarah is absolutely THRILLED and bouncing with enthusiasm, using exclamation points and words like "amazing," "fantastic," "awesome," "love," and "SO excited"  
 - **Natural Conversation Style**: Sarah speaks like an enthusiastic, helpful friend who's thrilled to assist with anything
 - **Context-Rich Memory System**: Sarah remembers conversation topics to avoid repetition while maintaining natural flow
 - **Emergency Response Protocol**: Immediate priority handling for urgent maintenance with proper escalation
