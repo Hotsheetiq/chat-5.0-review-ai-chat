@@ -78,20 +78,23 @@ def handle_incoming_call():
             response.record(timeout=30, transcribe=False)
             return str(response)
         
-        # Professional greeting and connect to real-time AI
+        # Professional greeting with speech gathering for now
         response.say("Hello, and thank you for calling our property management office. "
-                    "Please hold while I connect you to our AI assistant.")
-        response.pause(length=1)
-        response.say("You may begin speaking now.")
+                    "I'm your AI assistant and I can help with maintenance requests, "
+                    "leasing information, and general property questions. "
+                    "Please tell me how I can help you today.")
         
-        # Get the host from the request
-        host = request.host
+        # Use speech gathering instead of media streaming for better reliability
+        gather = response.gather(
+            input='speech',
+            timeout=10,
+            speech_timeout='auto',
+            action='/process-speech',
+            method='POST'
+        )
         
-        # Connect to media stream for real-time AI conversation
-        connect = Connect()
-        stream_url = f'wss://{host}/media-stream?caller={caller_phone}'
-        connect.stream(url=stream_url)
-        response.append(connect)
+        # Fallback if no speech detected
+        response.say("I didn't hear anything. Please call back and try again.")
         
         return str(response)
         
@@ -175,44 +178,37 @@ def process_speech():
             )
             return str(response)
         
-        # Simple keyword-based processing (would be replaced with OpenAI in production)
-        speech_lower = speech_result.lower()
-        
-        # Look up caller information
-        caller_info = {"phone": caller_phone, "is_tenant": False, "tenant_data": None}
-        
-        if rent_manager:
-            try:
-                # This would be an async call in production, simplified for demo
-                # tenant_data = await rent_manager.lookup_tenant_by_phone(caller_phone)
-                # For now, simulate tenant lookup
-                logger.info(f"Looking up tenant for phone: {caller_phone}")
-            except Exception as e:
-                logger.error(f"Error looking up tenant: {e}")
-        
-        # Process different types of requests
-        if any(word in speech_lower for word in ['maintenance', 'repair', 'broken', 'fix']):
-            response.say("I understand you have a maintenance request. "
-                        "I'm creating a service ticket for you right now. "
-                        "Our maintenance team will follow up within 24 hours. "
-                        "Is there anything else I can help you with?")
-                        
-        elif any(word in speech_lower for word in ['lease', 'rent', 'available', 'apartment']):
-            response.say("Thank you for your interest in our property. "
-                        "I'm creating a follow-up task for our leasing team. "
-                        "Someone will contact you within one business day with "
-                        "information about available units. "
-                        "Is there anything else I can help you with?")
-                        
-        elif any(word in speech_lower for word in ['hours', 'office', 'contact']):
-            hours_info = property_data.get_office_hours()
-            response.say(f"Our office hours are {hours_info}. "
-                        "Is there anything else I can help you with?")
-                        
-        else:
-            response.say("Thank you for your call. I've made a note of your request "
-                        "and someone from our team will follow up with you shortly. "
-                        "Is there anything else I can help you with?")
+        # Use OpenAI for intelligent response generation
+        try:
+            ai_response = generate_ai_response(speech_result, caller_phone)
+            response.say(ai_response)
+        except Exception as ai_error:
+            logger.error(f"OpenAI error: {ai_error}")
+            # Fallback to basic keyword processing
+            speech_lower = speech_result.lower()
+            
+            if any(word in speech_lower for word in ['maintenance', 'repair', 'broken', 'fix']):
+                response.say("I understand you have a maintenance request. "
+                            "I'm creating a service ticket for you right now. "
+                            "Our maintenance team will follow up within 24 hours. "
+                            "Is there anything else I can help you with?")
+                            
+            elif any(word in speech_lower for word in ['lease', 'rent', 'available', 'apartment']):
+                response.say("Thank you for your interest in our property. "
+                            "I'm creating a follow-up task for our leasing team. "
+                            "Someone will contact you within one business day with "
+                            "information about available units. "
+                            "Is there anything else I can help you with?")
+                            
+            elif any(word in speech_lower for word in ['hours', 'office', 'contact']):
+                hours_info = property_data.get_office_hours()
+                response.say(f"Our office hours are {hours_info}. "
+                            "Is there anything else I can help you with?")
+                            
+            else:
+                response.say("Thank you for your call. I've made a note of your request "
+                            "and someone from our team will follow up with you shortly. "
+                            "Is there anything else I can help you with?")
         
         # Give option to continue or end call
         response.gather(
@@ -246,11 +242,8 @@ def handle_media_stream_connect(auth):
         disconnect()
         return False
     
-    # Store caller info in session
-    from flask import session
-    session['caller'] = caller
-    session['is_tenant'] = False
-    session['conversation_log'] = []
+    # Store caller info (using simple logging for now)
+    logger.info(f"Media stream session started for caller: {caller}")
     
     # Look up caller if Rent Manager is available
     if rent_manager:
@@ -308,8 +301,7 @@ def handle_stream_start(data):
 @socketio.on('disconnect', namespace='/media-stream')
 def handle_media_stream_disconnect():
     """Handle WebSocket disconnection."""
-    caller = session.get('caller', 'Unknown')
-    logger.info(f"Media stream disconnected: {caller}")
+    logger.info("Media stream disconnected")
 
 if __name__ == '__main__':
     # For development
