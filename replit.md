@@ -91,7 +91,9 @@ The application is designed for cloud deployment with the following consideratio
 ## Recent Changes
 
 ### July 23, 2025 - Sarah Voice & Intelligence Complete Overhaul
-- **Premium Voice Upgrade**: Switched to Polly.Ruth-Neural for warm, expressive, non-robotic American accent
+- **Premium Voice Upgrade**: Switched to Polly.Joanna-Neural for warm, expressive, natural American accent
+- **Call Disconnect Fix**: Resolved TwiML encoding issue causing immediate call disconnections
+- **Extended Timeout Settings**: Increased conversation timeouts (20s initial, 15s follow-up) to prevent premature disconnections
 - **Smart Time-Aware Intelligence**: Sarah now accurately answers "Is the office open today?" with real-time awareness
 - **Context-Rich Conversation System**: Implemented memory to eliminate repetitive responses and maintain conversation flow
 - **Emergency Response Protocol**: Immediate priority handling for urgent maintenance (flooding, no heat, power outages)
@@ -100,4 +102,4 @@ The application is designed for cloud deployment with the following consideratio
 - **Intelligent Fallback System**: When OpenAI quota limits hit, Sarah uses sophisticated keyword processing instead of basic responses
 - **Professional Maintenance Workflows**: Categorizes issues by type (plumbing, electrical, HVAC) with appropriate urgency levels
 - **Leasing Intelligence**: Contextual apartment search assistance with size and timing collection
-- **Greeting Excellence**: Warm "Hey there! It's a great day at Grinberg Management, this is Sarah" delivery
+- **Greeting Excellence**: Warm "Hey there! This is Sarah from Grinberg Management, and I'm having such a great day!" delivery
