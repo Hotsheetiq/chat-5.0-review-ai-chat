@@ -227,6 +227,88 @@ def process_speech():
                     "Please call back and try again.")
         return str(response)
 
+# Conversation memory to avoid repetition
+conversation_memory = {}
+
+def get_intelligent_response(user_input, caller_phone):
+    """Intelligent response system that adapts and doesn't repeat itself."""
+    user_lower = user_input.lower().strip()
+    
+    # Initialize conversation memory for this caller
+    if caller_phone not in conversation_memory:
+        conversation_memory[caller_phone] = {
+            'topics_discussed': set(),
+            'questions_asked': [],
+            'conversation_stage': 'greeting'
+        }
+    
+    memory = conversation_memory[caller_phone]
+    
+    # AI/Human identity questions - vary responses
+    if any(word in user_lower for word in ['human', 'real person', 'real', 'robot', 'ai', 'computer', 'bot']):
+        if 'identity' not in memory['topics_discussed']:
+            memory['topics_discussed'].add('identity')
+            return "I'm an AI assistant, but I'm here to help you just like any team member would! What do you need help with today?"
+        else:
+            return "Yep, still your friendly AI assistant! Now, what can I actually help you with?"
+    
+    # Location/office questions with specific help
+    elif any(word in user_lower for word in ['where', 'located', 'address', 'office', 'location']):
+        if 'location' not in memory['topics_discussed']:
+            memory['topics_discussed'].add('location')
+            return "We manage properties throughout the area. Are you a current tenant needing to reach us, or are you interested in viewing available apartments? That'll help me point you in the right direction."
+        else:
+            return "Which specific location do you need? Are you looking for our leasing office or need to know about a specific property address?"
+    
+    # Maintenance requests - get specific
+    elif any(word in user_lower for word in ['fix', 'broken', 'maintenance', 'repair', 'not working', 'problem', 'issue']):
+        memory['topics_discussed'].add('maintenance')
+        memory['conversation_stage'] = 'maintenance'
+        return "I can help get that fixed right away. What's the specific issue you're having? Is it plumbing, electrical, heating, or something else?"
+    
+    # Leasing inquiries - specific questions
+    elif any(word in user_lower for word in ['apartment', 'rent', 'lease', 'available', 'move in', 'unit', 'bedroom']):
+        memory['topics_discussed'].add('leasing')
+        memory['conversation_stage'] = 'leasing'
+        return "Great! I'd love to help you find the right place. What size apartment are you looking for, and do you have a preferred move-in date?"
+    
+    # Follow-up responses based on conversation stage
+    elif memory['conversation_stage'] == 'maintenance':
+        if any(word in user_lower for word in ['water', 'plumbing', 'toilet', 'sink', 'leak']):
+            return "Got it, plumbing issue. I'm creating a priority service request for you right now. Can you give me your apartment number and a good callback number? Our maintenance team will contact you within 2 hours."
+        elif any(word in user_lower for word in ['heat', 'cold', 'hot', 'ac', 'air', 'temperature']):
+            return "Temperature issue - that's definitely a priority! I'm putting in an urgent request. What's your unit number? We'll have someone out to check your HVAC system today."
+        elif any(word in user_lower for word in ['electric', 'power', 'light', 'outlet']):
+            return "Electrical problems can be serious. I'm marking this as urgent. What's your unit number? Our maintenance team will prioritize this and get someone out as soon as possible."
+        else:
+            return "I'm creating a maintenance request for that issue. Can you give me your unit number and the best phone number to reach you? We'll get this taken care of quickly."
+    
+    elif memory['conversation_stage'] == 'leasing':
+        if any(word in user_lower for word in ['one', '1', 'studio']):
+            return "Perfect! We have some great one-bedroom and studio options. When are you looking to move in? And do you have any specific preferences for location or amenities?"
+        elif any(word in user_lower for word in ['two', '2', 'three', '3']):
+            return "Excellent choice! Larger units are really popular. I can check availability for you. What's your ideal move-in timeframe, and are there any must-have features you're looking for?"
+        else:
+            return "I can definitely help you find something that fits your needs. What size space works best for you, and when would you ideally like to move in?"
+    
+    # Generic helpful responses that don't repeat
+    elif any(word in user_lower for word in ['hi', 'hello', 'hey', 'good morning', 'good afternoon']):
+        if len(memory['questions_asked']) == 0:
+            return "Hi there! I'm Sarah. How can I help you today?"
+        else:
+            return "What else can I help you with?"
+    
+    elif any(word in user_lower for word in ['thank', 'thanks']):
+        return "You're very welcome! Is there anything else you need help with today?"
+    
+    # Smart default that asks for clarification
+    else:
+        memory['questions_asked'].append(user_input)
+        if len(memory['questions_asked']) == 1:
+            return "I want to make sure I help you with exactly what you need. Are you calling about maintenance, looking for an apartment, or do you have questions about your current lease?"
+        else:
+            return "I'm not quite sure how to help with that. Could you tell me a bit more about what you need? I can assist with maintenance requests, apartment availability, or general property questions."
+
 def create_natural_say(response_obj, text):
     """Helper function to add happy American voice with natural speech patterns."""
     # Add natural pauses and emphasis to make speech less robotic
@@ -275,32 +357,8 @@ Remember: You're speaking on a phone call with a bubbly, friendly personality - 
         
     except Exception as e:
         logger.error(f"OpenAI API error: {e}")
-        # Smart fallback responses based on common questions - natural and conversational
-        user_lower = user_input.lower()
-        
-        # Respond naturally to "are you human/real person" questions
-        if any(word in user_lower for word in ['human', 'real person', 'real', 'robot', 'ai', 'computer']):
-            return ("Ha! You caught me - I'm actually an AI, but honestly? I absolutely love helping folks here at Grinberg Management! I'm like your super enthusiastic digital assistant who's here 24/7. So what's going on? Need help with maintenance, looking at apartments, or got questions?")
-        
-        # Location questions
-        elif any(word in user_lower for word in ['where', 'located', 'address', 'office']):
-            return ("Oh great question! So we've got properties all over, but if you're asking about our main office, I can totally help you figure out which location you need! Are you a current tenant with a maintenance issue, or are you looking to check out some apartments?")
-        
-        # Maintenance requests
-        elif any(word in user_lower for word in ['fix', 'broken', 'maintenance', 'repair', 'not working', 'problem']):
-            return ("Oh no! Something's giving you trouble? Don't worry, we'll get that sorted out super quick! Tell me what's going on and I'll get our awesome maintenance team on it right away!")
-        
-        # Leasing/apartment inquiries
-        elif any(word in user_lower for word in ['apartment', 'rent', 'lease', 'available', 'move in']):
-            return ("That's so exciting! Looking for a new place? I'd love to help you find something perfect! What kind of space are you thinking about, and do you have a preferred area in mind?")
-        
-        # General greeting responses
-        elif any(word in user_lower for word in ['hi', 'hello', 'hey', 'good morning', 'good afternoon']):
-            return ("Hey there! Thanks so much for calling! I'm Sarah and I'm here to help with absolutely anything you need. What's going on today?")
-        
-        # Default friendly response
-        else:
-            return ("I'm here and ready to help with whatever you need! Whether it's maintenance stuff, apartment hunting, or just questions about Grinberg Management - I've got you covered! What can I do for you?")
+        # Intelligent conversation system - context-aware responses
+        return get_intelligent_response(user_input, caller_phone)
 
 # WebSocket handler for media streams
 @socketio.on('connect', namespace='/media-stream')
