@@ -3,6 +3,7 @@ import json
 import base64
 import asyncio
 import logging
+import websockets
 from threading import Thread
 from flask import Flask, request, render_template, jsonify
 from flask_socketio import SocketIO, emit, disconnect
@@ -77,21 +78,20 @@ def handle_incoming_call():
             response.record(timeout=30, transcribe=False)
             return str(response)
         
-        # Professional greeting for voice assistant
+        # Professional greeting and connect to real-time AI
         response.say("Hello, and thank you for calling our property management office. "
-                    "I'm your AI assistant and I can help with maintenance requests, "
-                    "leasing information, and general property questions. "
-                    "How can I help you today?")
+                    "Please hold while I connect you to our AI assistant.")
+        response.pause(length=1)
+        response.say("You may begin speaking now.")
         
-        # For now, provide a simple response system
-        # In production, this would connect to the real-time AI system
-        response.gather(
-            input='speech',
-            timeout=10,
-            speech_timeout='auto',
-            action='/process-speech',
-            method='POST'
-        )
+        # Get the host from the request
+        host = request.host
+        
+        # Connect to media stream for real-time AI conversation
+        connect = Connect()
+        stream_url = f'wss://{host}/media-stream?caller={caller_phone}'
+        connect.stream(url=stream_url)
+        response.append(connect)
         
         return str(response)
         
@@ -182,6 +182,83 @@ def process_speech():
         response.say("I'm sorry, I had trouble processing your request. "
                     "Please call back and try again.")
         return str(response)
+
+# WebSocket handler for media streams
+@socketio.on('connect', namespace='/media-stream')
+def handle_media_stream_connect(auth):
+    """Handle WebSocket connection for media stream."""
+    caller = request.args.get('caller', 'Unknown')
+    logger.info(f"Media stream WebSocket connected from: {caller}")
+    
+    if not OPENAI_API_KEY:
+        logger.error("OpenAI API key not available")
+        disconnect()
+        return False
+    
+    # Store caller info in session
+    from flask import session
+    session['caller'] = caller
+    session['is_tenant'] = False
+    session['conversation_log'] = []
+    
+    # Look up caller if Rent Manager is available
+    if rent_manager:
+        try:
+            # For now, we'll simulate this lookup
+            logger.info(f"Looking up caller: {caller}")
+        except Exception as e:
+            logger.error(f"Error looking up caller: {e}")
+    
+    emit('status', {'message': 'Connected to voice assistant'})
+
+@socketio.on('media', namespace='/media-stream')
+def handle_media_data(data):
+    """Handle incoming media data from Twilio."""
+    try:
+        # In a full implementation, this would:
+        # 1. Forward audio to OpenAI Realtime API
+        # 2. Process the response
+        # 3. Send audio back to Twilio
+        
+        # For now, we'll acknowledge the data
+        logger.debug("Received media data")
+        
+        # Simulate AI processing and response
+        if data.get('event') == 'media':
+            # Process audio data here
+            payload = data.get('media', {}).get('payload', '')
+            
+            # Simple echo for testing - in production this would go to OpenAI
+            emit('media', {
+                'event': 'media',
+                'streamSid': data.get('streamSid'),
+                'media': {'payload': payload}
+            })
+            
+    except Exception as e:
+        logger.error(f"Error handling media data: {e}")
+
+@socketio.on('start', namespace='/media-stream')
+def handle_stream_start(data):
+    """Handle stream start event."""
+    stream_sid = data.get('streamSid')
+    logger.info(f"Media stream started: {stream_sid}")
+    
+    # Send initial AI greeting
+    greeting_response = {
+        'event': 'media',
+        'streamSid': stream_sid,
+        'media': {
+            'payload': base64.b64encode(b'Hello! I\'m your property management AI assistant. How can I help you today?').decode()
+        }
+    }
+    emit('media', greeting_response)
+
+@socketio.on('disconnect', namespace='/media-stream')
+def handle_media_stream_disconnect():
+    """Handle WebSocket disconnection."""
+    caller = session.get('caller', 'Unknown')
+    logger.info(f"Media stream disconnected: {caller}")
 
 if __name__ == '__main__':
     # For development
