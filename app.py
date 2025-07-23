@@ -78,12 +78,9 @@ def handle_incoming_call():
             response.record(timeout=30, transcribe=False)
             return str(response)
         
-        # Professional greeting with Sarah introduction - using natural voice
-        response.say("Hello, and thank you for calling Grinberg Properties. "
-                    "My name is Sarah, and I'm Grinberg's newest addition to our AI team. "
-                    "I can help with maintenance requests, leasing information, and general property questions. "
-                    "Please tell me how I can help you today.",
-                    voice='Polly.Joanna-Neural', language='en-US')
+        # Bubbly greeting with Sarah introduction
+        response.say("Hey! Thanks for calling Grinberg Management, this is Sarah! How can I help you today?",
+                    voice='Polly.Amy-Neural', language='en-US')
         
         # Use speech gathering instead of media streaming for better reliability
         gather = response.gather(
@@ -94,9 +91,9 @@ def handle_incoming_call():
             method='POST'
         )
         
-        # Fallback if no speech detected - natural voice
-        response.say("I didn't hear anything. Please call back and try again.",
-                    voice='Polly.Joanna-Neural', language='en-US')
+        # Fallback if no speech detected - bubbly voice
+        response.say("Oops! I didn't catch that. Give me a call back and try again!",
+                    voice='Polly.Amy-Neural', language='en-US')
         
         return str(response)
         
@@ -113,11 +110,11 @@ def fallback_call():
         logger.warning("Fallback handler activated")
         response = VoiceResponse()
         
-        # Professional fallback message from Sarah with natural voice
-        create_natural_say(response, "Thank you for calling Grinberg Properties. "
-                    "This is Sarah, and we're experiencing temporary technical difficulties. "
-                    "Please call back in a few minutes, or leave a detailed message "
-                    "after the beep including your name, phone number, and reason for calling.")
+        # Bubbly fallback message from Sarah
+        create_natural_say(response, "Hey! This is Sarah from Grinberg Management. "
+                    "We're having some technical issues right now, but I still want to help! "
+                    "Please call back in a few minutes, or leave me a message after the beep "
+                    "with your name, number, and what you need - I'll make sure someone gets back to you!")
         
         # Record message for follow-up
         response.record(
@@ -191,27 +188,24 @@ def process_speech():
             speech_lower = speech_result.lower()
             
             if any(word in speech_lower for word in ['maintenance', 'repair', 'broken', 'fix']):
-                create_natural_say(response, "I understand you have a maintenance request. "
-                            "I'm creating a service ticket for you right now with Grinberg Properties. "
-                            "Our maintenance team will follow up within 24 hours. "
-                            "Is there anything else I can help you with?")
+                create_natural_say(response, "Oh no! I'm so sorry you're having that issue! "
+                            "I'm creating a service ticket for you right now - our awesome maintenance team "
+                            "will take care of you within 24 hours! Anything else I can help with?")
                             
             elif any(word in speech_lower for word in ['lease', 'rent', 'available', 'apartment']):
-                create_natural_say(response, "Thank you for your interest in Grinberg Properties. "
-                            "I'm creating a follow-up task for our leasing team. "
-                            "Someone will contact you within one business day with "
-                            "information about available units. "
-                            "Is there anything else I can help you with?")
+                create_natural_say(response, "That's so exciting! I'd love to help you find a great place! "
+                            "I'm setting up a follow-up for our leasing team - they'll reach out within one business day "
+                            "with all the info about our available units! What else can I help you with?")
                             
             elif any(word in speech_lower for word in ['hours', 'office', 'contact']):
                 hours_info = property_data.get_office_hours()
-                create_natural_say(response, f"Our Grinberg Properties office hours are {hours_info}. "
-                            "Is there anything else I can help you with?")
+                create_natural_say(response, f"Great question! Our Grinberg Management office hours are {hours_info}. "
+                            "Anything else I can help you with today?")
                             
             else:
-                create_natural_say(response, "Thank you for calling Grinberg Properties. I've made a note of your request "
-                            "and someone from our team will follow up with you shortly. "
-                            "Is there anything else I can help you with?")
+                create_natural_say(response, "Thanks so much for calling Grinberg Management! I've totally got this covered - "
+                            "someone from our awesome team will follow up with you super soon! "
+                            "Anything else I can help you with today?")
         
         # Give option to continue or end call
         response.gather(
@@ -234,8 +228,8 @@ def process_speech():
         return str(response)
 
 def create_natural_say(response_obj, text):
-    """Helper function to add natural voice to all responses."""
-    return response_obj.say(text, voice='Polly.Joanna-Neural', language='en-US')
+    """Helper function to add bubbly natural voice to all responses."""
+    return response_obj.say(text, voice='Polly.Amy-Neural', language='en-US')
 
 def generate_ai_response(user_input, caller_phone):
     """Generate AI response using OpenAI with Sarah's personality."""
@@ -243,22 +237,24 @@ def generate_ai_response(user_input, caller_phone):
         from openai import OpenAI
         client = OpenAI(api_key=OPENAI_API_KEY)
         
-        # System prompt to make Sarah respond as Grinberg's AI assistant
-        system_prompt = """You are Sarah, Grinberg Properties' newest AI team member. You are friendly, professional, and knowledgeable about property management.
+        # System prompt to make Sarah respond as Grinberg's bubbly AI assistant
+        system_prompt = """You are Sarah, Grinberg Management's bubbly and friendly AI team member. You're enthusiastic, upbeat, and genuinely excited to help people with their property needs.
 
-Key points about your role:
-- You work for Grinberg Properties, a professional property management company
+Key points about your personality and role:
+- You work for Grinberg Management and love helping people
+- You're bubbly, enthusiastic, and use casual friendly language 
 - You help with maintenance requests, leasing inquiries, and general property questions
-- You can create service tickets, schedule follow-ups, and provide property information
-- You're personable but professional - speak naturally like a helpful team member
-- Keep responses concise and actionable for phone conversations
-- Always offer to help with additional questions
+- You speak like a cheerful, helpful friend - not overly formal
+- Use words like "awesome," "great," "totally," and exclamation points in your tone
+- Keep responses conversational, upbeat, and not too long for phone calls
+- Always sound excited to help with whatever they need
 
-For maintenance requests: Create a service ticket and give a timeline
-For leasing inquiries: Gather contact info and schedule follow-up
-For general questions: Provide helpful information about Grinberg Properties
+When someone asks if you're real: Be honest that you're an AI but emphasize how much you love helping
+For maintenance requests: Sound sympathetic and excited to get it fixed quickly
+For leasing inquiries: Be enthusiastic about the properties and eager to help
+For general questions: Be bubbly and helpful with Grinberg Management info
 
-Remember: You're speaking on a phone call, so keep responses conversational and not too long."""
+Remember: You're speaking on a phone call with a bubbly, friendly personality - make people smile!"""
 
         response = client.chat.completions.create(
             model="gpt-4o",
