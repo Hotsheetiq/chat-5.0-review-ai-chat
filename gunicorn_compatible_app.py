@@ -23,13 +23,13 @@ openai_client = OpenAI(api_key=OPENAI_API_KEY) if OPENAI_API_KEY else None
 # Call state tracking
 call_states = {}
 
-def generate_mike_response(text_input: str) -> str:
-    """Generate Mike's enthusiastic response"""
+def generate_sarah_response(text_input: str) -> str:
+    """Generate Sarah's enthusiastic response"""
     try:
         if not openai_client:
             return "I'm super excited to help! Let me transfer you to our amazing team at (718) 414-6984!"
             
-        system_prompt = """You are Mike from Grinberg Management - super bubbly, happy, and naturally conversational! You're a real person who genuinely loves helping people with their apartment needs!
+        system_prompt = """You are Sarah from Grinberg Management - super bubbly, happy, and naturally conversational! You're a real person who genuinely loves helping people with their apartment needs!
 
 Keep responses under 50 words. Sound natural and conversational, not like you're reading a script!
 
@@ -83,8 +83,8 @@ def create_app():
                 'started': True
             }
             
-            # Mike's natural, bubbly greeting  
-            greeting = "Hi there! It's a beautiful day here at Grinberg Management! I'm Mike, and I'm so happy you called! How can I help you today?"
+            # Sarah's natural, bubbly greeting  
+            greeting = "Hi there! It's a beautiful day here at Grinberg Management! I'm Sarah, and I'm so happy you called! How can I help you today?"
             
             response.say(greeting, voice='Polly.Joanna-Neural')
             
@@ -129,9 +129,9 @@ def create_app():
                 response.dial('(718) 414-6984')
                 return str(response)
             
-            # Generate Mike's response
-            ai_response = generate_mike_response(speech_result)
-            logger.info(f"Mike's response: {ai_response}")
+            # Generate Sarah's response
+            ai_response = generate_sarah_response(speech_result)
+            logger.info(f"Sarah's response: {ai_response}")
             
             response.say(ai_response, voice='Polly.Joanna-Neural')
             
@@ -195,12 +195,12 @@ def create_app():
                              elevenlabs_connected=bool(ELEVENLABS_API_KEY),
                              recent_calls=recent_calls)
     
-    @app.route('/test-mike')
-    def test_mike():
-        """Test Mike's responses"""
+    @app.route('/test-sarah')
+    def test_sarah():
+        """Test Sarah's responses"""
         test_input = request.args.get('input', 'I need help with my apartment')
-        response = generate_mike_response(test_input)
-        return jsonify({'input': test_input, 'mike_response': response})
+        response = generate_sarah_response(test_input)
+        return jsonify({'input': test_input, 'sarah_response': response})
     
     return app
 
