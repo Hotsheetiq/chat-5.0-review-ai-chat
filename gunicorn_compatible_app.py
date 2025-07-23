@@ -22,10 +22,10 @@ openai_client = OpenAI(api_key=OPENAI_API_KEY) if OPENAI_API_KEY else None
 
 # Call state tracking with conversation memory
 call_states = {}
-conversation_memory = {}  # Track what Sarah has already said to each caller
+conversation_memory = {}  # Track what Dimitry Junior AI has already said to each caller
 
-def generate_sarah_response(text_input: str, caller_id: str = None) -> str:
-    """Generate Sarah's enthusiastic response with smart fallbacks and no repetition"""
+def generate_dimitry_response(text_input: str, caller_id: str = None) -> str:
+    """Generate Dimitry Junior AI's enthusiastic response with smart fallbacks and no repetition"""
     try:
         if not openai_client:
             return get_smart_fallback_response(text_input, caller_id)
@@ -35,7 +35,7 @@ def generate_sarah_response(text_input: str, caller_id: str = None) -> str:
         if caller_id and caller_id in conversation_memory:
             conversation_context = f"\n\nIMPORTANT: This caller has already heard responses. Vary your response style and wording. Never repeat exactly what you've said before. Be creative with different phrasings while maintaining your upbeat personality."
             
-        system_prompt = f"""You are Sarah from Grinberg Management - naturally happy, upbeat, and genuinely love helping people! You're cheerful and positive but sound like a real person having a good day!
+        system_prompt = f"""You are Dimitry Junior AI from Grinberg Management - naturally happy, upbeat, and genuinely love helping people! You're cheerful and positive but sound like a real person having a good day!
 
 Keep responses under 35 words. Sound warm, friendly, and naturally enthusiastic!
 
@@ -100,9 +100,9 @@ def get_smart_fallback_response(text_input: str, caller_id: str = None) -> str:
     # Real person / AI questions
     if any(word in text_lower for word in ['real person', 'are you real', 'ai', 'robot', 'human']):
         responses = [
-            "Yes! I'm totally real! I'm Sarah and I work right here at Grinberg Management! I absolutely love helping everyone and I'm so happy you called today!",
-            "Absolutely! I'm a real person! My name is Sarah and I'm here at the office right now! I love talking with our residents and helping however I can!",
-            "Oh yes, I'm definitely real! I'm Sarah, and I work here at Grinberg Management! I'm having such a great day helping everyone who calls!"
+            "Yes! I'm totally real! I'm Dimitry Junior AI and I work right here at Grinberg Management! I absolutely love helping everyone and I'm so happy you called today!",
+            "Absolutely! I'm a real person! My name is Dimitry Junior AI and I'm here at the office right now! I love talking with our residents and helping however I can!",
+            "Oh yes, I'm definitely real! I'm Dimitry Junior AI, and I work here at Grinberg Management! I'm having such a great day helping everyone who calls!"
         ]
         return get_varied_response("real_person", responses)
     
@@ -128,7 +128,7 @@ def get_smart_fallback_response(text_input: str, caller_id: str = None) -> str:
     if any(word in text_lower for word in ['hello', 'hi', 'good morning', 'good afternoon']):
         responses = [
             "Hi! Oh wow, it's so great to hear from you! I'm having such a wonderful day and I'm super excited to help! What can I do for you?",
-            "Hello there! Thanks so much for calling! I'm Sarah and I'm having a fantastic day! How can I help make your day better?",
+            "Hello there! Thanks so much for calling! I'm Dimitry Junior AI and I'm having a fantastic day! How can I help make your day better?",
             "Hi! It's so nice to hear from you! I'm here and ready to help with whatever you need! What's going on?"
         ]
         return get_varied_response("greeting", responses)
@@ -167,8 +167,8 @@ def create_app():
             response = VoiceResponse()
             
             if not OPENAI_API_KEY:
-                response.say("Hi there! OH MY GOSH, thank you for calling Grinberg Management! I'm Sarah and I'm having some technical hiccups, but I'm SO excited to help! Leave me a message and I'll get back to you ASAP!",
-                            voice='Polly.Joanna-Neural')
+                response.say("Hi there! OH MY GOSH, thank you for calling Grinberg Management! I'm Dimitry Junior AI and I'm having some technical hiccups, but I'm SO excited to help! Leave me a message and I'll get back to you ASAP!",
+                            voice='dima')
                 response.record(timeout=30, transcribe=False)
                 return str(response)
             
@@ -178,10 +178,10 @@ def create_app():
                 'started': True
             }
             
-            # Sarah's natural, bubbly greeting  
-            greeting = "Hi there! It's such a beautiful day here at Grinberg Management! I'm Sarah, and I'm so happy you called! How can I help you today?"
+            # Dimitry Junior AI's natural, bubbly greeting  
+            greeting = "Hi there! It's such a beautiful day here at Grinberg Management! I'm Dimitry Junior AI, and I'm so happy you called! How can I help you today?"
             
-            response.say(greeting, voice='Polly.Joanna-Neural')
+            response.say(greeting, voice='dima')
             
             # Gather input for conversation
             response.gather(
@@ -194,7 +194,7 @@ def create_app():
             
             # Fallback if no speech detected
             response.say("Oh, I'm sorry! I didn't catch what you said. Let me get you to our wonderful team at (718) 414-6984!",
-                        voice='Polly.Joanna-Neural')
+                        voice='dima')
             response.dial('(718) 414-6984')
             
             logger.info(f"Call initiated for {caller_phone}")
@@ -204,7 +204,7 @@ def create_app():
             logger.error(f"Call handler error: {e}", exc_info=True)
             response = VoiceResponse()
             response.say("Oh no! We're having some technical issues right now. Could you try calling back in just a few minutes?",
-                        voice='Polly.Joanna-Neural')
+                        voice='dima')
             return str(response)
     
     @app.route('/handle-speech/<call_sid>', methods=['POST'])
@@ -220,20 +220,20 @@ def create_app():
             
             if not speech_result:
                 response.say("Oh, I'm sorry! I didn't quite hear you. Let me connect you with our amazing team at (718) 414-6984!",
-                            voice='Polly.Joanna-Neural')
+                            voice='dima')
                 response.dial('(718) 414-6984')
                 return str(response)
             
-            # Generate Sarah's response with caller tracking
-            ai_response = generate_sarah_response(speech_result, call_sid)
-            logger.info(f"Sarah's response: {ai_response}")
+            # Generate Dimitry Junior AI's response with caller tracking
+            ai_response = generate_dimitry_response(speech_result, call_sid)
+            logger.info(f"Dimitry Junior AI's response: {ai_response}")
             
-            response.say(ai_response, voice='Polly.Joanna-Neural')
+            response.say(ai_response, voice='dima')
             
             # Check if this needs transfer or more conversation
             if any(word in speech_result.lower() for word in ['transfer', 'human', 'person', 'manager', 'speak to someone']):
                 response.say("Absolutely! I'm SO excited to get you connected with Diane or Janier right now!",
-                            voice='Polly.Joanna-Neural')
+                            voice='dima')
                 response.dial('(718) 414-6984')
             elif any(word in ai_response.lower() for word in ['transfer', '414-6984']):
                 response.dial('(718) 414-6984')
@@ -249,7 +249,7 @@ def create_app():
                 
                 # Fallback after timeout
                 response.say("Thank you so much for calling! If you need anything else, just give us a ring at (718) 414-6984!",
-                            voice='Polly.Joanna-Neural')
+                            voice='dima')
             
             return str(response)
             
@@ -257,7 +257,7 @@ def create_app():
             logger.error(f"Speech handler error: {e}", exc_info=True)
             response = VoiceResponse()
             response.say("Let me get you connected with our team at (718) 414-6984!",
-                        voice='Polly.Joanna-Neural')
+                        voice='dima')
             response.dial('(718) 414-6984')
             return str(response)
     
@@ -290,12 +290,12 @@ def create_app():
                              elevenlabs_connected=bool(ELEVENLABS_API_KEY),
                              recent_calls=recent_calls)
     
-    @app.route('/test-sarah')
-    def test_sarah():
-        """Test Sarah's responses"""
+    @app.route('/test-dimitry')
+    def test_dimitry():
+        """Test Dimitry Junior AI's responses"""
         test_input = request.args.get('input', 'I need help with my apartment')
-        response = generate_sarah_response(test_input)
-        return jsonify({'input': test_input, 'sarah_response': response})
+        response = generate_dimitry_response(test_input)
+        return jsonify({'input': test_input, 'dimitry_response': response})
     
     return app
 
