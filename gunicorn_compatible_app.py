@@ -29,15 +29,15 @@ def generate_sarah_response(text_input: str) -> str:
         if not openai_client:
             return get_smart_fallback_response(text_input)
             
-        system_prompt = """You are Sarah from Grinberg Management - SUPER excited, bubbly, and absolutely LOVE helping people! You're genuinely thrilled about everything and use lots of exclamation points!
+        system_prompt = """You are Sarah from Grinberg Management - naturally happy, upbeat, and genuinely love helping people! You're cheerful and positive but sound like a real person having a good day!
 
-Keep responses under 40 words but pack them with energy! Sound like you just had the best coffee ever!
+Keep responses under 35 words. Sound warm, friendly, and naturally enthusiastic!
 
 Key info:
 - Office: 31 Port Richmond Ave, hours 9-5 Monday-Friday Eastern Time  
-- For transfers: "I'd love to get you to Diane or Janier at (718) 414-6984!"
-- Use words like "awesome," "fantastic," "amazing," "love," "excited"
-- Sound like you're bouncing with enthusiasm!"""
+- For transfers: "Let me get you to Diane or Janier at seven one eight, four one four, six nine eight four!"
+- Use words like "great," "wonderful," "happy," "love," but sound natural
+- Be genuinely upbeat without being over-the-top!"""
 
         response = openai_client.chat.completions.create(
             model="gpt-4o",  # the newest OpenAI model is "gpt-4o" which was released May 13, 2024. do not change this unless explicitly requested by the user
@@ -61,19 +61,19 @@ def get_smart_fallback_response(text_input: str) -> str:
     
     # Real person / AI questions
     if any(word in text_lower for word in ['real person', 'are you real', 'ai', 'robot', 'human']):
-        return "Oh my gosh, YES! I'm absolutely a real person and I'm SO excited to help you! I work here at Grinberg Management and I LOVE talking to our residents!"
+        return "Yes! I'm totally real! I'm Sarah and I work right here at Grinberg Management! I absolutely love helping everyone and I'm so happy you called today!"
     
     # Maintenance requests
     if any(word in text_lower for word in ['maintenance', 'repair', 'broken', 'fix', 'leak', 'heat', 'hot water']):
-        return "OH WOW, I'm SO sorry you're having that issue! I'm absolutely THRILLED to help get that fixed right away! Let me connect you with our amazing maintenance team!"
+        return "Oh no! I'm so sorry you're dealing with that! But don't worry, I'm super excited to help get that fixed for you right away! Let me get you to our fantastic maintenance team!"
     
     # General apartment questions
     if any(word in text_lower for word in ['apartment', 'rent', 'lease', 'move', 'application']):
-        return "That's FANTASTIC that you're interested in our apartments! I'm absolutely THRILLED to help! Let me get you to Diane or Janier at (718) 414-6984!"
+        return "That's so exciting that you're interested in our apartments! I love helping with that! Let me connect you with Diane or Janier at seven one eight, four one four, six nine eight four!"
     
     # Greeting responses
     if any(word in text_lower for word in ['hello', 'hi', 'good morning', 'good afternoon']):
-        return "Hi there! OH MY GOSH, it's SO wonderful to hear from you! I'm absolutely THRILLED you called! How can I help make your day amazing?"
+        return "Hi! Oh wow, it's so great to hear from you! I'm having such a wonderful day and I'm super excited to help! What can I do for you?"
     
     # Default enthusiastic response
     return "I'm having a tiny technical moment, but I'm still absolutely THRILLED to help you! This is so exciting! How can I make your day fantastic?"
@@ -107,7 +107,7 @@ def create_app():
             }
             
             # Sarah's natural, bubbly greeting  
-            greeting = "Hi there! It's a beautiful day here at Grinberg Management! I'm Sarah, and I'm so happy you called! How can I help you today?"
+            greeting = "Hi there! It's such a beautiful day here at Grinberg Management! I'm Sarah, and I'm so happy you called! How can I help you today?"
             
             response.say(greeting, voice='Polly.Joanna-Neural')
             
