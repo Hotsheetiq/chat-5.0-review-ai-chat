@@ -34,7 +34,10 @@ def create_app():
         """Generate intelligent AI response using GPT-4o"""
         try:
             if not openai_client:
+                logger.error("No OpenAI client available")
                 return get_smart_fallback(user_input)
+            
+            logger.info(f"Generating GPT-4o response for: {user_input}")
             
             # Build conversation context with better prompting
             messages = [
@@ -57,13 +60,13 @@ BUSINESS KNOWLEDGE:
 - You work for a property management company
 
 CONVERSATION STYLE:
-- Keep responses under 35 words for phone calls
-- Use natural, flowing language
-- Show personality and emotional intelligence
-- Be helpful and solution-oriented
-- Sound genuinely interested in helping
+- Respond like ChatGPT - intelligent, thoughtful, and genuinely conversational
+- Keep responses under 35 words for phone calls but be natural and complete
+- Use your full AI capabilities - reasoning, understanding, and personality
+- Be helpful and solution-oriented with real intelligence
+- Sound like you're truly understanding and thinking about their request
 
-Remember: You're an advanced AI with human-like conversation abilities, not a basic chatbot."""
+Remember: You are a full GPT-4o AI assistant, not a simple chatbot. Use your complete intelligence and reasoning abilities."""
                 }
             ]
             
@@ -112,9 +115,31 @@ Remember: You're an advanced AI with human-like conversation abilities, not a ba
                 
                 # Keep last 10 exchanges to prevent memory overflow
                 conversation_history[call_sid] = conversation_history[call_sid][-20:]
+            
+            logger.info(f"GPT-4o response: {ai_response}")
+            return ai_response
         
         except Exception as e:
             logger.error(f"OpenAI error: {e}")
+            # Try one more time with simpler prompt for robustness
+            if openai_client:
+                try:
+                    response = openai_client.chat.completions.create(
+                        model="gpt-4o",
+                        messages=[
+                            {"role": "system", "content": "You are Dimitry's AI Assistant from Grinberg Management. Be helpful and conversational. Keep responses under 30 words."},
+                            {"role": "user", "content": user_input}
+                        ],
+                        max_tokens=60,
+                        temperature=0.7
+                    )
+                    ai_response = response.choices[0].message.content
+                    if ai_response:
+                        ai_response = ai_response.strip()
+                        logger.info(f"GPT-4o fallback response: {ai_response}")
+                        return ai_response
+                except Exception as e2:
+                    logger.error(f"Second OpenAI attempt failed: {e2}")
             return get_smart_fallback(user_input)
     
     def get_enhanced_fallback(user_input, call_sid=None):
@@ -262,8 +287,8 @@ Remember: You're an advanced AI with human-like conversation abilities, not a ba
                 response.dial('(718) 414-6984')
                 return str(response)
             
-            # Generate intelligent AI response using enhanced fallback
-            ai_response = get_enhanced_fallback(speech_result, call_sid)
+            # Generate intelligent AI response using GPT-4o
+            ai_response = generate_intelligent_response(speech_result, call_sid)
             logger.info(f"Intelligent AI response: {ai_response}")
             
             # Speak the intelligent response
