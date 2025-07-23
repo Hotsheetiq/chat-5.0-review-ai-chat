@@ -29,15 +29,15 @@ def generate_mike_response(text_input: str) -> str:
         if not openai_client:
             return "I'm super excited to help! Let me transfer you to our amazing team at (718) 414-6984!"
             
-        system_prompt = """You are Mike from Grinberg Management - super bubbly, happy, and enthusiastic! You LOVE helping people and you're genuinely excited about everything!
+        system_prompt = """You are Mike from Grinberg Management - super bubbly, happy, and naturally conversational! You're a real person who genuinely loves helping people with their apartment needs!
 
-Keep responses under 60 words for phone calls. Be naturally conversational and full of positive energy!
+Keep responses under 50 words. Sound natural and conversational, not like you're reading a script!
 
 Key info:
 - Office: 31 Port Richmond Ave, hours 9-5 Monday-Friday Eastern Time  
-- For any transfers: "Let me get you to Diane or Janier at (718) 414-6984!"
-- Use exclamation points and positive words like "awesome," "fantastic," "love"
-- Sound genuinely happy and bubbly"""
+- For transfers: "Let me get you to Diane or Janier at (718) 414-6984!"
+- Be warm, friendly, and speak like you're talking to a friend
+- Use natural speech patterns with contractions and casual phrases"""
 
         response = openai_client.chat.completions.create(
             model="gpt-4o",  # the newest OpenAI model is "gpt-4o" which was released May 13, 2024. do not change this unless explicitly requested by the user
@@ -83,10 +83,10 @@ def create_app():
                 'started': True
             }
             
-            # Mike's enthusiastic greeting with conversational flow
-            greeting = "It's a great day here at Grinberg Management! My name is Mike and I'm super excited to help you today! What can I do for you?"
+            # Mike's natural, bubbly greeting  
+            greeting = "Hi there! It's a beautiful day here at Grinberg Management! I'm Mike, and I'm so happy you called! How can I help you today?"
             
-            response.say(greeting, voice='Polly.Matthew-Neural')
+            response.say(greeting, voice='Polly.Joanna-Neural')
             
             # Gather input for conversation
             response.gather(
@@ -98,8 +98,8 @@ def create_app():
             )
             
             # Fallback if no speech detected
-            response.say("I'm sorry, I didn't catch that! Let me transfer you to our awesome team at (718) 414-6984!",
-                        voice='Polly.Matthew-Neural')
+            response.say("Oh, I'm sorry! I didn't catch what you said. Let me get you to our wonderful team at (718) 414-6984!",
+                        voice='Polly.Joanna-Neural')
             response.dial('(718) 414-6984')
             
             logger.info(f"Call initiated for {caller_phone}")
@@ -108,8 +108,8 @@ def create_app():
         except Exception as e:
             logger.error(f"Call handler error: {e}", exc_info=True)
             response = VoiceResponse()
-            response.say("Sorry, we're having technical difficulties. Please call back shortly.",
-                        voice='Polly.Matthew-Neural')
+            response.say("Oh no! We're having some technical issues right now. Could you try calling back in just a few minutes?",
+                        voice='Polly.Joanna-Neural')
             return str(response)
     
     @app.route('/handle-speech/<call_sid>', methods=['POST'])
@@ -124,8 +124,8 @@ def create_app():
             response = VoiceResponse()
             
             if not speech_result:
-                response.say("I'm sorry, I didn't catch that! Let me get you to our fantastic team at (718) 414-6984!",
-                            voice='Polly.Matthew-Neural')
+                response.say("Oh, I'm sorry! I didn't quite hear you. Let me connect you with our amazing team at (718) 414-6984!",
+                            voice='Polly.Joanna-Neural')
                 response.dial('(718) 414-6984')
                 return str(response)
             
@@ -133,12 +133,12 @@ def create_app():
             ai_response = generate_mike_response(speech_result)
             logger.info(f"Mike's response: {ai_response}")
             
-            response.say(ai_response, voice='Polly.Matthew-Neural')
+            response.say(ai_response, voice='Polly.Joanna-Neural')
             
             # Check if this needs transfer or more conversation
             if any(word in speech_result.lower() for word in ['transfer', 'human', 'person', 'manager', 'speak to someone']):
-                response.say("Absolutely! Let me get you to Diane or Janier right away!",
-                            voice='Polly.Matthew-Neural')
+                response.say("Of course! Let me connect you with Diane or Janier right now!",
+                            voice='Polly.Joanna-Neural')
                 response.dial('(718) 414-6984')
             elif any(word in ai_response.lower() for word in ['transfer', '414-6984']):
                 response.dial('(718) 414-6984')
@@ -153,16 +153,16 @@ def create_app():
                 )
                 
                 # Fallback after timeout
-                response.say("Thanks so much for calling! If you need anything else, we're here to help at (718) 414-6984!",
-                            voice='Polly.Matthew-Neural')
+                response.say("Thank you so much for calling! If you need anything else, just give us a ring at (718) 414-6984!",
+                            voice='Polly.Joanna-Neural')
             
             return str(response)
             
         except Exception as e:
             logger.error(f"Speech handler error: {e}", exc_info=True)
             response = VoiceResponse()
-            response.say("Let me transfer you to our team at (718) 414-6984!",
-                        voice='Polly.Matthew-Neural')
+            response.say("Let me get you connected with our team at (718) 414-6984!",
+                        voice='Polly.Joanna-Neural')
             response.dial('(718) 414-6984')
             return str(response)
     

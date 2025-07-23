@@ -98,7 +98,7 @@ The application is designed for cloud deployment with the following consideratio
 - **ElevenLabs Integration**: Now using ElevenLabs Adam voice (pNInz6obpgDQGcFmaJgB) with API key for genuine human-like quality
 - **Gunicorn-Compatible Implementation**: Switched from WebSocket-based to HTTP speech gathering that works with gunicorn server
 - **True Human-Like Voice**: No more robotic TTS - this is authentic conversational AI with natural voice generation
-- **Perfect Greeting**: "It's a great day here at Grinberg Management! My name is Mike. How can I help you?" - friendly, helpful, complete
+- **Natural Bubbly Voice**: Changed to Polly.Joanna-Neural for warm, happy female voice that sounds conversational, not robotic
 - **Professional Call Transfer System**: Seamless transfer to (718) 414-6984 for non-apartment questions
 - **Smart Transfer Logic**: Any unrecognized requests or human transfer requests automatically route to Diane or Janier  
 - **Bubbly Enthusiastic Personality**: Mike is genuinely excited and enthusiastic, using words like "love," "fantastic," "awesome," and "excited" with authentic positive energy  
