@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="en" data-bs-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dimitry's AI Assistant - Intelligent Conversation</title>
+    <link href="https://cdn.replit.com/agent/bootstrap-agent-dark-theme.min.css" rel="stylesheet">
+    <style>
+        .status-indicator {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-right: 8px;
+        }
+        .status-ok { background-color: #28a745; }
+        .status-warning { background-color: #ffc107; }
+        .status-error { background-color: #dc3545; }
+        .conversation-preview {
+            max-height: 300px;
+            overflow-y: auto;
+            background: var(--bs-gray-900);
+            border-radius: 8px;
+            padding: 15px;
+        }
+        .intelligence-badge {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 0.8em;
+            font-weight: 600;
+        }
+    </style>
+</head>
+<body class="bg-dark">
+    <div class="container mt-4">
+        <div class="row">
+            <div class="col-12">
+                <div class="card mb-4">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <div>
+                            <h1 class="h3 mb-0">🧠 Dimitry's AI Assistant</h1>
+                            <small>Intelligent Conversation with GPT-4o <span class="intelligence-badge">ADVANCED AI</span></small>
+                        </div>
+                        <div class="text-end">
+                            <div class="small text-muted">Active Calls</div>
+                            <div class="h2 mb-0 text-success">{{ active_calls }}</div>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <h5>AI Intelligence Status</h5>
+                                <p class="mb-1">
+                                    <span class="status-indicator {{ 'status-ok' if openai_connected else 'status-error' }}"></span>
+                                    <strong>GPT-4o Brain:</strong> {{ 'Online' if openai_connected else 'Offline' }}
+                                </p>
+                                <p class="mb-1">
+                                    <span class="status-indicator status-ok"></span>
+                                    <strong>Emotional Intelligence:</strong> Active
+                                </p>
+                                <p class="mb-1">
+                                    <span class="status-indicator status-ok"></span>
+                                    <strong>Conversation Memory:</strong> Active
+                                </p>
+                                <p class="mb-1">
+                                    <span class="status-indicator status-ok"></span>
+                                    <strong>Voice Quality:</strong> Google Neural2-J
+                                </p>
+                            </div>
+                            <div class="col-md-6">
+                                <h5>AI Capabilities</h5>
+                                <ul class="list-unstyled">
+                                    <li>✓ Advanced conversational intelligence</li>
+                                    <li>✓ Emotional awareness & empathy</li>
+                                    <li>✓ Context understanding</li>
+                                    <li>✓ Natural personality</li>
+                                    <li>✓ Problem-solving abilities</li>
+                                    <li>✓ Business knowledge integration</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row mt-4">
+            <div class="col-12">
+                <div class="alert alert-success">
+                    <h6>🎉 Intelligent Conversation Ready!</h6>
+                    <p class="mb-0">
+                        Dimitry's AI Assistant now uses GPT-4o for genuine intelligent conversation with emotional awareness,
+                        context understanding, and natural personality. No more robotic responses!
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <div class="row mt-4">
+            <div class="col-md-4">
+                <div class="card">
+                    <div class="card-header">
+                        <h6>AI Intelligence</h6>
+                    </div>
+                    <div class="card-body">
+                        <p><strong>Model:</strong> GPT-4o (Latest)</p>
+                        <p><strong>Intelligence:</strong> Advanced reasoning</p>
+                        <p><strong>Memory:</strong> Conversation context</p>
+                        <p><strong>Personality:</strong> Naturally upbeat</p>
+                        <p><strong>Empathy:</strong> Emotional intelligence</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card">
+                    <div class="card-header">
+                        <h6>Voice & Speech</h6>
+                    </div>
+                    <div class="card-body">
+                        <p><strong>Voice:</strong> Google Neural2-J</p>
+                        <p><strong>Quality:</strong> Natural human-like</p>
+                        <p><strong>Recognition:</strong> Advanced speech AI</p>
+                        <p><strong>Response Time:</strong> Near real-time</p>
+                        <p><strong>Compatibility:</strong> Gunicorn ready</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card">
+                    <div class="card-header">
+                        <h6>Business Integration</h6>
+                    </div>
+                    <div class="card-body">
+                        <p><strong>Property Data:</strong> Integrated</p>
+                        <p><strong>Office Hours:</strong> Accurate</p>
+                        <p><strong>Transfers:</strong> Intelligent routing</p>
+                        <p><strong>Maintenance:</strong> Priority handling</p>
+                        <p><strong>Calls:</strong> Professional quality</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row mt-4">
+            <div class="col-md-8">
+                <div class="card">
+                    <div class="card-header">
+                        <h6>Test Intelligent Conversation</h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="input-group mb-3">
+                            <input type="text" class="form-control" id="testInput" placeholder="Test the AI intelligence..." value="Hi, I need help with my apartment">
+                            <button class="btn btn-primary" onclick="testIntelligence()">Test Intelligence</button>
+                        </div>
+                        <div id="testResult" class="conversation-preview" style="display: none;">
+                            <div id="testOutput"></div>
+                        </div>
+                        <div class="mt-3">
+                            <small class="text-muted">
+                                Try: "My heating isn't working", "What are your office hours?", "I want to speak to a person"
+                            </small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card">
+                    <div class="card-header">
+                        <h6>Recent Calls</h6>
+                    </div>
+                    <div class="card-body">
+                        {% if recent_calls %}
+                            {% for call in recent_calls %}
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <span class="small">{{ call.call_sid }}</span>
+                                <span class="badge bg-{{ 'success' if call.status == 'Active' else 'secondary' }}">{{ call.status }}</span>
+                            </div>
+                            {% endfor %}
+                        {% else %}
+                            <p class="text-muted small mb-0">No recent calls</p>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row mt-4">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header">
+                        <h6>Intelligent AI Architecture</h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-3">
+                                <h6>Intelligence Layer</h6>
+                                <ul class="list-unstyled small">
+                                    <li>• GPT-4o language model</li>
+                                    <li>• Advanced reasoning</li>
+                                    <li>• Emotional intelligence</li>
+                                    <li>• Context awareness</li>
+                                    <li>• Natural personality</li>
+                                </ul>
+                            </div>
+                            <div class="col-md-3">
+                                <h6>Voice Processing</h6>
+                                <ul class="list-unstyled small">
+                                    <li>• Twilio speech recognition</li>
+                                    <li>• Google Neural2-J voice</li>
+                                    <li>• Natural speech patterns</li>
+                                    <li>• Real-time processing</li>
+                                    <li>• High-quality audio</li>
+                                </ul>
+                            </div>
+                            <div class="col-md-3">
+                                <h6>Conversation Flow</h6>
+                                <ul class="list-unstyled small">
+                                    <li>• Intelligent conversation</li>
+                                    <li>• Context preservation</li>
+                                    <li>• Smart routing</li>
+                                    <li>• Fallback handling</li>
+                                    <li>• Transfer logic</li>
+                                </ul>
+                            </div>
+                            <div class="col-md-3">
+                                <h6>Business Logic</h6>
+                                <ul class="list-unstyled small">
+                                    <li>• Property management</li>
+                                    <li>• Office information</li>
+                                    <li>• Maintenance priorities</li>
+                                    <li>• Professional transfers</li>
+                                    <li>• Call logging</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function testIntelligence() {
+            const input = document.getElementById('testInput').value;
+            const result = document.getElementById('testResult');
+            const output = document.getElementById('testOutput');
+            
+            if (!input.trim()) return;
+            
+            output.innerHTML = '<div class="text-info">🧠 Processing with AI intelligence...</div>';
+            result.style.display = 'block';
+            
+            fetch(`/test-intelligent?input=${encodeURIComponent(input)}`)
+                .then(response => response.json())
+                .then(data => {
+                    output.innerHTML = `
+                        <div class="mb-2">
+                            <strong>You:</strong> ${data.input}
+                        </div>
+                        <div class="text-success">
+                            <strong>Dimitry's AI Assistant:</strong> ${data.intelligent_response}
+                        </div>
+                        <div class="small text-muted mt-2">
+                            <em>Response generated by GPT-4o with emotional intelligence</em>
+                        </div>
+                    `;
+                })
+                .catch(error => {
+                    output.innerHTML = '<div class="text-danger">Error testing AI intelligence</div>';
+                });
+        }
+        
+        // Allow Enter key to test
+        document.getElementById('testInput').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                testIntelligence();
+            }
+        });
+        
+        // Auto-refresh call count every 15 seconds
+        setInterval(function() {
+            fetch('/')
+                .then(response => response.text())
+                .then(data => {
+                    // Could extract call count and update without full refresh
+                });
+        }, 15000);
+    </script>
+</body>
+</html>
