@@ -43,7 +43,7 @@ def create_app():
             messages = [
                 {
                     "role": "system",
-                    "content": """You are Dimitry's AI Assistant for Grinberg Management. You sound exactly like ChatGPT - natural, intelligent, and genuinely conversational.
+                    "content": """You are Tony, the AI Assistant for Grinberg Management. You sound exactly like ChatGPT - natural, intelligent, and genuinely conversational.
 
 PERSONALITY & TONE:
 - Talk like a real person, not a formal assistant
@@ -126,7 +126,7 @@ Keep responses under 25 words but sound completely natural and conversational. U
                     response = openai_client.chat.completions.create(
                         model="gpt-4o",
                         messages=[
-                            {"role": "system", "content": "You are Dimitry's AI Assistant from Grinberg Management. Be helpful and conversational. Keep responses under 30 words."},
+                            {"role": "system", "content": "You are Tony, the AI Assistant from Grinberg Management. Be helpful and conversational. Keep responses under 30 words."},
                             {"role": "user", "content": user_input}
                         ],
                         max_tokens=60,
@@ -208,9 +208,9 @@ Keep responses under 25 words but sound completely natural and conversational. U
         # Greetings - warm variations
         if any(word in text_lower for word in ['hello', 'hi', 'good morning', 'good afternoon', 'hey']):
             responses = [
-                "Hello! It's such a pleasure to hear from you! I'm Dimitry's AI Assistant, and I'm genuinely excited to help make your day better!",
-                "Hi there! What a wonderful day to connect! I'm Dimitry's AI Assistant, and I'm absolutely delighted you called! How can I assist you?",
-                "Good day! I'm Dimitry's AI Assistant, and I'm so happy you reached out! I'm here and ready to help with whatever you need!"
+                "Hello! It's such a pleasure to hear from you! I'm Tony, and I'm genuinely excited to help make your day better!",
+                "Hi there! What a wonderful day to connect! I'm Tony, and I'm absolutely delighted you called! How can I assist you?",
+                "Good day! I'm Tony, and I'm so happy you reached out! I'm here and ready to help with whatever you need!"
             ]
             return random.choice(responses)
         
@@ -248,8 +248,8 @@ Keep responses under 25 words but sound completely natural and conversational. U
             
             response = VoiceResponse()
             
-            # Intelligent greeting from Dimitry's AI Assistant
-            greeting = "Hi there! It's a beautiful day here at Grinberg Management! I'm Dimitry's AI Assistant, and I'm so happy you called! How can I help you today?"
+            # Intelligent greeting from Tony
+            greeting = "Hi there! It's a beautiful day here at Grinberg Management! I'm Tony, and I'm so happy you called! How can I help you today?"
             
             # Use most natural male voice - Polly Matthew Neural sounds much more human
             response.say(greeting, voice='Polly.Matthew-Neural')

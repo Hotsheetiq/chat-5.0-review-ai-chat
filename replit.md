@@ -98,17 +98,19 @@ The application is designed for cloud deployment with the following consideratio
 - **Professional Personality**: Perfect balance of friendly professionalism with real intelligence and emotional awareness
 - **Advanced Voice Quality**: Google Neural2-J voice delivers natural human-like speech without robotic patterns
 - **Intelligent Response Examples**: "Of course! What specific question or issue do you have regarding your apartment lease? I'm here to help."
-- **Dimitry's AI Assistant Intelligence**: Uses GPT-4o for genuine intelligent conversation with Google Neural2-J voice - "Hi there! I'm Dimitry's AI Assistant!"
+- **Tony - AI Assistant Intelligence**: Uses GPT-4o for genuine intelligent conversation with Polly Matthew-Neural voice - "Hi there! I'm Tony!"
 - **Professional Call Transfer System**: Seamless transfer to (718) 414-6984 for non-apartment questions
 - **Smart Transfer Logic**: Any unrecognized requests or human transfer requests automatically route to Diane or Janier  
-- **Naturally Upbeat Personality**: Dimitry's AI Assistant is genuinely happy and cheerful with natural enthusiasm that sounds like a real person having a great day, not over-the-top artificial energy  
-- **Natural Conversation Style**: Dimitry's AI Assistant speaks like an enthusiastic, helpful friend who's thrilled to assist with anything
-- **Anti-Repetition System**: Dimitry's AI Assistant tracks all responses and never repeats the same answer twice, using varied phrasings and approaches while maintaining personality
+- **Naturally Upbeat Personality**: Tony is genuinely happy and cheerful with natural enthusiasm that sounds like a real person having a great day, not over-the-top artificial energy  
+- **Natural Conversation Style**: Tony speaks like an enthusiastic, helpful friend who's thrilled to assist with anything
+- **Anti-Repetition System**: Tony tracks all responses and never repeats the same answer twice, using varied phrasings and approaches while maintaining personality
 - **Emergency Response Protocol**: Immediate priority handling for urgent maintenance with proper escalation
 - **Correct Office Information**: All responses use accurate 31 Port Richmond Ave address with proper Eastern Time office hours
-- **Intelligent Fallback System**: When OpenAI is unavailable, Dimitry's AI Assistant uses smart keyword detection to provide empathetic, contextual responses for office hours, maintenance, and transfer requests with accurate business information
+- **Intelligent Fallback System**: When OpenAI is unavailable, Tony uses smart keyword detection to provide empathetic, contextual responses for office hours, maintenance, and transfer requests with accurate business information
 - **GPT-4o Integration**: Advanced conversational AI with emotional intelligence, context awareness, and natural personality that feels like talking to a real person
 - **Smart Conversation Flow**: Maintains conversation context, handles interruptions gracefully, and provides intelligent routing based on conversation content
-- **Character Consistency**: Dimitry's AI Assistant personality is helpful, friendly, and natural - no artificial enthusiasm or robotic patterns
+- **Character Consistency**: Tony's personality is helpful, friendly, and natural - no artificial enthusiasm or robotic patterns
 - **Speech Recognition System**: Implemented Twilio's speech gathering with conversational AI responses - no WebSocket errors
-- **Call Flow Fixed**: Calls no longer disconnect immediately - Dimitry's AI Assistant greets callers and processes speech input properly
+- **Call Flow Fixed**: Calls no longer disconnect immediately - Tony greets callers and processes speech input properly
+- **Voice Upgrade**: Switched from Google Neural2-J to Polly Matthew-Neural for more natural, human-like voice quality
+- **AI Assistant Renamed**: Changed from "Dimitry's AI Assistant" to "Tony" for simpler, more personal identity
