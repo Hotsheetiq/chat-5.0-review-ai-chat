@@ -111,21 +111,21 @@ def handle_incoming_call():
             response.record(timeout=30, transcribe=False)
             return str(response)
         
-        # Warm, casual greeting like a helpful friend
-        greeting = "Hey there! This is Sarah from Grinberg Management. How can I help you today?"
+        # Warm, expressive greeting with natural enthusiasm and smile in voice
+        greeting = "<speak><prosody rate='medium' pitch='+5%' volume='loud'>Hey there! <break time='0.3s'/> This is Sarah from Grinberg Management, and I'm having such a great day! <break time='0.2s'/> How can I help you?</prosody></speak>"
         response.say(greeting, voice='Polly.Joanna-Neural', language='en-US')
         
-        # Use speech gathering instead of media streaming for better reliability
+        # Use speech gathering with longer timeout so callers don't get cut off
         gather = response.gather(
             input='speech',
-            timeout=10,
+            timeout=20,
             speech_timeout='auto',
             action='/process-speech',
             method='POST'
         )
         
-        # Fallback if no speech detected - casual and friendly  
-        response.say("Sorry, I didn't catch that. Could you say it again?",
+        # Fallback if no speech detected - warm and encouraging with expression
+        response.say("<speak><prosody rate='medium' pitch='+2%'>Sorry, I didn't catch that! <break time='0.2s'/> Could you say it again? <break time='0.1s'/> I'm listening!</prosody></speak>",
                     voice='Polly.Joanna-Neural', language='en-US')
         
         logger.info(f"Returning TwiML response for {caller_phone}")
@@ -152,7 +152,7 @@ def fallback_call():
         
         response.gather(
             input='speech',
-            timeout=10,
+            timeout=20,
             speech_timeout='auto',
             action='/process-speech',
             method='POST'
@@ -221,11 +221,11 @@ def process_speech():
         response = VoiceResponse()
         
         if not speech_result:
-            response.say("Oh no, I totally spaced out there! What were you saying?",
+            response.say("<speak><prosody rate='medium' pitch='+2%'>Oh no, I totally spaced out there! <break time='0.2s'/> What were you saying?</prosody></speak>",
                         voice='Polly.Joanna-Neural', language='en-US')
             response.gather(
                 input='speech',
-                timeout=10,
+                timeout=20,
                 speech_timeout='auto',
                 action='/process-speech',
                 method='POST'
@@ -242,16 +242,16 @@ def process_speech():
             fallback_response = get_intelligent_response(speech_result, caller_phone)
             response.say(fallback_response, voice='Polly.Joanna-Neural', language='en-US')
         
-        # Give option to continue or end call
+        # Give option to continue or end call with longer timeout
         response.gather(
             input='speech',
-            timeout=5,
+            timeout=15,
             speech_timeout='auto',
             action='/process-speech',
             method='POST'
         )
         
-        response.say("Thanks for calling! Have a great day!", voice='Polly.Joanna-Neural', language='en-US')
+        response.say("<speak><prosody rate='medium' pitch='+3%'>Thanks for calling! <break time='0.2s'/> Have an amazing day!</prosody></speak>", voice='Polly.Joanna-Neural', language='en-US')
         
         return str(response)
         
@@ -283,7 +283,7 @@ def get_intelligent_response(user_input, caller_phone):
     if any(word in user_lower for word in ['human', 'real person', 'real', 'robot', 'ai', 'computer', 'bot', 'siri']):
         if 'identity' not in memory['topics_discussed']:
             memory['topics_discussed'].add('identity')
-            return "Ha! You got me! I'm Sarah and yep, I'm an AI. But I'm super friendly and I love helping with apartments and maintenance stuff. What's going on? How can I help?"
+            return "<speak><prosody rate='medium' pitch='+3%'>Ha! <break time='0.2s'/> You totally got me! <break time='0.3s'/> I'm Sarah and yep, I'm an AI. <break time='0.2s'/> But I'm super friendly and I absolutely love helping with apartments and maintenance stuff! <break time='0.3s'/> So what's going on? How can I help you out?</prosody></speak>"
         else:
             return "Yep, still me - your friendly AI Sarah! What can I help with?"
     
@@ -291,7 +291,7 @@ def get_intelligent_response(user_input, caller_phone):
     elif any(word in user_lower for word in ['where', 'located', 'address', 'location']) and not any(word in user_lower for word in ['hours', 'open', 'closed']):
         if 'location' not in memory['topics_discussed']:
             memory['topics_discussed'].add('location')
-            return "Great question! Our main office is at 123 Main Street in downtown. We've also got properties all over the area. Are you looking for our office or asking about a specific building?"
+            return "<speak><prosody rate='medium' pitch='+2%'>Great question! <break time='0.3s'/> Our main office is at 123 Main Street in downtown. <break time='0.2s'/> We've also got properties all over the area! <break time='0.3s'/> Are you looking for our office, or asking about a specific building?</prosody></speak>"
         else:
             return "Which location? Our main office on Main Street or one of our properties? I can help with both!"
 
@@ -306,7 +306,7 @@ def get_intelligent_response(user_input, caller_phone):
             memory['topics_discussed'].add('office_hours')
             # Check if it's currently business hours
             if current_day < 5 and 9 <= current_hour < 17:  # Mon-Fri, 9am-5pm
-                return "Yep, we're totally open right now! Hours are 9 to 5, Monday through Friday. What's up?"
+                return "<speak><prosody rate='medium' pitch='+3%'>Yep, we're totally open right now! <break time='0.2s'/> Hours are 9 to 5, Monday through Friday. <break time='0.3s'/> What's up?</prosody></speak>"
             elif current_day < 5 and current_hour < 9:
                 return "Not quite yet - we open at 9! Hours are 9 to 5, Monday through Friday. But hey, I'm here! What do you need?"
             elif current_day < 5 and current_hour >= 17:
@@ -322,7 +322,7 @@ def get_intelligent_response(user_input, caller_phone):
     elif any(word in user_lower for word in ['fix', 'broken', 'maintenance', 'repair', 'not working', 'problem', 'issue']):
         memory['topics_discussed'].add('maintenance')
         memory['conversation_stage'] = 'maintenance'
-        return "Oh no! Something's broken? Don't worry, I'll get our maintenance team on it right away. What's going on? Is it plumbing, electrical, heating, or something else?"
+        return "<speak><prosody rate='medium' pitch='+2%'>Oh no! <break time='0.2s'/> Something's broken? <break time='0.3s'/> Don't worry, I'll get our maintenance team on it right away! <break time='0.2s'/> What's going on? Is it plumbing, electrical, heating, or something else?</prosody></speak>"
     
     # Leasing inquiries - specific questions
     elif any(word in user_lower for word in ['apartment', 'rent', 'lease', 'available', 'move in', 'unit', 'bedroom']):
@@ -333,11 +333,11 @@ def get_intelligent_response(user_input, caller_phone):
     # Follow-up responses based on conversation stage
     elif memory['conversation_stage'] == 'maintenance':
         if any(word in user_lower for word in ['water', 'plumbing', 'toilet', 'sink', 'leak']):
-            return "Ugh, plumbing problems are the worst! Don't worry though - marking this as urgent right now. What's your apartment number? And your phone number? Our team will call you within a couple hours."
+            return "<speak><prosody rate='medium' pitch='+1%'>Ugh, plumbing problems are seriously the worst! <break time='0.3s'/> Don't worry though - I'm marking this as urgent right now. <break time='0.2s'/> What's your apartment number? <break time='0.2s'/> And your phone number? <break time='0.3s'/> Our team will call you within a couple hours!</prosody></speak>"
         elif any(word in user_lower for word in ['heat', 'cold', 'hot', 'ac', 'air', 'temperature']):
-            return "Oh no! Temperature problems are seriously the worst! Sending this to our HVAC team as urgent right now. What's your unit number? We'll have someone out today to get you comfortable again."
+            return "<speak><prosody rate='medium' pitch='+2%'>Oh no! Temperature problems are seriously the worst! <break time='0.3s'/> I'm sending this to our HVAC team as urgent right now. <break time='0.2s'/> What's your unit number? <break time='0.3s'/> We'll have someone out today to get you comfortable again!</prosody></speak>"
         elif any(word in user_lower for word in ['electric', 'power', 'light', 'outlet']):
-            return "Electrical stuff can be scary, so we take it super seriously. Marking this as highest priority! What's your unit number? Our team will get someone out there fast to make sure everything's safe."
+            return "<speak><prosody rate='medium' pitch='+1%'>Electrical stuff can be scary, so we take it super seriously. <break time='0.3s'/> I'm marking this as highest priority! <break time='0.2s'/> What's your unit number? <break time='0.3s'/> Our team will get someone out there fast to make sure everything's safe.</prosody></speak>"
         else:
             return "Got it! Setting up a maintenance request right now. What's your apartment number and phone number? Our team will take care of this quickly!"
     
@@ -352,7 +352,7 @@ def get_intelligent_response(user_input, caller_phone):
     # Generic helpful responses that don't repeat
     elif any(word in user_lower for word in ['hi', 'hello', 'hey', 'good morning', 'good afternoon']):
         if len(memory['questions_asked']) == 0:
-            return "Hey! I'm Sarah, and I'm here to help with whatever you need. What's going on?"
+            return "<speak><prosody rate='medium' pitch='+4%'>Hey! <break time='0.2s'/> I'm Sarah, and I'm here to help with whatever you need! <break time='0.3s'/> What's going on?</prosody></speak>"
         else:
             return "What else can I help with?"
     
