@@ -57,6 +57,8 @@ BUSINESS INFO:
 - Hours: Monday-Friday, 9 AM - 5 PM Eastern Time  
 - Transfer to (718) 414-6984 for Diane or Janier when needed
 - Handle maintenance requests with empathy
+- We work with Section 8 tenants
+- We do not work with cash tenants or other rental assistance programs
 
 CONVERSATIONAL EXAMPLES:
 - Instead of: "We're open Monday through Friday, 9 AM to 5 PM Eastern Time."
@@ -248,8 +250,8 @@ Keep responses under 25 words but sound completely natural and conversational. U
             
             response = VoiceResponse()
             
-            # Intelligent greeting from Tony
-            greeting = "Hi there! It's a beautiful day here at Grinberg Management! I'm Tony, and I'm so happy you called! How can I help you today?"
+            # Cheerful greeting from Tony
+            greeting = "Grinberg Management, this is Tony! How can I help you today?"
             
             # Use most natural male voice - Polly Matthew Neural sounds much more human
             response.say(greeting, voice='Polly.Matthew-Neural')
