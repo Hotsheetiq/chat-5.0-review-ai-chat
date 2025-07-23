@@ -90,16 +90,14 @@ The application is designed for cloud deployment with the following consideratio
 
 ## Recent Changes
 
-### July 23, 2025 - Sarah Voice & Intelligence Complete Overhaul
-- **Premium Voice Upgrade**: Switched to Polly.Joanna-Neural for warm, expressive, natural American accent
-- **Call Disconnect Fix**: Resolved TwiML encoding issue causing immediate call disconnections
-- **Extended Timeout Settings**: Increased conversation timeouts (20s initial, 15s follow-up) to prevent premature disconnections
-- **Smart Time-Aware Intelligence**: Sarah now accurately answers "Is the office open today?" with real-time awareness
-- **Context-Rich Conversation System**: Implemented memory to eliminate repetitive responses and maintain conversation flow
-- **Emergency Response Protocol**: Immediate priority handling for urgent maintenance (flooding, no heat, power outages)
-- **Property Intelligence**: Smart responses for amenities, rent payments, office hours, and common tenant questions
-- **Natural Conversational Patterns**: Uses casual, friendly language with expressions like "Ha, you got me!", "Oh wow!", "Don't worry"
-- **Intelligent Fallback System**: When OpenAI quota limits hit, Sarah uses sophisticated keyword processing instead of basic responses
-- **Professional Maintenance Workflows**: Categorizes issues by type (plumbing, electrical, HVAC) with appropriate urgency levels
-- **Leasing Intelligence**: Contextual apartment search assistance with size and timing collection
-- **Greeting Excellence**: Warm "Hey there! This is Sarah from Grinberg Management, and I'm having such a great day!" delivery
+### July 23, 2025 - Natural Voice Revolution & Call Transfer System
+- **Alice Voice Implementation**: Completely replaced robotic Polly.Joanna-Neural with Twilio's natural Alice voice for genuinely human-like conversation
+- **Simplified Conversational Style**: Eliminated overly enthusiastic robotic patterns in favor of natural, helpful communication
+- **Professional Call Transfer System**: Implemented seamless transfer to (718) 414-6984 for non-apartment questions with "Let me connect you with someone who can help you better"
+- **Smart Transfer Logic**: Any unrecognized requests or human transfer requests automatically route to Diane or Janier
+- **Natural Greeting**: "Hey! This is Sarah from Grinberg Management. I help with apartments and maintenance, or I can connect you with someone else if you need something different. What's up?"
+- **Improved Conversation Flow**: Eliminated repetitive menu-like responses in favor of contextual, helpful dialogue
+- **Context-Rich Memory System**: Sarah remembers conversation topics to avoid repetition while maintaining natural flow
+- **Emergency Response Protocol**: Immediate priority handling for urgent maintenance with proper escalation
+- **Correct Office Information**: All responses use accurate 31 Port Richmond Ave address with proper Eastern Time office hours
+- **Intelligent Fallback**: When OpenAI quota limits are reached, sophisticated keyword processing maintains service quality

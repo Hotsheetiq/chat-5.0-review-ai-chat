@@ -111,9 +111,9 @@ def handle_incoming_call():
             response.record(timeout=30, transcribe=False)
             return str(response)
         
-        # More natural, expressive greeting with personality
-        greeting = "Hi there! This is Sarah from Grinberg Management. I'm here to help with apartments, maintenance, or I can get you to someone who knows way more than me! What's going on?"
-        response.say(greeting, voice='Polly.Joanna-Neural', language='en-US')
+        # Try a completely different voice that sounds more human-like
+        greeting = "Hey! This is Sarah from Grinberg Management. I help with apartments and maintenance, or I can connect you with someone else if you need something different. What's up?"
+        response.say(greeting, voice='alice', language='en-US')
         
         # Use speech gathering with barge-in enabled so callers can interrupt
         gather = response.gather(
@@ -126,8 +126,8 @@ def handle_incoming_call():
         )
         
         # Fallback if no speech detected - warm and encouraging
-        response.say("Sorry, I didn't catch that! Could you say it again? I'm listening!",
-                    voice='Polly.Joanna-Neural', language='en-US')
+        response.say("I didn't hear anything. Could you say that again?",
+                    voice='alice', language='en-US')
         
         logger.info(f"Returning TwiML response for {caller_phone}")
         return str(response)
@@ -135,8 +135,8 @@ def handle_incoming_call():
     except Exception as e:
         logger.error(f"Error handling incoming call: {e}", exc_info=True)
         response = VoiceResponse()
-        response.say("Oh gosh, I'm having some technical trouble right now! I'm so sorry about that! Could you try calling back in just a few minutes? I promise I'll be back to my happy, helpful self!",
-                    voice='Polly.Joanna-Neural', language='en-US')
+        response.say("Sorry, I'm having some technical trouble right now. Could you try calling back in a few minutes?",
+                    voice='alice', language='en-US')
         return str(response)
 
 @app.route('/fallback-call', methods=['POST'])
@@ -148,8 +148,8 @@ def fallback_call():
         logger.info(f"Fallback call from: {caller_phone}")
         
         response = VoiceResponse()
-        response.say("Hi! Oh my gosh, it's such a beautiful day here at Grinberg Management! This is Sarah, and I'm so excited to help you today! What can I do for you?",
-                    voice='Polly.Joanna-Neural', language='en-US')
+        response.say("Hi! This is Sarah from Grinberg Management. What can I help you with today?",
+                    voice='alice', language='en-US')
         
         response.gather(
             input='speech',
@@ -159,8 +159,8 @@ def fallback_call():
             method='POST'
         )
         
-        response.say("Oops! I totally missed that! Could you say it again? I'm all ears!",
-                    voice='Polly.Joanna-Neural', language='en-US')
+        response.say("I didn't catch that. Could you repeat it?",
+                    voice='alice', language='en-US')
         
         return str(response)
         response = VoiceResponse()
@@ -222,8 +222,8 @@ def process_speech():
         response = VoiceResponse()
         
         if not speech_result:
-            response.say("Oh no, I totally spaced out there! What were you saying?",
-                        voice='Polly.Joanna-Neural', language='en-US')
+            response.say("Sorry, I didn't catch that. Could you repeat what you said?",
+                        voice='alice', language='en-US')
             response.gather(
                 input='speech',
                 timeout=20,
@@ -237,23 +237,23 @@ def process_speech():
         try:
             ai_response = generate_ai_response(speech_result, caller_phone)
             if ai_response == "transfer_call":
-                response.say("You know what, let me get you to someone who can help you better! I'm going to try to connect you with Diane or Janier. Hold on just a sec!", 
-                           voice='Polly.Joanna-Neural', language='en-US')
+                transfer_msg = "Let me connect you with someone who can help you better. I'm transferring you to Diane or Janier now."
+                response.say(transfer_msg, voice='alice', language='en-US')
                 response.dial("+17184146984")
                 return str(response)
             else:
-                response.say(ai_response, voice='Polly.Joanna-Neural', language='en-US')
+                response.say(ai_response, voice='alice', language='en-US')
         except Exception as ai_error:
             logger.error(f"OpenAI error: {ai_error}")
             # Fallback to intelligent keyword processing using our smart response system
             fallback_response = get_intelligent_response(speech_result, caller_phone)
             if fallback_response == "transfer_call":
-                response.say("I'm not sure how to help with that, but let me get you to someone who definitely can! I'm connecting you with Diane or Janier now!", 
-                           voice='Polly.Joanna-Neural', language='en-US')
+                fallback_transfer = "I'm not sure about that one, but let me get you to someone who can definitely help. Connecting you now."
+                response.say(fallback_transfer, voice='alice', language='en-US')
                 response.dial("+17184146984")
                 return str(response)
             else:
-                response.say(fallback_response, voice='Polly.Joanna-Neural', language='en-US')
+                response.say(fallback_response, voice='alice', language='en-US')
         
         # Give option to continue or end call with interruption enabled
         response.gather(
@@ -265,7 +265,7 @@ def process_speech():
             finish_on_key='#'  # Allow interruption
         )
         
-        response.say("Thanks for calling! Have an amazing day!", voice='Polly.Joanna-Neural', language='en-US')
+        response.say("Thanks for calling! Have a great day!", voice='alice', language='en-US')
         
         return str(response)
         
@@ -297,7 +297,7 @@ def get_intelligent_response(user_input, caller_phone):
     if any(word in user_lower for word in ['human', 'real person', 'real', 'robot', 'ai', 'computer', 'bot', 'siri']):
         if 'identity' not in memory['topics_discussed']:
             memory['topics_discussed'].add('identity')
-            return "Ha! You totally got me! I'm Sarah and yep, I'm an AI. But I'm super friendly and I absolutely love helping with apartments and maintenance stuff! So what's going on? How can I help you out?"
+            return "Ha! You got me. Yeah, I'm an AI, but I'm pretty good at helping with apartment stuff and maintenance requests. What do you need help with?"
         else:
             return "Yep, still me - your friendly AI Sarah! What can I help with?"
     
@@ -305,7 +305,17 @@ def get_intelligent_response(user_input, caller_phone):
     elif any(word in user_lower for word in ['where', 'located', 'address', 'location']) and not any(word in user_lower for word in ['hours', 'open', 'closed']):
         if 'location' not in memory['topics_discussed']:
             memory['topics_discussed'].add('location')
-            return "Great question! Our main office is at 31 Port Richmond Ave. We've also got properties all over the area! Are you looking for our office, or asking about a specific building?"
+            return '''<speak>
+                <prosody rate="100%" pitch="+2%" volume="medium">
+                    <emphasis level="moderate">Great question!</emphasis> 
+                    <break time="300ms"/>
+                    Our main office is at <prosody rate="85%">31 Port Richmond Ave.</prosody>
+                    <break time="250ms"/>
+                    <prosody pitch="+3%">We've also got properties all over the area!</prosody> 
+                    <break time="300ms"/>
+                    Are you looking for our office, or asking about a specific building?
+                </prosody>
+            </speak>'''
         else:
             return "Which location? Our main office on Port Richmond Ave or one of our properties? I can help with both!"
 
