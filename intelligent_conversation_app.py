@@ -525,31 +525,39 @@ If they need maintenance or have questions about a specific property, get their 
             tenant_unit = None
             tenant_id = None
             
-            if rent_manager:
-                try:
-                    # Quick tenant lookup
-                    tenant_info = rent_manager.lookup_tenant_by_phone(caller_phone)
-                    if tenant_info:
-                        caller_name = f"{tenant_info.get('FirstName', '')} {tenant_info.get('LastName', '')}".strip()
-                        tenant_unit = tenant_info.get('Unit', '')
-                        tenant_id = tenant_info.get('TenantID', '')
-                        logger.info(f"Tenant identified: {caller_name} - Unit {tenant_unit}")
-                except Exception as e:
-                    logger.warning(f"Tenant lookup failed: {e}")
+            # Skip tenant lookup for now to avoid async issues
+            # if rent_manager:
+            #     try:
+            #         tenant_info = rent_manager.lookup_tenant_by_phone(caller_phone)
+            #         if tenant_info:
+            #             caller_name = f"{tenant_info.get('FirstName', '')} {tenant_info.get('LastName', '')}".strip()
+            #             tenant_unit = tenant_info.get('Unit', '')
+            #             tenant_id = tenant_info.get('TenantID', '')
+            #             logger.info(f"Tenant identified: {caller_name} - Unit {tenant_unit}")
+            #     except Exception as e:
+            #         logger.warning(f"Tenant lookup failed: {e}")
             
-            # Add to active calls in database
+            # Add to active calls in database (upsert to handle duplicates)
             try:
                 with app.app_context():
-                    active_call = ActiveCall(
-                        call_sid=call_sid,
-                        phone_number=caller_phone,
-                        caller_name=caller_name,
-                        tenant_unit=tenant_unit,
-                        tenant_id=tenant_id,
-                        call_status='connected',
-                        current_action='Chris greeting caller'
-                    )
-                    db.session.add(active_call)
+                    # Check if call already exists
+                    existing_call = ActiveCall.query.filter_by(call_sid=call_sid).first()
+                    if existing_call:
+                        # Update existing call
+                        existing_call.last_activity = datetime.utcnow()
+                        existing_call.current_action = 'Chris greeting caller'
+                    else:
+                        # Create new call
+                        active_call = ActiveCall(
+                            call_sid=call_sid,
+                            phone_number=caller_phone,
+                            caller_name=caller_name,
+                            tenant_unit=tenant_unit,
+                            tenant_id=tenant_id,
+                            call_status='connected',
+                            current_action='Chris greeting caller'
+                        )
+                        db.session.add(active_call)
                     db.session.commit()
             except Exception as e:
                 logger.error(f"Database error adding active call: {e}")
@@ -563,7 +571,7 @@ If they need maintenance or have questions about a specific property, get their 
             
             response = VoiceResponse()
             
-            # Add simple call recording without complex webhooks
+            # Add simple call recording with status callback
             response.record(
                 max_length=1800,  # 30 minutes max
                 play_beep=False,
@@ -722,8 +730,10 @@ If they need maintenance or have questions about a specific property, get their 
     @app.route('/continue-conversation', methods=['POST'])
     def continue_conversation():
         """Continue conversation - no automatic transfers"""
+        from models import db, ActiveCall
         try:
             speech_result = request.values.get('SpeechResult', '').strip()
+            call_sid = request.values.get('CallSid', 'Unknown')
             logger.info(f"Speech received: '{speech_result}'")
             
             response = VoiceResponse()
@@ -741,6 +751,17 @@ If they need maintenance or have questions about a specific property, get their 
                     response.play(full_audio_url)
                 else:
                     response.say(ai_response, voice='Polly.Matthew-Neural')
+            
+            # Update active call status
+            try:
+                with app.app_context():
+                    active_call = ActiveCall.query.filter_by(call_sid=call_sid).first()
+                    if active_call:
+                        active_call.last_activity = datetime.utcnow()
+                        active_call.current_action = f"Discussing: {speech_result[:30]}..."
+                        db.session.commit()
+            except Exception as e:
+                logger.error(f"Database error updating call: {e}")
             
             # Continue conversation instead of auto-transfer
             response.gather(
@@ -810,6 +831,47 @@ If they need maintenance or have questions about a specific property, get their 
                 'current_action': call.current_action or 'In conversation'
             })
         return jsonify(calls_data)
+    
+    @app.route('/call-status', methods=['POST'])
+    def call_status():
+        """Handle call status updates from Twilio"""
+        from models import db, ActiveCall, CallRecord
+        
+        call_sid = request.values.get('CallSid', '')
+        call_status = request.values.get('CallStatus', '')
+        duration = request.values.get('CallDuration', '0')
+        
+        logger.info(f"Call status update: {call_sid} - {call_status}")
+        
+        if call_status in ['completed', 'failed', 'busy', 'no-answer']:
+            try:
+                with app.app_context():
+                    # Move from active calls to call records
+                    active_call = ActiveCall.query.filter_by(call_sid=call_sid).first()
+                    if active_call:
+                        # Create call record
+                        call_record = CallRecord(
+                            call_sid=call_sid,
+                            phone_number=active_call.phone_number,
+                            caller_name=active_call.caller_name,
+                            tenant_unit=active_call.tenant_unit,
+                            tenant_id=active_call.tenant_id,
+                            start_time=active_call.start_time,
+                            end_time=datetime.utcnow(),
+                            duration=int(duration),
+                            call_status=call_status
+                        )
+                        db.session.add(call_record)
+                        
+                        # Remove from active calls
+                        db.session.delete(active_call)
+                        db.session.commit()
+                        
+                        logger.info(f"Call {call_sid} moved to call records")
+            except Exception as e:
+                logger.error(f"Error updating call status: {e}")
+        
+        return '', 200
     
     @app.route('/test-intelligent')
     def test_intelligent():
