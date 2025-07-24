@@ -268,6 +268,29 @@ def create_app():
             
             # Expand instant response matching for better coverage
             instant_patterns = {
+                # EMERGENCY MAINTENANCE - IMMEDIATE RECOGNITION
+                "power not working": "ELECTRICAL EMERGENCY! I'm creating an urgent service request right now. What's your address and unit number?",
+                "no power": "POWER OUTAGE! This is urgent - I'm dispatching maintenance immediately. Address and unit please?",
+                "electricity": "ELECTRICAL ISSUE! This needs immediate attention. What's your address and unit?",
+                "power out": "POWER EMERGENCY! Creating urgent service request. Your address and unit number?",
+                "electrical": "ELECTRICAL PROBLEM! This is priority maintenance. Address and unit please?",
+                "lights not": "ELECTRICAL ISSUE! No lights is urgent. What's your address and unit?",
+                "no electricity": "POWER EMERGENCY! I'm sending maintenance right away. Address and unit?",
+                
+                # OTHER EMERGENCY MAINTENANCE
+                "no heat": "HEATING EMERGENCY! This is urgent in winter. Address and unit for immediate service?",
+                "heat not working": "HEATING ISSUE! Creating urgent service request. What's your address and unit?",
+                "no hot water": "HOT WATER EMERGENCY! This needs immediate attention. Address and unit please?",
+                "water leak": "WATER LEAK! This is urgent - could cause damage. Address and unit right away?",
+                "flooding": "FLOODING EMERGENCY! I'm dispatching maintenance immediately. Address and unit?",
+                "gas leak": "GAS LEAK EMERGENCY! This is extremely urgent. Address and unit for immediate response?",
+                
+                # CLEAR MAINTENANCE ISSUES
+                "broken": "Maintenance issue confirmed! What's broken and what's your address and unit?",
+                "not working": "I understand this needs repair. What's not working and your address/unit?",
+                "fix": "Repair needed! What needs fixing and what's your address and unit?",
+                "repair": "Maintenance request confirmed. What needs repair and your address/unit?",
+                
                 # Address confirmation patterns
                 "targee": "Perfect! What unit number and what maintenance issue can I help you with?",
                 "barker": "Great! What's your unit number and how can I assist you today?", 
@@ -279,12 +302,7 @@ def create_app():
                 "pine street": "Confirmed! Unit number and what's the problem?",
                 "betty court": "Thanks! What unit and how can I assist?",
                 "cary avenue": "Perfect! Unit number and what do you need help with?",
-                # Fast maintenance responses
-                "heat": "I'll create an urgent heating service request. What's your exact address and unit?",
-                "hot water": "Hot water issue noted. Confirm your address and unit for priority service.",
-                "leak": "Leak reported - this needs immediate attention. Address and unit please?",
-                "broken": "I'll get this fixed right away. What's broken and what's your unit?",
-                "not working": "Service issue confirmed. What's not working and your unit number?",
+                
                 # Quick confirmations
                 "yes": "Great! What else can I help you with?",
                 "no": "Understood. Anything else I can assist with?",
@@ -316,30 +334,30 @@ def create_app():
                     "role": "system",
                     "content": """You are Chris from Grinberg Management. You help tenants with maintenance issues and property questions.
 
-CRITICAL: When someone mentions an address or unit, FIRST ask them to verify their exact address so you can create service issues in the correct property.
+CRITICAL MAINTENANCE LOGIC:
+- When someone mentions "power not working", "no power", "electricity" - IMMEDIATELY recognize this as an ELECTRICAL EMERGENCY
+- When someone says "no heat", "heat not working" - IMMEDIATELY recognize as HEATING EMERGENCY  
+- When someone says "water leak", "flooding" - IMMEDIATELY recognize as WATER EMERGENCY
+- Don't ask what the problem is if they already told you - they said POWER NOT WORKING!
+
+NATURAL CONVERSATION FLOW:
+1. Person says "power not working" → You say "ELECTRICAL EMERGENCY! What's your address and unit?"
+2. Person gives address → You confirm address and create urgent service request
+3. Don't ask "what's the problem" if they already said power/heat/water issue!
 
 REAL PROPERTIES (some examples):
-- 122 Targee Street
-- 13 Barker Street
-- 15 Coonley Court
-- 173 South Avenue
-- 263A Maple Parkway
-- 28 Alaska Street
-- 28 Stanley Avenue
-- 38 Pine Street
-- 56 Betty Court
-- 627 Cary Avenue
+- 122 Targee Street, 13 Barker Street, 15 Coonley Court, 173 South Avenue, 263A Maple Parkway
 
 IMPORTANT RULES:
-- ALWAYS ask for exact address confirmation before creating service issues
-- Match spoken addresses to REAL Rent Manager properties only
-- Keep responses 15-25 words for clear communication
-- For maintenance: Get address, unit number, and problem description
+- RECOGNIZE maintenance issues immediately - don't ask what the problem is twice
+- Get address and unit for service requests
+- Keep responses 10-20 words for clear communication
+- Be SMART about what people are telling you
 
 OFFICE: 31 Port Richmond Ave, Staten Island, NY 10302
 HOURS: Monday-Friday 9 AM to 5 PM Eastern Time
 
-Focus on getting accurate property information to create service issues correctly!"""
+Use natural conversation logic - if someone says "power not working" that's obviously a maintenance emergency!"""
                 }
             ]
             
