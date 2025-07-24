@@ -101,9 +101,9 @@ def create_app():
                 "text": text,
                 "model_id": "eleven_turbo_v2",  # Faster model for quicker response
                 "voice_settings": {
-                    "stability": 0.3,          # More variation for emotional expression
-                    "similarity_boost": 0.9,   # Higher similarity for consistency
-                    "style": 0.7,              # More expressive and energetic style
+                    "stability": 0.2,          # Even more variation for higher energy
+                    "similarity_boost": 0.9,   # Maintain voice consistency
+                    "style": 0.8,              # Maximum expressiveness and energy
                     "use_speaker_boost": True
                 }
             }
@@ -149,22 +149,22 @@ def create_app():
 IMPORTANT RULES:
 - NEVER start responses with "Hi," "Hey," "Hello," or similar greetings
 - Continue the conversation naturally as if mid-conversation
-- Keep responses 8-15 words for quick delivery
-- Be direct and helpful
+- HIGH ENERGY and enthusiasm in every response
+- Sound genuinely excited and happy to help  
+- Keep responses 10-20 words for punchy, energetic delivery
+- Be enthusiastic and upbeat
 
 OFFICE HOURS: Monday-Friday 9 AM to 5 PM Eastern Time
 Address: 31 Port Richmond Ave, Staten Island, NY 10302
 
-RESPONSE EXAMPLES:
+ENERGETIC RESPONSE EXAMPLES:
 Question: "Are you open?"
-Answer: "We're closed right now, but I'm here to help. We're open Monday through Friday, 9 to 5."
-
-For office hours questions, be direct and complete. Don't ask for unit numbers unless they need maintenance help.
+Answer: "We're closed right now, but I'm absolutely here to help! We're open Monday through Friday, 9 to 5!"
 
 Question: "I have a maintenance issue"
-Answer: "What's happening? I'll help get that sorted out."
+Answer: "Oh absolutely! Tell me what's going on and I'll get that taken care of right away!"
 
-Be helpful and warm, but get straight to the point without greetings."""
+Be enthusiastic, energetic, and sound genuinely thrilled to assist with anything they need!"""
                 }
             ]
             
@@ -231,7 +231,7 @@ If they need maintenance or have questions about a specific property, get their 
                 model="gpt-4o",  # Latest OpenAI model for best conversation
                 messages=[{"role": msg["role"], "content": msg["content"]} for msg in messages],
                 max_tokens=50,  # Enough tokens to complete responses without cutting off
-                temperature=0.3,   # More consistent and direct
+                temperature=0.5,   # More natural variation for energy
                 presence_penalty=0,  # Remove penalties for speed
                 frequency_penalty=0
             )
@@ -575,8 +575,19 @@ If they need maintenance or have questions about a specific property, get their 
             #     record_on_answer=True
             # )
             
-            # Chris's natural voice greeting with ElevenLabs
-            greeting_text = "Hi there, you have reached Grinberg Management, I'm Chris, how can I help?"
+            # Time-based greeting with natural energy
+            eastern = pytz.timezone('US/Eastern')
+            current_time = datetime.now(eastern)
+            current_hour = current_time.hour
+            
+            if 5 <= current_hour < 12:
+                time_greeting = "Good morning"
+            elif 12 <= current_hour < 17:
+                time_greeting = "Good afternoon"
+            else:
+                time_greeting = "Good evening"
+            
+            greeting_text = f"{time_greeting}! You've reached Grinberg Management, I'm Chris, how can I help you today?"
             
             # Try ElevenLabs for natural voice
             audio_url = generate_elevenlabs_audio(greeting_text)
@@ -589,12 +600,31 @@ If they need maintenance or have questions about a specific property, get their 
                 # Fallback to Twilio voice
                 response.say(greeting_text, voice='Polly.Matthew-Neural')
             
-            # Wait for speech input
+            # Wait for speech input with shorter timeout for more interactive feel
             response.gather(
                 input='speech',
                 action='/continue-conversation',
-                timeout=30,
-                speech_timeout=6,
+                timeout=5,  # Short timeout so Chris checks in quickly
+                speech_timeout=4,
+                language='en-US'
+            )
+            
+            # Chris checks in after 5 seconds of silence
+            checkin_text = "I'm still here! What can I help you with today?"
+            checkin_audio = generate_elevenlabs_audio(checkin_text)
+            if checkin_audio:
+                replit_domain = os.environ.get('REPLIT_DOMAINS', '').split(',')[0] if os.environ.get('REPLIT_DOMAINS') else 'localhost:5000'
+                full_audio_url = f"https://{replit_domain}{checkin_audio}"
+                response.play(full_audio_url)
+            else:
+                response.say(checkin_text, voice='Polly.Matthew-Neural')
+            
+            # Give another chance to respond
+            response.gather(
+                input='speech',
+                action='/continue-conversation',
+                timeout=10,
+                speech_timeout=5,
                 language='en-US'
             )
             
