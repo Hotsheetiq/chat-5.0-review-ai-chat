@@ -215,7 +215,7 @@ Keep responses under 20 words for faster delivery. Sound natural and conversatio
             # Generate response using GPT-4o with optimized parameters
             response = openai_client.chat.completions.create(
                 model="gpt-4o",  # Latest OpenAI model for best conversation
-                messages=[{"role": msg["role"], "content": msg["content"]} for msg in messages],
+                messages=messages,
                 max_tokens=60,  # Shorter for faster responses  
                 temperature=0.7,   # Balanced for speed and naturalness
                 presence_penalty=0.2,  # Encourage new topics
