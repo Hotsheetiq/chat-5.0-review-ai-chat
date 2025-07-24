@@ -88,7 +88,7 @@ def create_app():
                 }
             }
             
-            response = requests.post(url, json=data, headers=headers, timeout=5)  # Much faster timeout
+            response = requests.post(url, json=data, headers=headers, timeout=3)  # Even faster timeout
             if response.status_code == 200:
                 # Save audio file and return URL
                 audio_filename = f"audio_{hash(text)}.mp3"
@@ -223,10 +223,10 @@ If they need maintenance or have questions about a specific property, get their 
             response = openai_client.chat.completions.create(
                 model="gpt-4o",  # Latest OpenAI model for best conversation
                 messages=[{"role": msg["role"], "content": msg["content"]} for msg in messages],
-                max_tokens=40,  # Even shorter for sub-2-second responses  
-                temperature=0.5,   # Lower for faster, more focused responses
-                presence_penalty=0.1,  # Reduce processing overhead
-                frequency_penalty=0.2  # Minimal repetition control
+                max_tokens=25,  # Very short responses for speed
+                temperature=0.3,   # Lower for faster responses
+                presence_penalty=0,  # Remove penalties for speed
+                frequency_penalty=0
             )
             
             ai_response = response.choices[0].message.content
@@ -534,25 +534,38 @@ If they need maintenance or have questions about a specific property, get their 
                 # Fallback to Twilio voice if ElevenLabs fails
                 response.say(greeting, voice='Polly.Matthew-Neural')
             
-            # Simple speech gathering without complex webhooks - just collect input and transfer
+            # Extended speech gathering to avoid premature transfers
             response.gather(
                 input='speech',
                 action='/simple-response',
                 method='POST',
-                timeout=10,
-                speech_timeout=3,
+                timeout=20,  # Longer timeout so Chris doesn't transfer immediately
+                speech_timeout=5,  # More time for user to speak
                 language='en-US'
             )
             
-            # If no speech detected, transfer with friendly message
-            transfer_text = "I'm here if you need anything else! Let me connect you with our team at (718) 414-6984."
-            audio_url = generate_elevenlabs_audio(transfer_text)
+            # If no speech detected after extended timeout, offer to wait or transfer
+            wait_text = "I'm here when you're ready! Take your time, or I can connect you with our team if you prefer."
+            audio_url = generate_elevenlabs_audio(wait_text)
             if audio_url:
                 replit_domain = os.environ.get('REPLIT_DOMAINS', '').split(',')[0] if os.environ.get('REPLIT_DOMAINS') else 'localhost:5000'
                 full_audio_url = f"https://{replit_domain}{audio_url}"
                 response.play(full_audio_url)
             else:
-                response.say(transfer_text, voice='Polly.Matthew-Neural')
+                response.say(wait_text, voice='Polly.Matthew-Neural')
+            
+            # Give another chance to speak instead of immediate transfer
+            response.gather(
+                input='speech',
+                action='/simple-response',
+                method='POST',
+                timeout=15,
+                speech_timeout=4,
+                language='en-US'
+            )
+            
+            # Only transfer after second timeout
+            response.say("Let me connect you with our team at (718) 414-6984.", voice='Polly.Matthew-Neural')
             response.dial('(718) 414-6984')
             
             logger.info(f"Intelligent conversation initiated for {caller_phone}")
