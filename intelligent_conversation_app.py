@@ -532,16 +532,8 @@ If they need maintenance or have questions about a specific property, get their 
             # Cheerful greeting from Chris
             greeting = "Hi there, you have reached Grinberg Management, I'm Chris, how can I help?"
             
-            # Use ElevenLabs for natural human voice
-            audio_url = generate_elevenlabs_audio(greeting)
-            if audio_url:
-                # Get the correct public URL for Twilio to access
-                replit_domain = os.environ.get('REPLIT_DOMAINS', '').split(',')[0] if os.environ.get('REPLIT_DOMAINS') else 'localhost:5000'
-                full_audio_url = f"https://{replit_domain}{audio_url}"
-                response.play(full_audio_url)
-            else:
-                # Fallback to Twilio voice if ElevenLabs fails
-                response.say(greeting, voice='Polly.Matthew-Neural')
+            # Temporarily use Twilio voice to test if issue is with audio serving
+            response.say(greeting, voice='Polly.Matthew-Neural')
             
             # Gather input for intelligent conversation
             response.gather(
@@ -554,13 +546,7 @@ If they need maintenance or have questions about a specific property, get their 
             
             # Fallback if no speech detected  
             fallback_text = "I'm sorry, I didn't catch that. Let me connect you with our wonderful team at (718) 414-6984!"
-            audio_url = generate_elevenlabs_audio(fallback_text)
-            if audio_url:
-                replit_domain = os.environ.get('REPLIT_DOMAINS', '').split(',')[0] if os.environ.get('REPLIT_DOMAINS') else 'localhost:5000'
-                full_audio_url = f"https://{replit_domain}{audio_url}"
-                response.play(full_audio_url)
-            else:
-                response.say(fallback_text, voice='Polly.Matthew-Neural')
+            response.say(fallback_text, voice='Polly.Matthew-Neural')
             response.dial('(718) 414-6984')
             
             logger.info(f"Intelligent conversation initiated for {caller_phone}")
