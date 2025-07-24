@@ -518,16 +518,7 @@ If they need maintenance or have questions about a specific property, get their 
             
             response = VoiceResponse()
             
-            # Start call recording for all calls
-            response.record(
-                action='/recording-status',
-                method='POST',
-                max_length=1800,  # 30 minutes max recording
-                play_beep=False,  # No recording beep for natural conversation
-                record_on_answer=True,
-                transcribe=True,  # Enable transcription for better record keeping
-                transcribe_callback='/transcription-callback'
-            )
+            # Remove recording to eliminate all webhook callbacks that might cause application error
             
             # Simplified greeting and immediate transfer - no speech gathering to avoid webhook issues
             greeting = "Hi there, you have reached Grinberg Management, I'm Chris. I'm connecting you with our amazing team at (718) 414-6984!"
