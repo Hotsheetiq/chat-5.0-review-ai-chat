@@ -402,24 +402,24 @@ def create_app():
             
             # Expand instant response matching for better coverage
             instant_patterns = {
-                # EMERGENCY MAINTENANCE - IMMEDIATE RECOGNITION (SUPER ENERGETIC responses)
-                "power not working": "ELECTRICAL EMERGENCY! I'm getting someone out there RIGHT NOW! What's your address?",
-                "no power": "Oh NO! Power outage is urgent! I'm creating your electrical service request immediately! Address please?",
-                "don't have power": "That's TERRIBLE! I'm getting maintenance on this emergency right away! What's your address?",
-                "have no power": "Electrical emergency! I'm dispatching someone IMMEDIATELY! Address?",
-                "electricity": "ELECTRICAL ISSUE! I'm SO ready to get this fixed fast! What's your address?",
-                "power out": "Power outage emergency! I'm getting someone there ASAP! Address?",
-                "electrical": "ELECTRICAL PROBLEM! I'm getting maintenance scheduled right now! Address?",
-                "lights not": "No lights is urgent! I'm getting this fixed immediately! Address?",
-                "no electricity": "Electrical emergency! Getting someone out there NOW! Address?",
+                # ELECTRICAL MAINTENANCE - PROFESSIONAL RESPONSE
+                "power not working": "I understand you're having electrical issues. Let me get a service request created for you. What's your address?",
+                "no power": "That's really inconvenient! I'll create an electrical service request right away. What's your address?",
+                "don't have power": "I'm sorry to hear about the power issue. Let me get maintenance scheduled for you. Address?",
+                "have no power": "Power issues are frustrating. I'll get a service request going immediately. What's your address?",
+                "electricity": "I can help with electrical problems. Let me create a service request. Address?",
+                "power out": "Sorry about the power trouble. I'll get maintenance scheduled right away. Address?",
+                "electrical": "I'll help with that electrical issue. Let me create a service request. Address?",
+                "lights not": "Lighting issues need attention. I'll get maintenance scheduled. Address?",
+                "no electricity": "That's definitely inconvenient. Let me create a service request for you. Address?",
                 
-                # OTHER EMERGENCY MAINTENANCE (Energetic responses)
-                "no heat": "Oh my! No heat is absolutely terrible! I'm getting someone out there super quickly. What's your address and unit?",
-                "heat not working": "That's definitely not comfortable at all! I'm getting heating maintenance scheduled immediately. Address and unit?",
-                "no hot water": "Hot water issues are such a hassle! I'm excited to get this fixed for you right away. What's your address and unit?",
-                "water leak": "Water leaks can cause serious damage! I'm getting someone there super fast. Address and unit please?",
-                "flooding": "Oh wow, that sounds incredibly stressful! I'm getting emergency maintenance on this right now. Address and unit?",
-                "gas leak": "Gas leaks are extremely serious! I'm making this my top priority immediately. Address and unit for immediate response?",
+                # OTHER MAINTENANCE ISSUES (Professional responses)
+                "no heat": "No heat is definitely uncomfortable. I'll get heating maintenance scheduled right away. What's your address and unit?",
+                "heat not working": "Heating issues need attention. I'll create a service request immediately. Address and unit?",
+                "no hot water": "Hot water problems are inconvenient. Let me get maintenance scheduled for you. Address and unit?",
+                "water leak": "Water leaks need prompt attention. I'll get someone scheduled right away. Address and unit please?",
+                "flooding": "That sounds concerning. I'll create an urgent service request. Address and unit?",
+                "gas leak": "Gas issues are serious. I'll create a high-priority service request immediately. Address and unit for immediate response?",
                 
                 # CLEAR MAINTENANCE ISSUES
                 "broken": "Maintenance issue confirmed! What's broken and what's your address and unit?",
@@ -509,7 +509,9 @@ NATURAL CONVERSATION FLOW:
 1. Person says "no power" → You say "ELECTRICAL EMERGENCY! What's your address and unit?"
 2. Person gives address → You say "Got it! I'm creating electrical service request for [address]. Maintenance will contact you within 2-4 hours."
 3. NEVER ask "what's the maintenance issue" if they already said no power/heat/water!
-4. NEVER promise "immediate" dispatch - say "within 2-4 hours" for realistic expectations
+4. NEVER promise "immediate" or "right now" dispatch - always say "within 2-4 hours" for realistic expectations
+5. Electrical issues are not always emergencies - could be unpaid bills, minor issues, etc.
+6. Be sympathetic but professional, not overly excited about problems
 
 CRITICAL CONVERSATION MEMORY:
 - REMEMBER the caller's complaint from the start of the call
