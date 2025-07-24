@@ -131,24 +131,63 @@ def create_app():
             logger.error(f"ElevenLabs generation error: {e}")
             return None
     
-    # Fast response cache for common questions
-    QUICK_RESPONSES = {
-        "are you open": "We're closed right now, but I'm absolutely here to help! We're open Monday through Friday, 9 to 5!",
-        "what are your hours": "We're open Monday through Friday, 9 AM to 5 PM Eastern Time!",
-        "office hours": "Monday through Friday, 9 to 5! We're closed right now but I'm here to help!",
-        "when do you open": "We open Monday through Friday at 9 AM Eastern Time!",
-        "are you closed": "Yes, we're closed right now, but I'm here to help! We're open Monday through Friday, 9 to 5!"
+    # Instant response cache with pre-generated audio URLs (no AI delay)
+    INSTANT_RESPONSES = {
+        "are you open": {
+            "text": "We're closed right now, but I'm absolutely here to help! We're open Monday through Friday, 9 to 5!",
+            "audio": None  # Will be generated once and cached
+        },
+        "what are your hours": {
+            "text": "We're open Monday through Friday, 9 AM to 5 PM Eastern Time!",
+            "audio": None
+        },
+        "office hours": {
+            "text": "Monday through Friday, 9 to 5! We're closed right now but I'm here to help!",
+            "audio": None
+        },
+        "when do you open": {
+            "text": "We open Monday through Friday at 9 AM Eastern Time!",
+            "audio": None
+        },
+        "are you closed": {
+            "text": "Yes, we're closed right now, but I'm here to help! We're open Monday through Friday, 9 to 5!",
+            "audio": None
+        },
+        "hello": {
+            "text": "Absolutely! What can I help you with today?",
+            "audio": None
+        },
+        "help": {
+            "text": "Of course! I'm here to help with anything you need!",
+            "audio": None
+        }
     }
+    
+    def pre_generate_instant_audio():
+        """Pre-generate audio for instant responses on startup"""
+        logger.info("Pre-generating audio for instant responses...")
+        for key, response in INSTANT_RESPONSES.items():
+            if response["audio"] is None:
+                audio_url = generate_elevenlabs_audio(response["text"])
+                if audio_url:
+                    response["audio"] = audio_url
+                    logger.info(f"Pre-generated audio for: {key}")
+    
+    # Pre-generate audio on startup
+    try:
+        pre_generate_instant_audio()
+    except Exception as e:
+        logger.error(f"Error pre-generating audio: {e}")
 
     def generate_intelligent_response(user_input, call_sid=None):
         """Generate intelligent AI response using GPT-4o with speed optimization"""
         try:
-            # Check for quick responses first to avoid AI delay
+            # Check for instant responses first (no AI delay)
             user_lower = user_input.lower().strip()
-            for key, quick_response in QUICK_RESPONSES.items():
+            for key, response_data in INSTANT_RESPONSES.items():
                 if key in user_lower:
-                    logger.info(f"Using cached quick response for: {user_input}")
-                    return quick_response
+                    logger.info(f"Using INSTANT cached response for: {user_input}")
+                    return response_data["text"]
             
             if not openai_client:
                 logger.error("No OpenAI client available")
@@ -763,18 +802,37 @@ If they need maintenance or have questions about a specific property, get their 
             response = VoiceResponse()
             
             if speech_result:
-                # Generate a quick AI response
-                ai_response = generate_intelligent_response(speech_result, 'simple')
+                # Check for instant cached responses first (FASTEST)
+                user_lower = speech_result.lower().strip()
+                instant_audio_url = None
+                ai_response = None
+                
+                for key, response_data in INSTANT_RESPONSES.items():
+                    if key in user_lower:
+                        ai_response = response_data["text"]
+                        instant_audio_url = response_data["audio"]
+                        logger.info(f"Using INSTANT cached response for: {speech_result}")
+                        break
+                
+                # If no instant response, generate AI response
+                if not ai_response:
+                    ai_response = generate_intelligent_response(speech_result, 'simple')
+                
                 logger.info(f"AI response: {ai_response}")
                 
-                # Use ElevenLabs for natural response
-                audio_url = generate_elevenlabs_audio(ai_response)
-                if audio_url:
+                # Use pre-generated audio or generate new one
+                if instant_audio_url:
                     replit_domain = os.environ.get('REPLIT_DOMAINS', '').split(',')[0] if os.environ.get('REPLIT_DOMAINS') else 'localhost:5000'
-                    full_audio_url = f"https://{replit_domain}{audio_url}"
+                    full_audio_url = f"https://{replit_domain}{instant_audio_url}"
                     response.play(full_audio_url)
                 else:
-                    response.say(ai_response, voice='Polly.Matthew-Neural')
+                    audio_url = generate_elevenlabs_audio(ai_response)
+                    if audio_url:
+                        replit_domain = os.environ.get('REPLIT_DOMAINS', '').split(',')[0] if os.environ.get('REPLIT_DOMAINS') else 'localhost:5000'
+                        full_audio_url = f"https://{replit_domain}{audio_url}"
+                        response.play(full_audio_url)
+                    else:
+                        response.say(ai_response, voice='Polly.Matthew-Neural')
             
             # Update active call status
             try:
