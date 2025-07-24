@@ -205,6 +205,7 @@ Keep responses under 20 words for faster delivery. Sound natural and conversatio
 IMPORTANT: Ask for their address or unit information so you can help them properly. Say something like:
 "I'd be happy to help! Could you tell me your address or unit number so I can assist you better?"
 
+If they provide unit/address info in their response, you can help them with maintenance requests and property questions.
 If they need maintenance or have questions about a specific property, get their location details first."""
                 messages.append({
                     "role": "system", 
