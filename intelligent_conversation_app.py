@@ -656,18 +656,38 @@ If they need maintenance or have questions about a specific property, get their 
                     # Create async function for tenant lookup
                     async def lookup_tenant():
                         try:
-                            return await rent_manager.lookup_tenant_by_phone(caller_phone)
+                            if rent_manager:
+                                return await rent_manager.lookup_tenant_by_phone(caller_phone)
+                            return None
                         except Exception as e:
                             logger.warning(f"Tenant lookup error: {e}")
                             return None
                     
-                    # Run tenant lookup
+                    # Run tenant lookup with timeout to prevent worker timeout
                     try:
-                        loop = asyncio.get_event_loop()
-                        tenant_info = loop.run_until_complete(lookup_tenant())
+                        # Set a 3-second timeout for phone lookup
+                        async def lookup_with_timeout():
+                            try:
+                                return await asyncio.wait_for(lookup_tenant(), timeout=3.0)
+                            except asyncio.TimeoutError:
+                                logger.warning(f"Phone lookup timeout for {caller_phone}")
+                                return None
+                        
+                        loop = asyncio.new_event_loop()
+                        asyncio.set_event_loop(loop)
+                        try:
+                            tenant_info = loop.run_until_complete(lookup_with_timeout())
+                        finally:
+                            loop.close()
                     except RuntimeError:
-                        # If no event loop, create new one
-                        tenant_info = asyncio.run(lookup_tenant())
+                        # If no event loop, create new one with timeout
+                        async def lookup_with_timeout():
+                            try:
+                                return await asyncio.wait_for(lookup_tenant(), timeout=3.0)
+                            except asyncio.TimeoutError:
+                                logger.warning(f"Phone lookup timeout for {caller_phone}")
+                                return None
+                        tenant_info = asyncio.run(lookup_with_timeout())
                     
                     if tenant_info:
                         caller_name = f"{tenant_info.get('FirstName', '')} {tenant_info.get('LastName', '')}".strip()
