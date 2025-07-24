@@ -619,7 +619,9 @@ If they need maintenance or have questions about a specific property, get their 
                 transfer_text = "Perfect! I'm connecting you with Diane or Janier right now!"
                 audio_url = generate_elevenlabs_audio(transfer_text)
                 if audio_url:
-                    response.play(f"https://{request.host}{audio_url}")
+                    replit_domain = os.environ.get('REPLIT_DOMAINS', '').split(',')[0] if os.environ.get('REPLIT_DOMAINS') else 'localhost:5000'
+                    full_audio_url = f"https://{replit_domain}{audio_url}"
+                    response.play(full_audio_url)
                 else:
                     response.say(transfer_text, voice='Polly.Matthew-Neural')
                 response.dial('(718) 414-6984')
@@ -639,7 +641,9 @@ If they need maintenance or have questions about a specific property, get their 
                 still_here_text = "I'm still here if you need anything else! Or I can connect you with our team at (718) 414-6984."
                 audio_url = generate_elevenlabs_audio(still_here_text)
                 if audio_url:
-                    response.play(f"https://{request.host}{audio_url}")
+                    replit_domain = os.environ.get('REPLIT_DOMAINS', '').split(',')[0] if os.environ.get('REPLIT_DOMAINS') else 'localhost:5000'
+                    full_audio_url = f"https://{replit_domain}{audio_url}"
+                    response.play(full_audio_url)
                 else:
                     response.say(still_here_text, voice='Polly.Matthew-Neural')
                 
@@ -656,7 +660,9 @@ If they need maintenance or have questions about a specific property, get their 
                 goodbye_text = "Thank you for calling Grinberg Management! Have a wonderful day!"
                 audio_url = generate_elevenlabs_audio(goodbye_text)
                 if audio_url:
-                    response.play(f"https://{request.host}{audio_url}")
+                    replit_domain = os.environ.get('REPLIT_DOMAINS', '').split(',')[0] if os.environ.get('REPLIT_DOMAINS') else 'localhost:5000'
+                    full_audio_url = f"https://{replit_domain}{audio_url}"
+                    response.play(full_audio_url)
                 else:
                     response.say(goodbye_text, voice='Polly.Matthew-Neural')
             
@@ -670,7 +676,9 @@ If they need maintenance or have questions about a specific property, get their 
             error_text = "I'm having a small technical moment. Let me help you another way - what can I assist you with today?"
             audio_url = generate_elevenlabs_audio(error_text)
             if audio_url:
-                response.play(f"https://{request.host}{audio_url}")
+                replit_domain = os.environ.get('REPLIT_DOMAINS', '').split(',')[0] if os.environ.get('REPLIT_DOMAINS') else 'localhost:5000'
+                full_audio_url = f"https://{replit_domain}{audio_url}"
+                response.play(full_audio_url)
             else:
                 response.say(error_text, voice='Polly.Matthew-Neural')
             
@@ -687,7 +695,9 @@ If they need maintenance or have questions about a specific property, get their 
             transfer_text = "Let me connect you with our team at (718) 414-6984!"
             audio_url = generate_elevenlabs_audio(transfer_text)
             if audio_url:
-                response.play(f"https://{request.host}{audio_url}")
+                replit_domain = os.environ.get('REPLIT_DOMAINS', '').split(',')[0] if os.environ.get('REPLIT_DOMAINS') else 'localhost:5000'
+                full_audio_url = f"https://{replit_domain}{audio_url}"
+                response.play(full_audio_url)
             else:
                 response.say(transfer_text, voice='Polly.Matthew-Neural')
             response.dial('(718) 414-6984')
