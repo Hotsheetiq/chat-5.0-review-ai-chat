@@ -49,7 +49,7 @@ def create_app():
     
     # Pre-generate common responses for instant delivery
     common_responses = {
-        "greeting": "Grinberg Management, this is Tony! How can I help you today?",
+        "greeting": "Hi there, you have reached Grinberg Management, I'm Chris, how can I help?",
         "thanks": "You're so welcome! Anything else I can help with?",
         "goodbye": "Thank you for calling Grinberg Management! Have a wonderful day!",
         "transfer": "Perfect! I'm connecting you with Diane or Janier right now!",
@@ -57,8 +57,8 @@ def create_app():
         "maintenance": "Absolutely! What's going on? I'm here to help get that sorted out."
     }
     
-    def generate_elevenlabs_audio(text, voice_id="pNInz6obpgDQGcFmaJgB"):
-        """Generate audio using ElevenLabs API with Tony voice - optimized for speed"""
+    def generate_elevenlabs_audio(text, voice_id="1aaKc4GWOfIKpc3svAJd"):
+        """Generate audio using ElevenLabs API with Chris voice - optimized for speed"""
         try:
             if not ELEVENLABS_API_KEY:
                 logger.warning("No ElevenLabs API key available")
@@ -124,7 +124,7 @@ def create_app():
             messages = [
                 {
                     "role": "system",
-                    "content": """You are Tony, the AI Assistant for Grinberg Management. You sound exactly like ChatGPT - natural, intelligent, and genuinely conversational.
+                    "content": """You are Chris, the AI Assistant for Grinberg Management. You sound exactly like ChatGPT - natural, intelligent, and genuinely conversational.
 
 PERSONALITY & TONE:
 - Talk like a real person, not a formal assistant
@@ -465,7 +465,7 @@ If they need maintenance or have questions about a specific property, get their 
             note_result = await rent_manager.add_tenant_note(
                 tenant_info.get('id'),
                 {
-                    'note': f"Tony Voice Assistant Call - Duration: {recording_info.get('duration', 'Unknown')}s\n\nSummary: {transcription[:200]}",
+                    'note': f"Chris Voice Assistant Call - Duration: {recording_info.get('duration', 'Unknown')}s\n\nSummary: {transcription[:200]}",
                     'type': 'call_log',
                     'timestamp': datetime.now().isoformat()
                 }
@@ -529,8 +529,8 @@ If they need maintenance or have questions about a specific property, get their 
                 transcribe_callback='/transcription-callback'
             )
             
-            # Cheerful greeting from Tony
-            greeting = "Grinberg Management, this is Tony! How can I help you today?"
+            # Cheerful greeting from Chris
+            greeting = "Hi there, you have reached Grinberg Management, I'm Chris, how can I help?"
             
             # Use ElevenLabs for natural human voice
             audio_url = generate_elevenlabs_audio(greeting)
@@ -595,7 +595,7 @@ If they need maintenance or have questions about a specific property, get their 
             ai_response = generate_intelligent_response(speech_result, call_sid)
             logger.info(f"Intelligent AI response: {ai_response}")
             
-            # Use ElevenLabs for Tony's natural voice
+            # Use ElevenLabs for Chris's natural voice
             audio_url = generate_elevenlabs_audio(ai_response)
             if audio_url:
                 response.play(f"https://{request.host}{audio_url}")
