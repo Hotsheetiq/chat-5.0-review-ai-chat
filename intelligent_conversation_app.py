@@ -193,6 +193,30 @@ def create_app():
             "text": "I can help with maintenance requests, office hours, and property questions.",
             "audio": None
         },
+        "what services do you provide": {
+            "text": "I help with maintenance requests, office hours, and property questions. What do you need?",
+            "audio": None
+        },
+        "what services": {
+            "text": "I help with maintenance requests, office hours, and property questions. What do you need?",
+            "audio": None
+        },
+        "what do you do": {
+            "text": "I help with maintenance requests, office hours, and property questions. What do you need?",
+            "audio": None
+        },
+        "what kind of help": {
+            "text": "I can help with maintenance requests, office hours, and property questions. What's going on?",
+            "audio": None
+        },
+        "what can you help with": {
+            "text": "I help with maintenance requests, office hours, and property questions. What do you need?",
+            "audio": None
+        },
+        "how can you help": {
+            "text": "I can help with maintenance requests, office hours, and property questions. What's happening?",
+            "audio": None
+        },
         "open right now": {
             "text": "dynamic_office_hours",  # Special marker for dynamic response
             "audio": None
@@ -239,6 +263,18 @@ def create_app():
         },
         "hey chris": {
             "text": "Hey! How can I help you out?",
+            "audio": None
+        },
+        "what's up": {
+            "text": "Hey there! What can I help you with today?",
+            "audio": None
+        },
+        "what's going on": {
+            "text": "Hey! What can I help you with?",
+            "audio": None
+        },
+        "what's happening": {
+            "text": "Hey there! How can I help you today?",
             "audio": None
         },
         "how are you": {
