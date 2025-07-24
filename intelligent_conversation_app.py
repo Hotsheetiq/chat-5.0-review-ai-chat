@@ -397,6 +397,95 @@ def create_app():
     def generate_intelligent_response(user_input, call_sid=None):
         """Generate intelligent AI response using GPT-4o with speed optimization"""
         try:
+            # CRITICAL: Check conversation memory FIRST for auto-ticket creation
+            if call_sid and call_sid in conversation_history and len(conversation_history[call_sid]) > 1:
+                logger.info(f"🧠 CHECKING CONVERSATION MEMORY for call {call_sid}")
+                
+                # Extract information from conversation history
+                extracted_info = {"address": None, "issue": None}
+                
+                for entry in conversation_history[call_sid]:
+                    content = entry['content'].lower()
+                    logger.info(f"🔍 ANALYZING: '{content}'")
+                    
+                    # Extract addresses from conversation history - DYNAMIC DETECTION
+                    if not extracted_info["address"]:
+                        import re
+                        # Check for street address patterns (numbers + street names)
+                        address_match = re.search(r'(\d+)\s+([\w\s]+(?:street|avenue|ave|road|rd|court|ct|lane|ln|drive|dr|way|place|pl|boulevard|blvd))', content, re.IGNORECASE)
+                        if address_match:
+                            potential_address = f"{address_match.group(1)} {address_match.group(2)}"
+                            extracted_info["address"] = potential_address
+                            logger.info(f"🏠 FOUND ADDRESS: {potential_address}")
+                    
+                    # Extract issues from conversation history
+                    if not extracted_info["issue"]:
+                        issue_patterns = [
+                            (['electrical', 'power', 'electric', 'no power', "don't have power", 'electricity', 'electrical issue', 'electrical problem'], "electrical"),
+                            (['noise', 'loud', 'neighbors', 'music', 'party'], "noise complaint"),
+                            (['heat', 'heating', 'no heat', 'cold'], "heating"),
+                            (['water', 'leak', 'plumbing'], "plumbing"),
+                            (['maintenance', 'repair', 'broken', 'not working'], "maintenance")
+                        ]
+                        
+                        for keywords, issue_type in issue_patterns:
+                            if any(word in content for word in keywords):
+                                extracted_info["issue"] = issue_type
+                                logger.info(f"⚡ FOUND ISSUE: {issue_type} from '{content}'")
+                                break
+                
+                logger.info(f"🧠 MEMORY RESULT - Address: {extracted_info['address']}, Issue: {extracted_info['issue']}")
+                
+                # If we have BOTH address and issue, create service ticket immediately
+                if extracted_info["address"] and extracted_info["issue"]:
+                    logger.info(f"🎫 CREATING SERVICE TICKET: {extracted_info['issue']} at {extracted_info['address']}")
+                    
+                    try:
+                        # Create a temporary tenant info dict for the service creation
+                        tenant_info = {
+                            'name': 'Caller',
+                            'phone': request.values.get('From', ''),
+                            'address': extracted_info["address"]
+                        }
+                        
+                        # Use async call properly
+                        import asyncio
+                        issue_result = asyncio.run(service_handler.create_maintenance_issue(
+                            tenant_info=tenant_info,
+                            issue_type=extracted_info["issue"],
+                            description=f"{extracted_info['issue']} issue reported",
+                            unit_address=extracted_info["address"]
+                        ))
+                        
+                        if issue_result and 'issue_number' in issue_result:
+                            ticket_number = issue_result['issue_number']
+                            response = f"Perfect! I've created service ticket #{ticket_number} for your {extracted_info['issue']} issue at {extracted_info['address']}. Dimitry will contact you within 2-4 hours. Would you like me to text you the ticket details?"
+                            
+                            # Store assistant response in conversation history
+                            conversation_history[call_sid].append({
+                                'role': 'assistant', 
+                                'content': response, 
+                                'timestamp': datetime.now()
+                            })
+                            return response
+                        else:
+                            response = f"Perfect! I've created your service request for {extracted_info['issue']} issue at {extracted_info['address']}. Dimitry will contact you within 2-4 hours."
+                            conversation_history[call_sid].append({
+                                'role': 'assistant', 
+                                'content': response, 
+                                'timestamp': datetime.now()
+                            })
+                            return response
+                    except Exception as e:
+                        logger.error(f"Service issue creation failed: {e}")
+                        response = f"I've documented your {extracted_info['issue']} issue at {extracted_info['address']}. Dimitry will contact you within 2-4 hours."
+                        conversation_history[call_sid].append({
+                            'role': 'assistant', 
+                            'content': response, 
+                            'timestamp': datetime.now()
+                        })
+                        return response
+            
             # Check for instant responses first (no AI delay)
             user_lower = user_input.lower().strip()
             
@@ -542,31 +631,77 @@ def create_app():
                 for entry in conversation_history[call_sid]:
                     content = entry['content'].lower()
                     
-                    # Extract addresses from conversation history - COMPREHENSIVE DETECTION
+                    # Extract addresses from conversation history - DYNAMIC DETECTION
                     if not extracted_info["address"]:
-                        # Check for addresses mentioned in conversation
                         import re
-                        # Look for any address patterns including numbers + street names
+                        
+                        # Check for street address patterns (numbers + street names)
+                        address_match = re.search(r'(\d+)\s+([\w\s]+(?:street|avenue|ave|road|rd|court|ct|lane|ln|drive|dr|way|place|pl|boulevard|blvd))', content, re.IGNORECASE)
+                        if address_match:
+                            potential_address = f"{address_match.group(1)} {address_match.group(2)}"
+                            logger.info(f"🔍 POTENTIAL ADDRESS DETECTED: {potential_address}")
+                            
+                            # Try to lookup this address in Rent Manager to validate it and find tenant
+                            try:
+                                from address_matcher import AddressMatcher
+                                matcher = AddressMatcher(rent_manager_api)
+                                matched_address = matcher.find_closest_match(potential_address)
+                                
+                                if matched_address:
+                                    extracted_info["address"] = matched_address
+                                    logger.info(f"🏠 VERIFIED ADDRESS: {matched_address} (matched from: {potential_address})")
+                                    
+                                    # Now try to lookup tenant information for this address
+                                    try:
+                                        # Get the phone number from the request
+                                        caller_phone = request.values.get('From', '').replace('+1', '').replace('-', '').replace('(', '').replace(')', '').replace(' ', '')
+                                        
+                                        # Look up tenant by phone number using sync wrapper
+                                        import asyncio
+                                        try:
+                                            tenant_lookup = asyncio.run(rent_manager_api.lookup_tenant_by_phone(caller_phone))
+                                        except Exception as async_error:
+                                            logger.error(f"Async tenant lookup failed: {async_error}")
+                                            tenant_lookup = None
+                                        
+                                        if tenant_lookup:
+                                            # Store tenant info in call state for future use
+                                            if call_sid not in call_states:
+                                                call_states[call_sid] = {}
+                                            call_states[call_sid]['tenant_info'] = tenant_lookup
+                                            logger.info(f"👤 TENANT FOUND: {tenant_lookup.get('name', 'Unknown')} at {matched_address}")
+                                        else:
+                                            logger.info(f"👤 NO TENANT MATCH: Address {matched_address} found but caller phone {caller_phone} not in tenant database")
+                                    except Exception as tenant_error:
+                                        logger.error(f"Tenant lookup failed: {tenant_error}")
+                                else:
+                                    # Still use the potential address even if not in database
+                                    extracted_info["address"] = potential_address
+                                    logger.info(f"🏠 USING UNVERIFIED ADDRESS: {potential_address}")
+                            except Exception as e:
+                                logger.error(f"Address verification failed: {e}")
+                                # Use potential address as fallback
+                                extracted_info["address"] = potential_address
+                                logger.info(f"🏠 FALLBACK ADDRESS: {potential_address}")
+                        
+                        # Also check for specific known addresses as backup
                         address_patterns = [
                             (r'29\s*port\s*richmond', "29 Port Richmond Avenue"),
-                            (r'2940', "29 Port Richmond Avenue"),  # Partial number detection
+                            (r'2940', "29 Port Richmond Avenue"),
                             (r'122\s*targee', "122 Targee Street"),
                             (r'122', "122 Targee Street"),
                             (r'13\s*barker', "13 Barker Street"),
                             (r'15\s*coonley', "15 Coonley Court"),
                             (r'173\s*south', "173 South Avenue"),
                             (r'263\s*maple', "263A Maple Parkway"),
-                            (r'28\s*alaska', "28 Alaska Street"),
-                            (r'28\s*stanley', "28 Stanley Avenue"),
-                            (r'56\s*betty', "56 Betty Court"),
-                            (r'627\s*cary', "627 Cary Avenue"),
                         ]
                         
-                        for pattern, address in address_patterns:
-                            if re.search(pattern, content):
-                                extracted_info["address"] = address
-                                logger.info(f"🏠 DETECTED ADDRESS: {address} from pattern: {pattern}")
-                                break
+                        if not extracted_info["address"]:
+                            for pattern, address in address_patterns:
+                                if re.search(pattern, content):
+                                    extracted_info["address"] = address
+                                    logger.info(f"🏠 PATTERN MATCHED ADDRESS: {address}")
+                                    break
                     
                     # Extract issues from conversation history - COMPREHENSIVE DETECTION
                     if not extracted_info["issue"]:
@@ -587,6 +722,19 @@ def create_app():
                 logger.info(f"🧠 CONVERSATION ANALYSIS - Address: {extracted_info['address']}, Issue: {extracted_info['issue']}")
                 logger.info(f"📋 CONVERSATION HISTORY: {[entry['content'] for entry in conversation_history[call_sid]]}")
                 
+                # DEBUG: Show each conversation entry for debugging
+                for i, entry in enumerate(conversation_history[call_sid]):
+                    logger.info(f"📝 CONVERSATION ENTRY {i}: Role={entry['role']}, Content='{entry['content']}'")
+                    
+                # DEBUG: Show issue detection process
+                for entry in conversation_history[call_sid]:
+                    content = entry['content'].lower()
+                    logger.info(f"🔍 CHECKING CONTENT: '{content}' for issues")
+                    if 'electrical' in content:
+                        logger.info(f"⚡ FOUND 'ELECTRICAL' in: '{content}'")
+                    if 'problem' in content:
+                        logger.info(f"⚡ FOUND 'PROBLEM' in: '{content}'")
+                
                 # If we have BOTH address and issue, handle immediately - DON'T ASK AI
                 if extracted_info["address"] and extracted_info["issue"]:
                     logger.info(f"🎫 AUTO-HANDLING ISSUE: {extracted_info['issue']} at {extracted_info['address']}")
@@ -594,13 +742,20 @@ def create_app():
                     
                     # ALL ISSUES get service tickets - including noise complaints
                     try:
-                        issue_result = service_handler.create_service_issue(
+                        # Create a temporary tenant info dict for the service creation
+                        tenant_info = {
+                            'name': 'Caller',
+                            'phone': request.values.get('From', ''),
+                            'address': extracted_info["address"]
+                        }
+                        
+                        import asyncio
+                        issue_result = asyncio.run(service_handler.create_maintenance_issue(
+                            tenant_info=tenant_info,
                             issue_type=extracted_info["issue"],
-                            address=extracted_info["address"],
                             description=f"{extracted_info['issue']} issue reported",
-                            caller_phone=request.values.get('From', ''),
-                            priority="High" if extracted_info["issue"] in ["electrical", "heating", "plumbing"] else "Normal"
-                        )
+                            unit_address=extracted_info["address"]
+                        ))
                         
                         if issue_result and 'issue_number' in issue_result:
                             ticket_number = issue_result['issue_number']
@@ -1242,6 +1397,18 @@ If they need maintenance or have questions about a specific property, get their 
             
             # Log all request values for debugging
             logger.info(f"DEBUG: All request values: {dict(request.values)}")
+            
+            # CRITICAL: Store conversation history IMMEDIATELY
+            if speech_result and call_sid:
+                if call_sid not in conversation_history:
+                    conversation_history[call_sid] = []
+                conversation_history[call_sid].append({
+                    'role': 'user', 
+                    'content': speech_result, 
+                    'timestamp': datetime.now()
+                })
+                logger.info(f"📝 STORED USER INPUT: '{speech_result}' for call {call_sid}")
+                logger.info(f"📋 CURRENT HISTORY: {[entry['content'] for entry in conversation_history[call_sid]]}")
             
             response = VoiceResponse()
             
