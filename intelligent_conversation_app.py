@@ -540,8 +540,9 @@ If they need maintenance or have questions about a specific property, get their 
                 input='speech',
                 action=f'/handle-speech/{call_sid}',
                 method='POST',
-                timeout=10,
-                speech_timeout='auto'
+                timeout=15,  # Longer timeout to give user time to speak
+                speech_timeout=5,  # Shorter speech timeout for quicker response
+                language='en-US'  # Explicitly set language for better recognition
             )
             
             # Fallback if no speech detected  
@@ -564,19 +565,24 @@ If they need maintenance or have questions about a specific property, get their 
         """Handle speech input with intelligent AI processing"""
         try:
             speech_result = request.values.get('SpeechResult', '').strip()
-            logger.info(f"Speech from caller: {speech_result}")
+            logger.info(f"DEBUG: Received speech for call {call_sid}: '{speech_result}'")
+            
+            # Log all request values for debugging
+            logger.info(f"DEBUG: All request values: {dict(request.values)}")
             
             response = VoiceResponse()
             
             if not speech_result:
+                logger.warning(f"No speech detected for call {call_sid}")
                 no_speech_text = "I didn't quite catch that. Let me connect you with our amazing team at (718) 414-6984!"
                 response.say(no_speech_text, voice='Polly.Matthew-Neural')
                 response.dial('(718) 414-6984')
                 return str(response)
             
             # Generate intelligent AI response using GPT-4o
+            logger.info(f"Generating AI response for: '{speech_result}'")
             ai_response = generate_intelligent_response(speech_result, call_sid)
-            logger.info(f"Intelligent AI response: {ai_response}")
+            logger.info(f"AI response generated: {ai_response}")
             
             # Use Twilio voice for Chris
             response.say(ai_response, voice='Polly.Matthew-Neural')
@@ -594,8 +600,9 @@ If they need maintenance or have questions about a specific property, get their 
                     input='speech',
                     action=f'/handle-speech/{call_sid}',
                     method='POST',
-                    timeout=15,  # Longer timeout for natural conversation
-                    speech_timeout='auto'
+                    timeout=20,  # Longer timeout for natural conversation
+                    speech_timeout=4,  # Shorter speech timeout for quicker response
+                    language='en-US'
                 )
                 
                 # Only say goodbye if they haven't responded for a while
@@ -607,8 +614,9 @@ If they need maintenance or have questions about a specific property, get their 
                     input='speech',
                     action=f'/handle-speech/{call_sid}',
                     method='POST',
-                    timeout=8,
-                    speech_timeout='auto'
+                    timeout=10,
+                    speech_timeout=3,
+                    language='en-US'
                 )
                 
                 # Final fallback
@@ -618,7 +626,7 @@ If they need maintenance or have questions about a specific property, get their 
             return str(response)
             
         except Exception as e:
-            logger.error(f"Speech handler error: {e}", exc_info=True)
+            logger.error(f"Speech handler error for call {call_sid}: {e}", exc_info=True)
             response = VoiceResponse()
             
             # Graceful error handling - don't disconnect, offer help
@@ -631,7 +639,8 @@ If they need maintenance or have questions about a specific property, get their 
                 action=f'/handle-speech/{call_sid}',
                 method='POST',
                 timeout=10,
-                speech_timeout='auto'
+                speech_timeout=3,
+                language='en-US'
             )
             
             # If still no response, then transfer
@@ -645,6 +654,15 @@ If they need maintenance or have questions about a specific property, get their 
         """Serve generated audio files"""
         from flask import send_from_directory
         return send_from_directory('static', filename)
+    
+    @app.route('/webhook-debug', methods=['POST'])
+    def webhook_debug():
+        """Debug webhook to see what Twilio is sending"""
+        logger.info(f"Webhook debug - Method: {request.method}")
+        logger.info(f"Webhook debug - Headers: {dict(request.headers)}")
+        logger.info(f"Webhook debug - Form data: {dict(request.form)}")
+        logger.info(f"Webhook debug - Values: {dict(request.values)}")
+        return "OK", 200
     
     @app.route('/')
     def dashboard():
