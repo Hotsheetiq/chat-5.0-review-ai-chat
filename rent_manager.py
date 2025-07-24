@@ -317,10 +317,10 @@ class RentManagerAPI:
             logger.error(f"Error adding note to tenant {tenant_id}: {e}")
             return False
     
-    async def create_service_issue(self, issue_data: Dict[str, Any]) -> Optional[str]:
+    async def create_service_issue(self, issue_data: Dict[str, Any]) -> Optional[Dict[str, Any]]:
         """
-        Create a new service/maintenance issue.
-        Returns the issue ID if successful, None otherwise.
+        Create a new service/maintenance issue assigned to Dimitry.
+        Returns issue details with ID and number if successful, None otherwise.
         """
         try:
             endpoint = "/service-issues"
@@ -331,8 +331,11 @@ class RentManagerAPI:
                 "category": issue_data.get('category', 'maintenance'),
                 "priority": issue_data.get('priority', 'normal'),
                 "status": "open",
+                "assigned_to": "Dimitry Simanovsky",  # Assign to Dimitry
+                "assigned_to_id": 1,  # Dimitry's user ID
                 "source": issue_data.get('source', 'voice_assistant'),
                 "created_by": "Voice Assistant",
+                "notes": f"{issue_data.get('notes', '')} - Assigned to Dimitry Simanovsky via Chris AI Assistant",
                 "date_reported": asyncio.get_event_loop().time()
             }
             
@@ -340,8 +343,17 @@ class RentManagerAPI:
             
             if result and result.get('issue_id'):
                 issue_id = result['issue_id']
-                logger.info(f"Successfully created service issue {issue_id} for tenant {issue_data.get('tenant_id')}")
-                return issue_id
+                issue_number = result.get('issue_number', f"SV-{issue_id}")
+                logger.info(f"Successfully created service issue {issue_number} (ID: {issue_id}) assigned to Dimitry for tenant {issue_data.get('tenant_id')}")
+                return {
+                    'success': True,
+                    'issue_id': issue_id,
+                    'issue_number': issue_number,
+                    'description': issue_data.get('description'),
+                    'priority': issue_data.get('priority', 'normal'),
+                    'assigned_to': 'Dimitry Simanovsky',
+                    'status': 'open'
+                }
             else:
                 logger.error(f"Failed to create service issue for tenant {issue_data.get('tenant_id')}")
                 return None

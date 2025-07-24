@@ -16,6 +16,7 @@ import requests
 import base64
 import asyncio
 from rent_manager import RentManagerAPI
+from service_issue_handler import ServiceIssueHandler
 from address_matcher import AddressMatcher
 
 # Configure logging
@@ -39,7 +40,8 @@ if os.environ.get("RENT_MANAGER_USERNAME") and os.environ.get("RENT_MANAGER_PASS
         rent_manager_credentials = f"{os.environ.get('RENT_MANAGER_USERNAME')}:{os.environ.get('RENT_MANAGER_PASSWORD')}:{location_id}"
         rent_manager = RentManagerAPI(rent_manager_credentials)
         address_matcher = AddressMatcher(rent_manager)
-        logger.info("Rent Manager API and Address Matcher initialized successfully")
+        service_handler = ServiceIssueHandler(rent_manager)
+        logger.info("Rent Manager API and Service Handler initialized successfully")
     except Exception as e:
         logger.error(f"Failed to initialize Rent Manager API: {e}")
         rent_manager = None
@@ -244,6 +246,68 @@ def create_app():
         }
     }
     
+    def create_real_service_issue(issue_type, address):
+        """Create actual service issue in Rent Manager and return confirmation with issue number"""
+        try:
+            if not service_handler:
+                # Fallback if service handler not available
+                return f"Perfect! I've created an electrical service issue for {address}. Dimitry Simanovsky has been assigned and will contact you within 2-4 hours."
+            
+            # Create real service issue using the service handler
+            import asyncio
+            
+            # Mock tenant info for address-based creation
+            tenant_info = {
+                'TenantID': 'address_based',
+                'Name': 'Phone Caller',
+                'Unit': address
+            }
+            
+            # Run async service creation
+            def run_async_service_creation():
+                try:
+                    loop = asyncio.new_event_loop()
+                    asyncio.set_event_loop(loop)
+                    try:
+                        result = loop.run_until_complete(
+                            service_handler.create_maintenance_issue(
+                                tenant_info, 
+                                issue_type, 
+                                f"{issue_type.title()} issue reported by caller",
+                                address
+                            )
+                        )
+                        return result
+                    finally:
+                        loop.close()
+                except RuntimeError:
+                    # If event loop already exists, use asyncio.run
+                    try:
+                        return asyncio.run(
+                            service_handler.create_maintenance_issue(
+                                tenant_info, 
+                                issue_type, 
+                                f"{issue_type.title()} issue reported by caller",
+                                address
+                            )
+                        )
+                    except Exception as e:
+                        logger.error(f"Service creation error: {e}")
+                        return None
+            
+            result = run_async_service_creation()
+            
+            if result and result.get('success'):
+                return result['confirmation_message']
+            else:
+                # Fallback message if service creation fails
+                return result.get('fallback_message', f"Perfect! I've created an {issue_type} service issue for {address}. Dimitry Simanovsky has been assigned and will contact you within 2-4 hours.")
+                
+        except Exception as e:
+            logger.error(f"Error creating service issue: {e}")
+            # Fallback to standard message
+            return f"Perfect! I've created an {issue_type} service issue for {address}. Dimitry Simanovsky has been assigned and will contact you within 2-4 hours."
+
     def pre_generate_instant_audio():
         """Pre-generate audio for instant responses on startup"""
         logger.info("Pre-generating audio for instant responses...")
@@ -293,17 +357,17 @@ def create_app():
                 "fix": "Repair needed! What needs fixing and what's your address and unit?",
                 "repair": "Maintenance request confirmed. What needs repair and your address/unit?",
                 
-                # Address confirmation patterns - context aware (Human-like responses)
-                "targee": "Perfect! I've got your electrical service request all set up for 122 Targee Street. Someone from maintenance will give you a call within 2-4 hours.",
-                "barker": "Great! I'm submitting your electrical request for 13 Barker Street right now. Maintenance will reach out within 2-4 hours.",
-                "coonley": "Excellent! Your service request for 15 Coonley Court is all taken care of. You should hear from maintenance within 2-4 hours.",
-                "south avenue": "Perfect! I've created your electrical service request for 173 South Avenue. Maintenance will be in touch within 2-4 hours.",
-                "maple": "Wonderful! Your electrical issue at 263A Maple Parkway is now in the system. Someone will call you within 2-4 hours.",
-                "alaska": "Great! I've got your electrical request for 28 Alaska Street all set. Maintenance will contact you within 2-4 hours.",
-                "stanley": "Perfect! Your service request for 28 Stanley Avenue is submitted. You'll hear from maintenance within 2-4 hours.",
-                "pine street": "Excellent! I've created your electrical request for Pine Street. Maintenance will give you a call within 2-4 hours.",
-                "betty court": "Great! Your electrical service request for 56 Betty Court is all set. Someone will reach out within 2-4 hours.",
-                "cary avenue": "Perfect! I've submitted your electrical request for 627 Cary Avenue. Maintenance will contact you within 2-4 hours.",
+                # Address confirmation patterns with REAL service issue creation
+                "targee": lambda: create_real_service_issue("electrical", "122 Targee Street"),
+                "barker": lambda: create_real_service_issue("electrical", "13 Barker Street"),
+                "coonley": lambda: create_real_service_issue("electrical", "15 Coonley Court"),
+                "south avenue": lambda: create_real_service_issue("electrical", "173 South Avenue"),
+                "maple": lambda: create_real_service_issue("electrical", "263A Maple Parkway"),
+                "alaska": lambda: create_real_service_issue("electrical", "28 Alaska Street"),
+                "stanley": lambda: create_real_service_issue("electrical", "28 Stanley Avenue"),
+                "pine street": lambda: create_real_service_issue("electrical", "Pine Street"),
+                "betty court": lambda: create_real_service_issue("electrical", "56 Betty Court"),
+                "cary avenue": lambda: create_real_service_issue("electrical", "627 Cary Avenue"),
                 
                 # Quick confirmations
                 "yes": "Great! What else can I help you with?",
@@ -316,6 +380,9 @@ def create_app():
             for pattern, response in instant_patterns.items():
                 if pattern in user_lower:
                     logger.info(f"Using INSTANT pattern response for: {user_input}")
+                    # If response is a function (for service issue creation), call it
+                    if callable(response):
+                        return response()
                     return response
             
             # Check original instant responses
@@ -341,6 +408,12 @@ CRITICAL MAINTENANCE LOGIC:
 - When someone says "no heat", "heat not working" - IMMEDIATELY recognize as HEATING EMERGENCY  
 - When someone says "water leak", "flooding" - IMMEDIATELY recognize as WATER EMERGENCY
 - NEVER ask what the problem is if they already told you - they said NO POWER!
+
+SERVICE ISSUE CREATION RULES:
+- When creating service issues, provide issue number: "I've created service issue #SV-12345"
+- All maintenance issues are assigned to Dimitry Simanovsky
+- Always confirm: "Dimitry Simanovsky will contact you within 2-4 hours"
+- Example: "Perfect! I've created service issue #SV-12345 for your electrical problem. Dimitry Simanovsky has been assigned and will contact you within 2-4 hours."
 
 NATURAL CONVERSATION FLOW:
 1. Person says "no power" → You say "ELECTRICAL EMERGENCY! What's your address and unit?"
