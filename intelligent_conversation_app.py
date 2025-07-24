@@ -510,13 +510,20 @@ CRITICAL PERSONALITY RULES:
 - Keep responses under 15 words but make them warm and caring
 
 CRITICAL ISSUE RECOGNITION:
-- NOISE COMPLAINTS: "noise", "loud", "neighbors", "music", "party" → noise complaint (NOT maintenance)
-- ELECTRICAL: "power not working", "no power", "don't have power" → electrical maintenance
-- HEATING: "no heat", "heat not working" → heating maintenance
-- PLUMBING: "water leak", "flooding" → plumbing maintenance
+- NOISE COMPLAINTS: "noise", "loud", "neighbors", "music", "party" → noise complaint (CREATE TICKET)
+- ELECTRICAL: "power not working", "no power", "don't have power" → electrical maintenance (CREATE TICKET)
+- HEATING: "no heat", "heat not working" → heating maintenance (CREATE TICKET)  
+- PLUMBING: "water leak", "flooding" → plumbing maintenance (CREATE TICKET)
+- ALL ISSUES get service tickets with ticket numbers for caller reference
 - NEVER ask what the problem is if they already told you - listen to what they actually said!
 
-SERVICE ISSUE CREATION RULES:
+SERVICE TICKET CREATION RULES:
+- ALL ISSUES get service tickets (maintenance AND noise complaints)
+- Always provide ticket number: "I've created service ticket #SV-12345"
+- Maintenance issues assigned to Dimitry Simanovsky
+- After-hours: "Someone will get back to you when we reopen. Hold onto ticket #SV-12345"
+- Impatient callers: Offer transfer to (718) 414-6984 after-hours line
+- Offer SMS confirmation: "Would you like me to text you the ticket number?"
 - When creating service issues, provide issue number: "I've created service issue #SV-12345"
 - All maintenance issues are assigned to Dimitry Simanovsky
 - Always confirm: "Dimitry Simanovsky will contact you within 2-4 hours"
@@ -595,26 +602,39 @@ Use natural conversation logic - if someone says "power not working" that's obvi
                 if extracted_info["address"] and extracted_info["issue"]:
                     logger.info(f"AUTO-HANDLING ISSUE: {extracted_info['issue']} at {extracted_info['address']}")
                     
-                    # Handle noise complaints differently from maintenance issues
-                    if extracted_info["issue"] == "noise complaint":
-                        return f"I understand you're dealing with noise issues at {extracted_info['address']}. That's really disruptive. I'll document this complaint and have our property manager follow up with you within 24 hours about addressing this with your neighbors."
-                    else:
-                        # Handle maintenance issues with service ticket creation
-                        try:
-                            issue_result = service_handler.create_service_issue(
-                                issue_type=extracted_info["issue"],
-                                address=extracted_info["address"],
-                                description=f"{extracted_info['issue']} issue reported",
-                                caller_phone=request.values.get('From', ''),
-                                priority="High" if extracted_info["issue"] in ["electrical", "heating", "plumbing"] else "Normal"
-                            )
-                            if issue_result and 'issue_number' in issue_result:
-                                return f"Perfect! I've created service issue #{issue_result['issue_number']} for your {extracted_info['issue']} problem at {extracted_info['address']}. Dimitry will contact you within 2-4 hours."
+                    # ALL ISSUES get service tickets - including noise complaints
+                    try:
+                        issue_result = service_handler.create_service_issue(
+                            issue_type=extracted_info["issue"],
+                            address=extracted_info["address"],
+                            description=f"{extracted_info['issue']} issue reported",
+                            caller_phone=request.values.get('From', ''),
+                            priority="High" if extracted_info["issue"] in ["electrical", "heating", "plumbing"] else "Normal"
+                        )
+                        
+                        if issue_result and 'issue_number' in issue_result:
+                            ticket_number = issue_result['issue_number']
+                            
+                            # Check if office is closed for different messaging
+                            eastern = pytz.timezone('US/Eastern')
+                            current_time = datetime.now(eastern)
+                            current_hour = current_time.hour
+                            current_day = current_time.weekday()  # 0=Monday, 6=Sunday
+                            office_closed = not (current_day < 5 and 9 <= current_hour < 17)
+                            
+                            if office_closed:
+                                return f"I've created service ticket #{ticket_number} for your {extracted_info['issue']} at {extracted_info['address']}. Since our office is closed, someone will get back to you as soon as we reopen. Please hold onto your ticket number #{ticket_number} for reference. If you need immediate assistance, you can call our after-hours line at (718) 414-6984."
                             else:
-                                return f"I've created your {extracted_info['issue']} service request for {extracted_info['address']}. Maintenance will contact you within 2-4 hours."
-                        except Exception as e:
-                            logger.error(f"Service issue creation failed: {e}")
-                            return f"I've documented your {extracted_info['issue']} issue at {extracted_info['address']}. Maintenance will contact you within 2-4 hours."
+                                if extracted_info["issue"] == "noise complaint":
+                                    return f"I've created service ticket #{ticket_number} for your noise complaint at {extracted_info['address']}. Our property manager will follow up within 24 hours. Please keep your ticket number #{ticket_number} for reference."
+                                else:
+                                    return f"Perfect! I've created service ticket #{ticket_number} for your {extracted_info['issue']} at {extracted_info['address']}. Dimitry will contact you within 2-4 hours."
+                        else:
+                            # Fallback if no ticket number returned
+                            return f"I've created your service request for {extracted_info['issue']} at {extracted_info['address']}. Someone will contact you within 2-4 hours."
+                    except Exception as e:
+                        logger.error(f"Service issue creation failed: {e}")
+                        return f"I've documented your {extracted_info['issue']} issue at {extracted_info['address']}. Someone will contact you within 2-4 hours."
                 
                 # Add context about what we already know
                 context_info = f"\n\nIMPORTANT CONVERSATION CONTEXT:\n"
@@ -644,7 +664,7 @@ Use natural conversation logic - if someone says "power not working" that's obvi
             if current_day < 5 and 9 <= current_hour < 17:
                 office_status = "OFFICE STATUS: We are currently OPEN (Monday-Friday, 9 AM - 5 PM Eastern)"
             else:
-                office_status = "OFFICE STATUS: We are currently CLOSED (Monday-Friday, 9 AM - 5 PM Eastern). Still be helpful and empathetic - take information for urgent issues and assure them someone will follow up during business hours."
+                office_status = "OFFICE STATUS: We are currently CLOSED (Monday-Friday, 9 AM - 5 PM Eastern). Still be helpful and empathetic - create service tickets for all issues and tell them someone will get back to them when we reopen. For impatient or upset callers, offer transfer to after-hours line (718) 414-6984."
             
             messages.append({
                 "role": "system",
