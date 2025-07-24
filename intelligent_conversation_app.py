@@ -12,6 +12,8 @@ import json
 from datetime import datetime
 import requests
 import base64
+import asyncio
+from rent_manager import RentManagerAPI
 
 # Configure logging
 logging.basicConfig(level=logging.DEBUG)
@@ -20,9 +22,13 @@ logger = logging.getLogger(__name__)
 # Environment variables
 OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY")
 ELEVENLABS_API_KEY = os.environ.get("ELEVENLABS_API_KEY")
+RENT_MANAGER_API_KEY = os.environ.get("RENT_MANAGER_API_KEY")
 
 # Initialize OpenAI client
 openai_client = OpenAI(api_key=OPENAI_API_KEY) if OPENAI_API_KEY else None
+
+# Initialize Rent Manager client
+rent_manager = RentManagerAPI(RENT_MANAGER_API_KEY) if RENT_MANAGER_API_KEY else None
 
 # Call state tracking
 call_states = {}
@@ -129,6 +135,11 @@ BUSINESS INFO:
 - We work with Section 8 tenants
 - We do not work with cash tenants or other rental assistance programs
 
+TENANT CONTEXT:
+- If caller is a known tenant, greet them personally and reference their unit
+- For maintenance requests from tenants, create service issues in Rent Manager
+- For prospects, collect basic information and create worker tasks for follow-up
+
 CONVERSATIONAL EXAMPLES:
 - Instead of: "We're open Monday through Friday, 9 AM to 5 PM Eastern Time."
 - Say: "Oh sure! We're here Monday through Friday, 9 to 5. What can I help you with?"
@@ -150,6 +161,17 @@ Keep responses under 20 words for faster delivery. Sound natural and conversatio
                             "role": role,
                             "content": content
                         })
+            
+            # Add tenant context if available
+            call_info = call_states.get(call_sid, {})
+            tenant_info = call_info.get('tenant_info')
+            
+            if tenant_info:
+                context_message = f"CALLER CONTEXT: This is {tenant_info.get('name', 'a tenant')} from unit {tenant_info.get('unit', 'unknown')} at {tenant_info.get('property', 'the property')}. Greet them personally!"
+                messages.append({
+                    "role": "system",
+                    "content": context_message
+                })
             
             # Add current user input
             messages.append({
@@ -302,6 +324,19 @@ Keep responses under 20 words for faster delivery. Sound natural and conversatio
         ]
         return random.choice(default_responses)
     
+    async def lookup_caller_info(phone_number):
+        """Look up caller information from Rent Manager"""
+        if not rent_manager:
+            return None
+        try:
+            tenant_info = await rent_manager.lookup_tenant_by_phone(phone_number)
+            if tenant_info:
+                logger.info(f"Found tenant: {tenant_info.get('name')} in unit {tenant_info.get('unit')}")
+                return tenant_info
+        except Exception as e:
+            logger.error(f"Error looking up caller {phone_number}: {e}")
+        return None
+
     @app.route('/incoming-call', methods=['GET', 'POST'])
     def handle_incoming_call():
         """Handle incoming calls with intelligent conversation"""
@@ -311,10 +346,21 @@ Keep responses under 20 words for faster delivery. Sound natural and conversatio
             
             logger.info(f"Incoming call from: {caller_phone}, CallSid: {call_sid}")
             
-            # Initialize call state
+            # Look up tenant information
+            tenant_info = None
+            if rent_manager:
+                try:
+                    loop = asyncio.new_event_loop()
+                    asyncio.set_event_loop(loop)
+                    tenant_info = loop.run_until_complete(lookup_caller_info(caller_phone))
+                except Exception as e:
+                    logger.error(f"Error looking up tenant: {e}")
+            
+            # Initialize call state with tenant info
             call_states[call_sid] = {
                 'phone': caller_phone,
-                'started': True
+                'started': True,
+                'tenant_info': tenant_info
             }
             
             response = VoiceResponse()
