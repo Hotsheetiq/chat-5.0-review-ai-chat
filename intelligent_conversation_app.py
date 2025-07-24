@@ -194,11 +194,11 @@ def create_app():
             "audio": None
         },
         "open right now": {
-            "text": "We're closed right now, but I'm here to help. We're open Monday through Friday, 9 to 5.",
+            "text": "dynamic_office_hours",  # Special marker for dynamic response
             "audio": None
         },
         "right now": {
-            "text": "We're closed right now, but I'm here to help. We're open Monday through Friday, 9 to 5.",
+            "text": "dynamic_office_hours",  # Special marker for dynamic response
             "audio": None
         },
         "can you help with": {
@@ -1258,9 +1258,27 @@ If they need maintenance or have questions about a specific property, get their 
             logger.info(f"Checking instant responses for: '{user_lower}'")
             for key, response_data in INSTANT_RESPONSES.items():
                 if key in user_lower:
-                    ai_response = response_data["text"]
-                    instant_audio_url = response_data["audio"]
-                    logger.info(f"INSTANT MATCH! Key: {key}, Audio: {instant_audio_url}")
+                    # Check for dynamic office hours response
+                    if response_data["text"] == "dynamic_office_hours":
+                        # Generate dynamic office hours response
+                        eastern = pytz.timezone('US/Eastern')
+                        current_time = datetime.now(eastern)
+                        current_hour = current_time.hour
+                        current_day = current_time.weekday()  # 0=Monday, 6=Sunday
+                        
+                        if current_day < 5 and 9 <= current_hour < 17:
+                            ai_response = "Yes, we're open right now! Our hours are Monday through Friday, 9 to 5. How can I help you?"
+                        elif current_day < 5 and current_hour < 9:
+                            ai_response = "Not quite yet - we open at 9 AM! Hours are Monday through Friday, 9 to 5. But I'm here and ready to help! What do you need?"
+                        elif current_day < 5 and current_hour >= 17:
+                            ai_response = "We're closed for the day - we close at 5 PM! Hours are Monday through Friday, 9 to 5. But I'm here and ready to help! What's going on?"
+                        else:  # Weekend
+                            ai_response = "We're closed weekends, but we'll be back Monday at 9 AM! Hours are Monday through Friday, 9 to 5. But I'm here and excited to help! What can I do for you?"
+                        logger.info(f"DYNAMIC OFFICE HOURS RESPONSE: {ai_response}")
+                    else:
+                        ai_response = response_data["text"]
+                        instant_audio_url = response_data["audio"]
+                    logger.info(f"INSTANT MATCH! Key: {key}, Response: {ai_response}")
                     break
             
             # If no instant response, generate AI response
@@ -1372,13 +1390,30 @@ If they need maintenance or have questions about a specific property, get their 
                 instant_audio_url = None
                 ai_response = None
                 
-                # Minimal debug logging for speed
+                # Check for instant responses with dynamic office hours
                 logger.info(f"Checking instant responses for: '{user_lower}'")
-                
                 for key, response_data in INSTANT_RESPONSES.items():
                     if key in user_lower:
-                        ai_response = response_data["text"]
-                        instant_audio_url = response_data["audio"]
+                        # Check for dynamic office hours response
+                        if response_data["text"] == "dynamic_office_hours":
+                            # Generate dynamic office hours response
+                            eastern = pytz.timezone('US/Eastern')
+                            current_time = datetime.now(eastern)
+                            current_hour = current_time.hour
+                            current_day = current_time.weekday()  # 0=Monday, 6=Sunday
+                            
+                            if current_day < 5 and 9 <= current_hour < 17:
+                                ai_response = "Yes, we're open right now! Our hours are Monday through Friday, 9 to 5. How can I help you?"
+                            elif current_day < 5 and current_hour < 9:
+                                ai_response = "Not quite yet - we open at 9 AM! Hours are Monday through Friday, 9 to 5. But I'm here and ready to help! What do you need?"
+                            elif current_day < 5 and current_hour >= 17:
+                                ai_response = "We're closed for the day - we close at 5 PM! Hours are Monday through Friday, 9 to 5. But I'm here and ready to help! What's going on?"
+                            else:  # Weekend
+                                ai_response = "We're closed weekends, but we'll be back Monday at 9 AM! Hours are Monday through Friday, 9 to 5. But I'm here and excited to help! What can I do for you?"
+                            logger.info(f"DYNAMIC OFFICE HOURS RESPONSE: {ai_response}")
+                        else:
+                            ai_response = response_data["text"]
+                            instant_audio_url = response_data["audio"]
                         logger.info(f"INSTANT MATCH: {key}")
                         break
                 
