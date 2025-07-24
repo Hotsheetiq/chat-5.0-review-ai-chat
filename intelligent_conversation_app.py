@@ -143,7 +143,7 @@ def create_app():
     # Instant response cache with pre-generated audio URLs (no AI delay)
     INSTANT_RESPONSES = {
         "are you open": {
-            "text": "We're closed right now, but I'm absolutely here to help! We're open Monday through Friday, 9 to 5!",
+            "text": "We're totally open and ready to help! Monday through Friday, 9 to 5 Eastern! I'm super excited to assist you!",
             "audio": None  # Will be generated once and cached
         },
         "what are your hours": {
@@ -159,15 +159,15 @@ def create_app():
             "audio": None
         },
         "are you closed": {
-            "text": "Yes, we're closed right now, but I'm here to help! We're open Monday through Friday, 9 to 5!",
+            "text": "Nope! We're wide open and pumped to help! Monday through Friday, 9 to 5 Eastern! What can I do for you?",
             "audio": None
         },
         "hello": {
-            "text": "Absolutely! What can I help you with today?",
+            "text": "Hello! I'm Chris and I'm SO excited to help you today! What can I do for you?",
             "audio": None
         },
         "help": {
-            "text": "Of course! I'm here to help with anything you need!",
+            "text": "Absolutely! I'm totally pumped to help with anything you need! What's going on?",
             "audio": None
         },
         "are you a real person": {
@@ -203,7 +203,7 @@ def create_app():
             "audio": None
         },
         "maintenance": {
-            "text": "Of course! Tell me what's going on and I'll get that taken care of right away!",
+            "text": "Absolutely! I'm super excited to help! Tell me what's going on and I'll get that sorted right away!",
             "audio": None
         },
         "emergency": {
@@ -268,24 +268,24 @@ def create_app():
             
             # Expand instant response matching for better coverage
             instant_patterns = {
-                # EMERGENCY MAINTENANCE - IMMEDIATE RECOGNITION (Human-like responses)
-                "power not working": "Oh no! That's an electrical emergency. Let me get this fixed for you right away. What's your address and unit?",
-                "no power": "That's definitely urgent! I'll create an electrical service request immediately. What's your address and unit?",
-                "don't have power": "I understand how frustrating that must be! Let me get maintenance out there. What's your address and unit?",
-                "have no power": "That's not good at all! I'll get someone on this right away. What's your address and unit number?",
-                "electricity": "Electrical issues can be really concerning. Let me help you with that. What's your address and unit?",
-                "power out": "Power outages are never fun! I'll get this taken care of for you. Address and unit please?",
-                "electrical": "I hear you on the electrical problem. Let me get maintenance scheduled. Address and unit?",
-                "lights not": "No lights definitely needs attention! Let me help you get this sorted. Address and unit?",
-                "no electricity": "That must be really inconvenient! I'll get someone out there. Address and unit?",
+                # EMERGENCY MAINTENANCE - IMMEDIATE RECOGNITION (Energetic responses)
+                "power not working": "Oh wow! That's definitely an electrical emergency! I'm absolutely getting this fixed for you right away. What's your address and unit?",
+                "no power": "That's super urgent! I'm creating an electrical service request immediately - let's get this sorted! What's your address and unit?",
+                "don't have power": "Oh my goodness, how frustrating! I'm getting maintenance out there right now. What's your address and unit?",
+                "have no power": "That's really not good! I'm getting someone on this immediately. What's your address and unit number?",
+                "electricity": "Electrical issues are definitely concerning! I'm excited to help you get this resolved. What's your address and unit?",
+                "power out": "Power outages are the worst! I'm getting this taken care of for you right away. Address and unit please?",
+                "electrical": "I totally understand the electrical problem! Let me get maintenance scheduled immediately. Address and unit?",
+                "lights not": "No lights is definitely urgent! I'm excited to help you get this sorted out. Address and unit?",
+                "no electricity": "That must be incredibly inconvenient! I'm getting someone out there right away. Address and unit?",
                 
-                # OTHER EMERGENCY MAINTENANCE (Human-like responses)
-                "no heat": "Oh wow, no heat is really tough! Let me get someone out there quickly. What's your address and unit?",
-                "heat not working": "That's definitely not comfortable! I'll get heating maintenance scheduled right away. Address and unit?",
-                "no hot water": "Hot water issues are always a pain! Let me get this fixed for you. What's your address and unit?",
-                "water leak": "Water leaks can cause real damage! I need to get someone there fast. Address and unit please?",
-                "flooding": "That sounds really stressful! I'm getting emergency maintenance on this immediately. Address and unit?",
-                "gas leak": "Gas leaks are extremely serious! I'm prioritizing this right now. Address and unit for immediate response?",
+                # OTHER EMERGENCY MAINTENANCE (Energetic responses)
+                "no heat": "Oh my! No heat is absolutely terrible! I'm getting someone out there super quickly. What's your address and unit?",
+                "heat not working": "That's definitely not comfortable at all! I'm getting heating maintenance scheduled immediately. Address and unit?",
+                "no hot water": "Hot water issues are such a hassle! I'm excited to get this fixed for you right away. What's your address and unit?",
+                "water leak": "Water leaks can cause serious damage! I'm getting someone there super fast. Address and unit please?",
+                "flooding": "Oh wow, that sounds incredibly stressful! I'm getting emergency maintenance on this right now. Address and unit?",
+                "gas leak": "Gas leaks are extremely serious! I'm making this my top priority immediately. Address and unit for immediate response?",
                 
                 # CLEAR MAINTENANCE ISSUES
                 "broken": "Maintenance issue confirmed! What's broken and what's your address and unit?",
@@ -832,7 +832,7 @@ If they need maintenance or have questions about a specific property, get their 
             else:
                 time_greeting = "Good evening"
             
-            greeting_text = f"{time_greeting}! You've reached Grinberg Management, I'm Chris, how can I help you today?"
+            greeting_text = f"{time_greeting}! You've reached Grinberg Management, I'm Chris, and I'm excited to help you today! What can I do for you?"
             
             # Try ElevenLabs for natural voice
             audio_url = generate_elevenlabs_audio(greeting_text)
