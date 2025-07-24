@@ -148,8 +148,51 @@
             <div class="col-12">
                 <div class="card">
                     <div class="card-header">
-                        <h4 class="mb-0">🎙️ Call Recordings & Transcriptions</h4>
-                        <small class="text-muted">Listen to recent calls and review transcriptions</small>
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <h4 class="mb-0">🎙️ Call Recordings & Transcriptions</h4>
+                                <small class="text-muted">Listen to recent calls and review transcriptions ({{ total_recordings }} total recordings)</small>
+                            </div>
+                        </div>
+                        
+                        <!-- Search Filters -->
+                        <div class="row mt-3">
+                            <div class="col-md-4">
+                                <div class="input-group input-group-sm">
+                                    <span class="input-group-text">📞</span>
+                                    <input type="text" class="form-control" id="phoneSearch" placeholder="Search by phone number..." value="{{ search_phone }}">
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="input-group input-group-sm">
+                                    <span class="input-group-text">📅</span>
+                                    <input type="date" class="form-control" id="dateSearch" value="{{ search_date }}">
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="input-group input-group-sm">
+                                    <span class="input-group-text">🔍</span>
+                                    <input type="text" class="form-control" id="textSearch" placeholder="Search transcription...">
+                                </div>
+                            </div>
+                            <div class="col-md-2">
+                                <button class="btn btn-sm btn-primary w-100" onclick="searchRecordings()">Search</button>
+                            </div>
+                        </div>
+                        
+                        <!-- Clear Filters -->
+                        {% if search_phone or search_date %}
+                        <div class="mt-2">
+                            <button class="btn btn-sm btn-outline-secondary" onclick="clearFilters()">
+                                Clear Filters
+                            </button>
+                            <span class="small text-muted ms-2">
+                                Showing filtered results
+                                {% if search_phone %} • Phone: {{ search_phone }}{% endif %}
+                                {% if search_date %} • Date: {{ search_date }}{% endif %}
+                            </span>
+                        </div>
+                        {% endif %}
                     </div>
                     <div class="card-body">
                         {% if recent_recordings %}
@@ -348,6 +391,41 @@
             if (e.key === 'Enter') {
                 testIntelligence();
             }
+        });
+        
+        // Search recordings function
+        function searchRecordings() {
+            const phone = document.getElementById('phoneSearch').value.trim();
+            const date = document.getElementById('dateSearch').value;
+            
+            const params = new URLSearchParams();
+            if (phone) params.append('phone', phone);
+            if (date) params.append('date', date);
+            
+            const url = params.toString() ? `/?${params.toString()}` : '/';
+            window.location.href = url;
+        }
+        
+        // Clear filters function
+        function clearFilters() {
+            window.location.href = '/';
+        }
+        
+        // Allow Enter key to search
+        document.getElementById('phoneSearch').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                searchRecordings();
+            }
+        });
+        
+        document.getElementById('textSearch').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                searchRecordings();
+            }
+        });
+        
+        document.getElementById('dateSearch').addEventListener('change', function() {
+            searchRecordings();
         });
         
         // Auto-refresh call count every 15 seconds

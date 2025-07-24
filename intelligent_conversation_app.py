@@ -699,10 +699,24 @@ If they need maintenance or have questions about a specific property, get their 
                 'status': 'Active' if state.get('started') else 'Ended'
             })
         
-        # Recent call recordings (last 10)
-        recent_recordings = []
-        for call_sid, recording in list(call_recordings.items())[-10:]:
-            recent_recordings.append({
+        # Get search parameters
+        search_phone = request.args.get('phone', '').strip()
+        search_date = request.args.get('date', '').strip()
+        
+        # Filter call recordings based on search criteria
+        filtered_recordings = []
+        for call_sid, recording in call_recordings.items():
+            # Apply phone number filter
+            if search_phone and search_phone not in recording.get('phone', ''):
+                continue
+                
+            # Apply date filter
+            if search_date:
+                recording_date = recording.get('timestamp', '')[:10]  # Extract YYYY-MM-DD
+                if search_date != recording_date:
+                    continue
+            
+            filtered_recordings.append({
                 'call_sid': call_sid[-8:],
                 'phone': recording.get('phone', 'Unknown'),
                 'duration': recording.get('duration', '0'),
@@ -712,12 +726,19 @@ If they need maintenance or have questions about a specific property, get their 
                 'tenant_name': recording.get('tenant_info', {}).get('name', 'Unknown Caller') if recording.get('tenant_info') else 'Unknown Caller'
             })
         
+        # Sort by timestamp (newest first) and limit to last 50
+        filtered_recordings.sort(key=lambda x: x['timestamp'], reverse=True)
+        recent_recordings = filtered_recordings[:50]
+        
         return render_template('intelligent_dashboard.html',
                              openai_connected=bool(OPENAI_API_KEY),
                              elevenlabs_connected=bool(ELEVENLABS_API_KEY),
                              active_calls=len([s for s in call_states.values() if s.get('started')]),
                              recent_calls=recent_calls,
-                             recent_recordings=recent_recordings)
+                             recent_recordings=recent_recordings,
+                             search_phone=search_phone,
+                             search_date=search_date,
+                             total_recordings=len(call_recordings))
     
     @app.route('/test-intelligent')
     def test_intelligent():
@@ -725,6 +746,55 @@ If they need maintenance or have questions about a specific property, get their 
         test_input = request.args.get('input', 'Hello, how are you?')
         response = generate_intelligent_response(test_input, 'test')
         return jsonify({'input': test_input, 'intelligent_response': response})
+    
+    @app.route('/api/recordings/search')
+    def search_recordings_api():
+        """API endpoint for searching call recordings"""
+        try:
+            search_phone = request.args.get('phone', '').strip()
+            search_date = request.args.get('date', '').strip()
+            search_text = request.args.get('text', '').strip()
+            
+            filtered_recordings = []
+            for call_sid, recording in call_recordings.items():
+                # Apply phone number filter
+                if search_phone and search_phone not in recording.get('phone', ''):
+                    continue
+                    
+                # Apply date filter
+                if search_date:
+                    recording_date = recording.get('timestamp', '')[:10]
+                    if search_date != recording_date:
+                        continue
+                
+                # Apply transcription text search
+                if search_text:
+                    transcription = recording.get('transcription', '').lower()
+                    if search_text.lower() not in transcription:
+                        continue
+                
+                filtered_recordings.append({
+                    'call_sid': call_sid,
+                    'phone': recording.get('phone', 'Unknown'),
+                    'duration': recording.get('duration', '0'),
+                    'timestamp': recording.get('timestamp', ''),
+                    'recording_url': recording.get('url', ''),
+                    'transcription': recording.get('transcription', ''),
+                    'tenant_name': recording.get('tenant_info', {}).get('name', 'Unknown Caller') if recording.get('tenant_info') else 'Unknown Caller'
+                })
+            
+            # Sort by timestamp (newest first)
+            filtered_recordings.sort(key=lambda x: x['timestamp'], reverse=True)
+            
+            return jsonify({
+                'recordings': filtered_recordings[:50],  # Limit to 50 results
+                'total_found': len(filtered_recordings),
+                'total_recordings': len(call_recordings)
+            })
+            
+        except Exception as e:
+            logger.error(f"Search API error: {e}")
+            return jsonify({'error': 'Search failed'}), 500
     
     return app
 
