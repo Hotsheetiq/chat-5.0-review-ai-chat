@@ -77,7 +77,7 @@ def create_app():
         "maintenance": "Absolutely! What's going on? I'm here to help get that sorted out."
     }
     
-    def generate_elevenlabs_audio(text, voice_id="1aaKc4GWOfIKpc3svAJd"):
+    def generate_elevenlabs_audio(text, voice_id="f218e5pATi8cBqEEIGBU"):
         """Generate audio using ElevenLabs API with Chris voice - optimized for speed"""
         try:
             if not ELEVENLABS_API_KEY:
