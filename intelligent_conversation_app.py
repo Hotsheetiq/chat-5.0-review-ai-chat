@@ -10,6 +10,7 @@ from twilio.twiml.voice_response import VoiceResponse
 from openai import OpenAI
 import json
 from datetime import datetime
+import pytz
 import requests
 import base64
 import asyncio
@@ -129,9 +130,11 @@ PERSONALITY & TONE:
 
 BUSINESS INFO:
 - Office: 31 Port Richmond Avenue
-- Hours: Monday-Friday, 9 AM - 5 PM Eastern Time  
-- Transfer to (718) 414-6984 for Diane or Janier when needed
-- Handle maintenance requests with empathy
+- Hours: Monday-Friday, 9 AM - 5 PM Eastern Time
+- IMPORTANT: Check current time! If outside office hours, say "We're closed right now, but I'm here to help!"
+- After hours: Take messages, handle maintenance emergencies, create service requests
+- Transfer to (718) 414-6984 for Diane or Janier when needed (office hours only)
+- Handle maintenance requests with empathy regardless of time
 - We work with Section 8 tenants
 - We do not work with cash tenants or other rental assistance programs
 
@@ -161,6 +164,23 @@ Keep responses under 20 words for faster delivery. Sound natural and conversatio
                             "role": role,
                             "content": content
                         })
+            
+            # Add current time context for office hours
+            eastern = pytz.timezone('US/Eastern')
+            current_time = datetime.now(eastern)
+            current_hour = current_time.hour
+            current_day = current_time.weekday()  # 0=Monday, 6=Sunday
+            
+            # Check if office is open (Monday-Friday, 9 AM - 5 PM Eastern)
+            if current_day < 5 and 9 <= current_hour < 17:
+                office_status = "OFFICE STATUS: We are currently OPEN (Monday-Friday, 9 AM - 5 PM Eastern)"
+            else:
+                office_status = "OFFICE STATUS: We are currently CLOSED (Monday-Friday, 9 AM - 5 PM Eastern). Be helpful but acknowledge we're closed."
+            
+            messages.append({
+                "role": "system",
+                "content": office_status
+            })
             
             # Add tenant context if available
             call_info = call_states.get(call_sid, {})
