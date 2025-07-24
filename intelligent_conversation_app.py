@@ -86,7 +86,7 @@ def create_app():
         "goodbye": "Thank you for calling Grinberg Management! Have a wonderful day!",
         "transfer": "Perfect! I'm connecting you with Diane or Janier right now!",
         "hours": "We're here Monday through Friday, 9 to 5. What can I help you with?",
-        "maintenance": "Absolutely! What's going on? I'm here to help get that sorted out."
+        "maintenance": "I can help with maintenance requests. What's the issue?"
     }
     
     def generate_elevenlabs_audio(text, voice_id="f218e5pATi8cBqEEIGBU"):
@@ -186,23 +186,23 @@ def create_app():
             "audio": None
         },
         "can you help": {
-            "text": "Absolutely! I'm here to help with anything you need! What can I do for you?",
+            "text": "Yes, I can help with maintenance and property questions. What do you need?",
             "audio": None
         },
         "what can you do": {
-            "text": "I can help with maintenance requests, office hours, general questions, and anything else you need!",
+            "text": "I can help with maintenance requests, office hours, and property questions.",
             "audio": None
         },
         "open right now": {
-            "text": "We're closed right now, but I'm absolutely here to help! We're open Monday through Friday, 9 to 5!",
+            "text": "We're closed right now, but I'm here to help. We're open Monday through Friday, 9 to 5.",
             "audio": None
         },
         "right now": {
-            "text": "We're closed right now, but I'm absolutely here to help! We're open Monday through Friday, 9 to 5!",
+            "text": "We're closed right now, but I'm here to help. We're open Monday through Friday, 9 to 5.",
             "audio": None
         },
         "can you help with": {
-            "text": "Absolutely! I can help with anything you need! What's going on?",
+            "text": "Yes, I can help with maintenance requests and property questions. What do you need?",
             "audio": None
         },
         "maintenance": {
@@ -659,7 +659,7 @@ If they need maintenance or have questions about a specific property, get their 
             if "hours" in user_input.lower() or "open" in user_input.lower():
                 return "Oh sure! We're here Monday through Friday, 9 to 5. What can I help you with?"
             elif "maintenance" in user_input.lower() or "repair" in user_input.lower():
-                return "Absolutely! What's going on? I'm here to help get that sorted out."
+                return "I can help with maintenance requests. What's the issue?"
             else:
                 return "I'd love to help! Let me connect you with our team at (718) 414-6984."
     
@@ -715,7 +715,7 @@ If they need maintenance or have questions about a specific property, get their 
         if any(word in text_lower for word in ['person', 'human', 'manager', 'speak to someone', 'transfer']):
             responses = [
                 "Perfect! I'd be delighted to connect you with Diane or Janier at (718) 414-6984. They're wonderful people who'll give you personalized attention!",
-                "Absolutely! Let me get you directly to Diane or Janier at (718) 414-6984. They're incredibly helpful and will take great care of you!",
+                "I'll transfer you to Diane or Janier at (718) 414-6984. They can help you with that.",
                 "Of course! I'll connect you right now with our amazing team members Diane or Janier at (718) 414-6984. They'll be thrilled to help!"
             ]
             return random.choice(responses)
@@ -723,8 +723,8 @@ If they need maintenance or have questions about a specific property, get their 
         # Greetings - warm variations
         if any(word in text_lower for word in ['hello', 'hi', 'good morning', 'good afternoon', 'hey']):
             responses = [
-                "Hello! It's such a pleasure to hear from you! I'm Tony, and I'm genuinely excited to help make your day better!",
-                "Hi there! What a wonderful day to connect! I'm Tony, and I'm absolutely delighted you called! How can I assist you?",
+                "Hello, I'm Chris from Grinberg Management. How can I help you?",
+                "Hi, this is Chris from Grinberg Management. What can I do for you?",
                 "Good day! I'm Tony, and I'm so happy you reached out! I'm here and ready to help with whatever you need!"
             ]
             return random.choice(responses)
@@ -740,8 +740,8 @@ If they need maintenance or have questions about a specific property, get their 
         
         # Default - helpful with personality variations
         default_responses = [
-            "I'm having a brief technical moment, but I'm still absolutely thrilled to help you! What can I do to brighten your day?",
-            "Even with a tiny technical hiccup, I'm here and excited to assist you! Tell me how I can make your experience wonderful!",
+            "I'm having a brief technical moment, but I'm here to help. What can I do for you?",
+            "There's a small technical issue, but I can still assist you. How can I help?",
             "Despite a small technical pause, I'm completely focused on helping you! What would make your day better right now?"
         ]
         return random.choice(default_responses)
@@ -1006,7 +1006,7 @@ If they need maintenance or have questions about a specific property, get their 
             else:
                 time_greeting = "Good evening"
             
-            greeting_text = f"{time_greeting}! You've reached Grinberg Management, I'm Chris, and I'm excited to help you today! What can I do for you?"
+            greeting_text = f"{time_greeting}! You've reached Grinberg Management, I'm Chris. How can I help you?"
             
             # Try ElevenLabs for natural voice
             audio_url = generate_elevenlabs_audio(greeting_text)
