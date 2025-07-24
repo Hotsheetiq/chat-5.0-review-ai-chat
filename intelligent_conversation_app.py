@@ -31,10 +31,16 @@ openai_client = OpenAI(api_key=OPENAI_API_KEY) if OPENAI_API_KEY else None
 # Initialize Rent Manager client with proper credentials
 rent_manager = None
 if os.environ.get("RENT_MANAGER_USERNAME") and os.environ.get("RENT_MANAGER_PASSWORD"):
-    # Create credentials string - location ID will default to 1 if not numeric
-    location_id = os.environ.get("RENT_MANAGER_LOCATION_ID", "1")
-    rent_manager_credentials = f"{os.environ.get('RENT_MANAGER_USERNAME')}:{os.environ.get('RENT_MANAGER_PASSWORD')}:{location_id}"
-    rent_manager = RentManagerAPI(rent_manager_credentials)
+    try:
+        from rent_manager import RentManagerAPI
+        # Create credentials string - location ID will default to 1 if not numeric
+        location_id = os.environ.get("RENT_MANAGER_LOCATION_ID", "1")
+        rent_manager_credentials = f"{os.environ.get('RENT_MANAGER_USERNAME')}:{os.environ.get('RENT_MANAGER_PASSWORD')}:{location_id}"
+        rent_manager = RentManagerAPI(rent_manager_credentials)
+        logger.info("Rent Manager API initialized successfully")
+    except Exception as e:
+        logger.error(f"Failed to initialize Rent Manager API: {e}")
+        rent_manager = None
 
 # Call state tracking
 call_states = {}
@@ -643,17 +649,40 @@ If they need maintenance or have questions about a specific property, get their 
             tenant_unit = None
             tenant_id = None
             
-            # Skip tenant lookup for now to avoid async issues
-            # if rent_manager:
-            #     try:
-            #         tenant_info = rent_manager.lookup_tenant_by_phone(caller_phone)
-            #         if tenant_info:
-            #             caller_name = f"{tenant_info.get('FirstName', '')} {tenant_info.get('LastName', '')}".strip()
-            #             tenant_unit = tenant_info.get('Unit', '')
-            #             tenant_id = tenant_info.get('TenantID', '')
-            #             logger.info(f"Tenant identified: {caller_name} - Unit {tenant_unit}")
-            #     except Exception as e:
-            #         logger.warning(f"Tenant lookup failed: {e}")
+            # Enable tenant lookup for caller identification
+            if rent_manager:
+                try:
+                    import asyncio
+                    # Create async function for tenant lookup
+                    async def lookup_tenant():
+                        try:
+                            return await rent_manager.lookup_tenant_by_phone(caller_phone)
+                        except Exception as e:
+                            logger.warning(f"Tenant lookup error: {e}")
+                            return None
+                    
+                    # Run tenant lookup
+                    try:
+                        loop = asyncio.get_event_loop()
+                        tenant_info = loop.run_until_complete(lookup_tenant())
+                    except RuntimeError:
+                        # If no event loop, create new one
+                        tenant_info = asyncio.run(lookup_tenant())
+                    
+                    if tenant_info:
+                        caller_name = f"{tenant_info.get('FirstName', '')} {tenant_info.get('LastName', '')}".strip()
+                        tenant_unit = tenant_info.get('Unit', '')
+                        tenant_id = tenant_info.get('TenantID', '')
+                        logger.info(f"Tenant identified: {caller_name} - Unit {tenant_unit}")
+                        
+                        # Store tenant info for use in conversation
+                        call_states[call_sid] = {
+                            'tenant_info': tenant_info,
+                            'caller_name': caller_name,
+                            'tenant_unit': tenant_unit
+                        }
+                except Exception as e:
+                    logger.warning(f"Tenant lookup failed: {e}")
             
             # Add to active calls in database (upsert to handle duplicates)
             try:
@@ -912,9 +941,9 @@ If they need maintenance or have questions about a specific property, get their 
                 
                 # Skip logging for speed when no instant match
                 
-                # If no instant response, generate AI response
+                # If no instant response, generate AI response with caller context
                 if not ai_response:
-                    ai_response = generate_intelligent_response(speech_result, 'simple')
+                    ai_response = generate_intelligent_response(speech_result, call_sid)
                 
                 logger.info(f"AI response: {ai_response}")
                 
