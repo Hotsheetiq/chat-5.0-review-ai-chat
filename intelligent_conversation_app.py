@@ -108,7 +108,7 @@ def create_app():
                 }
             }
             
-            response = requests.post(url, json=data, headers=headers, timeout=2)  # Faster timeout for quicker responses
+            response = requests.post(url, json=data, headers=headers, timeout=5)  # Sufficient timeout to avoid failures
             if response.status_code == 200:
                 # Save audio file and return URL
                 audio_filename = f"audio_{hash(text)}.mp3"
@@ -158,6 +158,8 @@ Address: 31 Port Richmond Ave, Staten Island, NY 10302
 RESPONSE EXAMPLES:
 Question: "Are you open?"
 Answer: "We're closed right now, but I'm here to help. We're open Monday through Friday, 9 to 5."
+
+For office hours questions, be direct and complete. Don't ask for unit numbers unless they need maintenance help.
 
 Question: "I have a maintenance issue"
 Answer: "What's happening? I'll help get that sorted out."
@@ -228,7 +230,7 @@ If they need maintenance or have questions about a specific property, get their 
             response = openai_client.chat.completions.create(
                 model="gpt-4o",  # Latest OpenAI model for best conversation
                 messages=[{"role": msg["role"], "content": msg["content"]} for msg in messages],
-                max_tokens=20,  # Shorter responses for faster delivery
+                max_tokens=50,  # Enough tokens to complete responses without cutting off
                 temperature=0.3,   # More consistent and direct
                 presence_penalty=0,  # Remove penalties for speed
                 frequency_penalty=0
