@@ -162,15 +162,35 @@ def create_app():
             "audio": None
         },
         "are you a real person": {
-            "text": "I'm Chris, your AI assistant from Grinberg Management! I'm here 24/7 to help with any questions about your apartment!",
+            "text": "I'm Chris, your AI assistant from Grinberg Management! I'm here 24/7 to help with any questions you have!",
             "audio": None
         },
         "are you human": {
-            "text": "I'm Chris, your AI assistant! I'm here around the clock to help you with maintenance, office hours, and any apartment questions!",
+            "text": "I'm Chris, your AI assistant! I'm here around the clock to help you with anything you need!",
             "audio": None
         },
         "who are you": {
-            "text": "I'm Chris from Grinberg Management! I'm an AI assistant here to help with all your apartment needs!",
+            "text": "I'm Chris from Grinberg Management! I'm an AI assistant here to help with all your questions!",
+            "audio": None
+        },
+        "can you help": {
+            "text": "Absolutely! I'm here to help with anything you need! What can I do for you?",
+            "audio": None
+        },
+        "what can you do": {
+            "text": "I can help with maintenance requests, office hours, general questions, and anything else you need!",
+            "audio": None
+        },
+        "open right now": {
+            "text": "We're closed right now, but I'm absolutely here to help! We're open Monday through Friday, 9 to 5!",
+            "audio": None
+        },
+        "right now": {
+            "text": "We're closed right now, but I'm absolutely here to help! We're open Monday through Friday, 9 to 5!",
+            "audio": None
+        },
+        "can you help with": {
+            "text": "Absolutely! I can help with anything you need! What's going on?",
             "audio": None
         }
     }
@@ -211,27 +231,20 @@ def create_app():
             messages = [
                 {
                     "role": "system",
-                    "content": """You are Chris from Grinberg Management. Continue conversations naturally without starting with greetings.
+                    "content": """You are Chris from Grinberg Management. Help with ANY questions - not just apartments!
 
 IMPORTANT RULES:
-- NEVER start responses with "Hi," "Hey," "Hello," or similar greetings
-- Continue the conversation naturally as if mid-conversation
+- Help with ALL types of questions (general, personal, anything they ask)
 - HIGH ENERGY and enthusiasm in every response
-- Sound genuinely excited and happy to help  
 - Keep responses 10-20 words for punchy, energetic delivery
-- Be enthusiastic and upbeat
+- Be enthusiastic and upbeat about helping with ANYTHING
 
 OFFICE HOURS: Monday-Friday 9 AM to 5 PM Eastern Time
 Address: 31 Port Richmond Ave, Staten Island, NY 10302
 
-ENERGETIC RESPONSE EXAMPLES:
-Question: "Are you open?"
-Answer: "We're closed right now, but I'm absolutely here to help! We're open Monday through Friday, 9 to 5!"
+You can help with maintenance, office info, general questions, personal questions, or absolutely anything!
 
-Question: "I have a maintenance issue"
-Answer: "Oh absolutely! Tell me what's going on and I'll get that taken care of right away!"
-
-Be enthusiastic, energetic, and sound genuinely thrilled to assist with anything they need!"""
+Be enthusiastic, energetic, and thrilled to assist with ANY topic they bring up!"""
                 }
             ]
             
