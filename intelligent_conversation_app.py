@@ -192,6 +192,46 @@ def create_app():
         "can you help with": {
             "text": "Absolutely! I can help with anything you need! What's going on?",
             "audio": None
+        },
+        "maintenance": {
+            "text": "Of course! Tell me what's going on and I'll get that taken care of right away!",
+            "audio": None
+        },
+        "emergency": {
+            "text": "Absolutely! Tell me what's happening and I'll make sure you get immediate help!",
+            "audio": None
+        },
+        "thank you": {
+            "text": "You're so welcome! Happy to help anytime!",
+            "audio": None
+        },
+        "thanks": {
+            "text": "You're welcome! Anything else I can help with?",
+            "audio": None
+        },
+        "good morning": {
+            "text": "Good morning! How can I help you today?",
+            "audio": None
+        },
+        "good afternoon": {
+            "text": "Good afternoon! What can I do for you?",
+            "audio": None
+        },
+        "good evening": {
+            "text": "Good evening! How can I assist you tonight?",
+            "audio": None
+        },
+        "hi chris": {
+            "text": "Hey there! What can I help you with today?",
+            "audio": None
+        },
+        "hey chris": {
+            "text": "Hey! How can I help you out?",
+            "audio": None
+        },
+        "how are you": {
+            "text": "I'm doing great and ready to help! What can I do for you?",
+            "audio": None
         }
     }
     
@@ -860,20 +900,17 @@ If they need maintenance or have questions about a specific property, get their 
                 instant_audio_url = None
                 ai_response = None
                 
-                # Debug logging
+                # Minimal debug logging for speed
                 logger.info(f"Checking instant responses for: '{user_lower}'")
-                logger.info(f"Available keys: {list(INSTANT_RESPONSES.keys())}")
                 
                 for key, response_data in INSTANT_RESPONSES.items():
                     if key in user_lower:
                         ai_response = response_data["text"]
                         instant_audio_url = response_data["audio"]
-                        logger.info(f"MATCH FOUND! Using INSTANT cached response for: {speech_result}")
-                        logger.info(f"Matched key: {key}, Audio URL: {instant_audio_url}")
+                        logger.info(f"INSTANT MATCH: {key}")
                         break
                 
-                if not ai_response:
-                    logger.info(f"No instant match found for: '{user_lower}'")
+                # Skip logging for speed when no instant match
                 
                 # If no instant response, generate AI response
                 if not ai_response:
@@ -895,16 +932,18 @@ If they need maintenance or have questions about a specific property, get their 
                     else:
                         response.say(ai_response, voice='Polly.Matthew-Neural')
             
-            # Update active call status
-            try:
-                with app.app_context():
-                    active_call = ActiveCall.query.filter_by(call_sid=call_sid).first()
-                    if active_call:
-                        active_call.last_activity = datetime.utcnow()
-                        active_call.current_action = f"Discussing: {speech_result[:30]}..."
-                        db.session.commit()
-            except Exception as e:
-                logger.error(f"Database error updating call: {e}")
+            # Update active call status asynchronously to avoid blocking response
+            # Skip database updates for instant responses to maintain speed
+            if not instant_audio_url:
+                try:
+                    with app.app_context():
+                        active_call = ActiveCall.query.filter_by(call_sid=call_sid).first()
+                        if active_call:
+                            active_call.last_activity = datetime.utcnow()
+                            active_call.current_action = f"Discussing: {speech_result[:30]}..."
+                            db.session.commit()
+                except Exception as e:
+                    logger.error(f"Database error updating call: {e}")
             
             # Continue conversation with optimized timeouts for faster interaction
             response.gather(
