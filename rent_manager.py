@@ -11,21 +11,74 @@ class RentManagerAPI:
     Rent Manager API integration for tenant management, notes, and service issues.
     """
     
-    def __init__(self, api_key: str):
-        self.api_key = api_key
-        self.base_url = "https://grinb.api.rentmanager.com"  # Correct format from HttpClientHelper.cs
-        self.headers = {
-            "X-RM12Api-ApiToken": api_key,
+    def __init__(self, credentials: str):
+        # Parse credentials - expecting format "username:password:locationID" or just the session token
+        if ':' in credentials:
+            parts = credentials.split(':')
+            self.username = parts[0]
+            self.password = parts[1] 
+            # Handle location ID - if it's not a number, default to 1
+            try:
+                self.location_id = int(parts[2]) if len(parts) > 2 else 1
+            except (ValueError, IndexError):
+                self.location_id = 1
+            self.session_token = None
+        else:
+            # Assume it's already a session token
+            self.session_token = credentials
+            self.username = None
+            self.password = None
+            self.location_id = None
+            
+        self.base_url = "https://grinb.api.rentmanager.com"
+        self.base_headers = {
             "Content-Type": "application/json",
             "Accept": "application/json"
         }
     
+    async def authenticate(self) -> bool:
+        """Authenticate with Rent Manager API to get session token"""
+        if self.session_token:
+            return True  # Already have token
+            
+        if not (self.username and self.password):
+            logger.error("No username/password provided for authentication")
+            return False
+            
+        try:
+            auth_data = {
+                "Username": self.username,
+                "Password": self.password,
+                "LocationID": self.location_id or 1
+            }
+            
+            url = f"{self.base_url}/Authentication/AuthorizeUser"
+            async with aiohttp.ClientSession(headers=self.base_headers) as session:
+                async with session.post(url, json=auth_data) as response:
+                    if response.status == 200:
+                        # Token is returned as quoted string, remove quotes
+                        self.session_token = (await response.text()).strip('"')
+                        logger.info("Successfully authenticated with Rent Manager API")
+                        return True
+                    else:
+                        logger.error(f"Authentication failed: {response.status} - {await response.text()}")
+                        return False
+                        
+        except Exception as e:
+            logger.error(f"Authentication error: {e}")
+            return False
+
     async def _make_request(self, method: str, endpoint: str, data: Optional[Dict] = None) -> Optional[Dict]:
         """Make an HTTP request to the Rent Manager API."""
+        # Ensure we're authenticated
+        if not self.session_token and not await self.authenticate():
+            return None
+            
         url = f"{self.base_url}{endpoint}"
+        headers = {**self.base_headers, "X-RM12Api-ApiToken": self.session_token}
         
         try:
-            async with aiohttp.ClientSession(headers=self.headers) as session:
+            async with aiohttp.ClientSession(headers=headers) as session:
                 async with session.request(method, url, json=data) as response:
                     if response.status == 200:
                         return await response.json()

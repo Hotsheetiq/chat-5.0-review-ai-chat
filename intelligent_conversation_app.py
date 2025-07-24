@@ -23,13 +23,17 @@ logger = logging.getLogger(__name__)
 # Environment variables
 OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY")
 ELEVENLABS_API_KEY = os.environ.get("ELEVENLABS_API_KEY")
-RENT_MANAGER_API_KEY = os.environ.get("RENT_MANAGER_API_KEY")
 
 # Initialize OpenAI client
 openai_client = OpenAI(api_key=OPENAI_API_KEY) if OPENAI_API_KEY else None
 
-# Initialize Rent Manager client
-rent_manager = RentManagerAPI(RENT_MANAGER_API_KEY) if RENT_MANAGER_API_KEY else None
+# Initialize Rent Manager client with proper credentials
+rent_manager = None
+if os.environ.get("RENT_MANAGER_USERNAME") and os.environ.get("RENT_MANAGER_PASSWORD"):
+    # Create credentials string - location ID will default to 1 if not numeric
+    location_id = os.environ.get("RENT_MANAGER_LOCATION_ID", "1")
+    rent_manager_credentials = f"{os.environ.get('RENT_MANAGER_USERNAME')}:{os.environ.get('RENT_MANAGER_PASSWORD')}:{location_id}"
+    rent_manager = RentManagerAPI(rent_manager_credentials)
 
 # Call state tracking
 call_states = {}
