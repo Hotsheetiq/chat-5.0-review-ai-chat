@@ -86,7 +86,7 @@ def create_app():
         "goodbye": "Thank you for calling Grinberg Management! Have a wonderful day!",
         "transfer": "Perfect! I'm connecting you with Diane or Janier right now!",
         "hours": "We're here Monday through Friday, 9 to 5. What can I help you with?",
-        "maintenance": "I can help with maintenance requests. What's the issue?"
+        "maintenance": "I understand you need maintenance help. What's happening?"
     }
     
     def generate_elevenlabs_audio(text, voice_id="f218e5pATi8cBqEEIGBU"):
@@ -170,7 +170,7 @@ def create_app():
             "audio": None
         },
         "help": {
-            "text": "I can help with maintenance requests and property questions. What do you need?",
+            "text": "I'm here to help with whatever you need. What's going on?",
             "audio": None
         },
         "are you a real person": {
@@ -206,11 +206,11 @@ def create_app():
             "audio": None
         },
         "maintenance": {
-            "text": "I can help with maintenance requests. What's the issue?",
+            "text": "I understand you need maintenance help. What's happening?",
             "audio": None
         },
         "emergency": {
-            "text": "I understand this is urgent. What's the emergency?",
+            "text": "I understand this is urgent. I'm here to help. What's the emergency?",
             "audio": None
         },
         "thank you": {
@@ -402,6 +402,15 @@ def create_app():
             
             # Expand instant response matching for better coverage
             instant_patterns = {
+                # NOISE COMPLAINTS - EMPATHETIC RESPONSES
+                "noise": "I'm sorry you're dealing with noise issues. That's really disruptive. What's your address?",
+                "neighbors": "I understand neighbor issues can be frustrating. Let me help you. What's happening?",
+                "loud": "That sounds really disruptive. I'm sorry you're going through this. What's your address?",
+                "music": "Loud music can be so frustrating. I understand. What's your address so I can help?",
+                "party": "I understand how disruptive parties can be. Let me help address this. What's your address?",
+                "yelling": "That must be really stressful. I'm sorry you're dealing with that. What's your address?",
+                "shouting": "That sounds very disruptive. Let me help you with this situation. What's your address?",
+                
                 # ELECTRICAL MAINTENANCE - PROFESSIONAL RESPONSE
                 "power not working": "I understand you're having electrical issues. Let me get a service request created for you. What's your address?",
                 "no power": "That's really inconvenient! I'll create an electrical service request right away. What's your address?",
@@ -493,11 +502,12 @@ def create_app():
                     "role": "system",
                     "content": """You are Chris from Grinberg Management. You help tenants with maintenance issues and property questions.
 
-CRITICAL VOICE DELIVERY RULES:
-- NEVER say you are "excited" or "pumped" about anything - real humans are never excited about tenant problems
-- Keep responses under 12 words to prevent speech interruptions
-- Speak professionally and calmly without artificial enthusiasm
-- Use simple, direct language
+CRITICAL PERSONALITY RULES:
+- Be WARM, EMPATHETIC, and genuinely caring about tenant concerns
+- Show understanding for problems like noise complaints, maintenance issues, and tenant frustrations
+- Use phrases like "I understand how frustrating that must be", "That sounds really disruptive", "I'm sorry you're dealing with that"
+- Be helpful and solutions-focused, not dry or robotic
+- Keep responses under 15 words but make them warm and caring
 
 CRITICAL MAINTENANCE LOGIC:
 - When someone mentions "power not working", "no power", "don't have power" - recognize as electrical issue
@@ -625,7 +635,7 @@ Use natural conversation logic - if someone says "power not working" that's obvi
             if current_day < 5 and 9 <= current_hour < 17:
                 office_status = "OFFICE STATUS: We are currently OPEN (Monday-Friday, 9 AM - 5 PM Eastern)"
             else:
-                office_status = "OFFICE STATUS: We are currently CLOSED (Monday-Friday, 9 AM - 5 PM Eastern). Be helpful but acknowledge we're closed."
+                office_status = "OFFICE STATUS: We are currently CLOSED (Monday-Friday, 9 AM - 5 PM Eastern). Still be helpful and empathetic - take information for urgent issues and assure them someone will follow up during business hours."
             
             messages.append({
                 "role": "system",
