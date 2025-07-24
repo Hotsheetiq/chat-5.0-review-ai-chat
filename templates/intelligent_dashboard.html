@@ -50,32 +50,74 @@
                     </div>
                     <div class="card-body">
                         <div class="row">
-                            <div class="col-md-6">
-                                <h5>AI Intelligence Status</h5>
-                                <p class="mb-1">
-                                    <span class="status-indicator {{ 'status-ok' if openai_connected else 'status-error' }}"></span>
-                                    <strong>GPT-4o Brain:</strong> {{ 'Online' if openai_connected else 'Offline' }}
-                                </p>
-                                <p class="mb-1">
-                                    <span class="status-indicator status-ok"></span>
-                                    <strong>ElevenLabs Voice:</strong> {{ 'Active' if elevenlabs_connected else 'Offline' }}
-                                </p>
-                                <p class="mb-1">
-                                    <span class="status-indicator status-ok"></span>
-                                    <strong>Call Recording:</strong> Active
-                                </p>
-                                <p class="mb-1">
-                                    <span class="status-indicator status-ok"></span>
-                                    <strong>Transcription:</strong> Active
-                                </p>
+                            <div class="col-md-12">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <span class="status-indicator {{ 'status-ok' if openai_connected else 'status-error' }}"></span>
+                                        <strong>Chris AI:</strong> {{ 'Online' if openai_connected else 'Offline' }}
+                                    </div>
+                                    <div>
+                                        <span class="status-indicator status-ok"></span>
+                                        <strong>Voice:</strong> Natural
+                                    </div>
+                                    <div>
+                                        <span class="status-indicator status-ok"></span>
+                                        <strong>Recording:</strong> Active
+                                    </div>
+                                </div>
                             </div>
-                            <div class="col-md-6">
-                                <h5>AI Capabilities</h5>
-                                <ul class="list-unstyled">
-                                    <li>✓ Advanced conversational intelligence</li>
-                                    <li>✓ Emotional awareness & empathy</li>
-                                    <li>✓ Context understanding</li>
-                                    <li>✓ Natural personality</li>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Call Recordings Section -->
+                <div class="card">
+                    <div class="card-header">
+                        <h4 class="mb-0">📞 Recent Call Recordings</h4>
+                    </div>
+                    <div class="card-body">
+                        {% if call_recordings %}
+                            <div class="table-responsive">
+                                <table class="table table-dark table-striped">
+                                    <thead>
+                                        <tr>
+                                            <th>Time</th>
+                                            <th>Phone Number</th>
+                                            <th>Duration</th>
+                                            <th>Recording</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for recording in call_recordings %}
+                                        <tr>
+                                            <td>{{ recording.timestamp.strftime('%m/%d %I:%M %p') if recording.timestamp else 'Unknown' }}</td>
+                                            <td>{{ recording.phone }}</td>
+                                            <td>{{ recording.duration }}s</td>
+                                            <td>
+                                                {% if recording.recording_url %}
+                                                    <audio controls style="max-width: 200px;">
+                                                        <source src="{{ recording.recording_url }}" type="audio/mpeg">
+                                                        Your browser does not support the audio element.
+                                                    </audio>
+                                                {% else %}
+                                                    <span class="text-muted">Processing...</span>
+                                                {% endif %}
+                                            </td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        {% else %}
+                            <p class="text-muted mb-0">No call recordings yet. Recordings will appear here after calls are completed.</p>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
                                     <li>✓ Problem-solving abilities</li>
                                     <li>✓ Business knowledge integration</li>
                                 </ul>

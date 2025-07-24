@@ -508,7 +508,12 @@ If they need maintenance or have questions about a specific property, get their 
             
             response = VoiceResponse()
             
-            # Remove recording to eliminate all webhook callbacks that might cause application error
+            # Add simple call recording without complex webhooks
+            response.record(
+                max_length=1800,  # 30 minutes max
+                play_beep=False,
+                record_on_answer=True
+            )
             
             # Chris's friendly greeting - ready to chat
             greeting = "Hi there, you have reached Grinberg Management, I'm Chris, how can I help?"
@@ -748,7 +753,7 @@ If they need maintenance or have questions about a specific property, get their 
                              elevenlabs_connected=bool(ELEVENLABS_API_KEY),
                              active_calls=len([s for s in call_states.values() if s.get('started')]),
                              recent_calls=recent_calls,
-                             recent_recordings=recent_recordings,
+                             call_recordings=recent_recordings,
                              search_phone=search_phone,
                              search_date=search_date,
                              total_recordings=len(call_recordings))
