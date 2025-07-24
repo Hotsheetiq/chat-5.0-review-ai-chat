@@ -108,7 +108,7 @@ def create_app():
                 }
             }
             
-            response = requests.post(url, json=data, headers=headers, timeout=3)  # Even faster timeout
+            response = requests.post(url, json=data, headers=headers, timeout=2)  # Faster timeout for quicker responses
             if response.status_code == 200:
                 # Save audio file and return URL
                 audio_filename = f"audio_{hash(text)}.mp3"
@@ -144,30 +144,25 @@ def create_app():
             messages = [
                 {
                     "role": "system",
-                    "content": """You are Chris from Grinberg Management. Be helpful and conversational with a soft, friendly tone.
+                    "content": """You are Chris from Grinberg Management. Continue conversations naturally without starting with greetings.
 
-TONE & STYLE:
-- Speak softly and warmly like a caring friend
-- Use gentle, natural language - not robotic or formal
-- Be conversational and approachable
-- Keep responses 15-25 words for good pacing
-- Sound like a real person, not a phone operator
+IMPORTANT RULES:
+- NEVER start responses with "Hi," "Hey," "Hello," or similar greetings
+- Continue the conversation naturally as if mid-conversation
+- Keep responses 8-15 words for quick delivery
+- Be direct and helpful
 
-OFFICE HOURS:
-- Open: Monday-Friday 9-5 Eastern  
-- Currently CLOSED (after hours)
+OFFICE HOURS: Monday-Friday 9 AM to 5 PM Eastern Time
+Address: 31 Port Richmond Ave, Staten Island, NY 10302
 
-NATURAL RESPONSE EXAMPLES:
+RESPONSE EXAMPLES:
 Question: "Are you open?"
-Answer: "We're actually closed right now, but I'm here to help. We're open Monday through Friday, 9 to 5."
+Answer: "We're closed right now, but I'm here to help. We're open Monday through Friday, 9 to 5."
 
 Question: "I have a maintenance issue"
-Answer: "Oh no, I'm sorry to hear that. Tell me what's happening and I'll help you get it sorted out."
+Answer: "What's happening? I'll help get that sorted out."
 
-Question: "Can you help me?"
-Answer: "Absolutely, I'd be happy to help. What's going on?"
-
-Be warm, caring, and genuinely helpful. Don't sound like a phone system."""
+Be helpful and warm, but get straight to the point without greetings."""
                 }
             ]
             
@@ -233,8 +228,8 @@ If they need maintenance or have questions about a specific property, get their 
             response = openai_client.chat.completions.create(
                 model="gpt-4o",  # Latest OpenAI model for best conversation
                 messages=[{"role": msg["role"], "content": msg["content"]} for msg in messages],
-                max_tokens=30,  # Longer responses but still fast
-                temperature=0.4,   # More natural sounding
+                max_tokens=20,  # Shorter responses for faster delivery
+                temperature=0.3,   # More consistent and direct
                 presence_penalty=0,  # Remove penalties for speed
                 frequency_penalty=0
             )
