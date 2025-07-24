@@ -268,24 +268,24 @@ def create_app():
             
             # Expand instant response matching for better coverage
             instant_patterns = {
-                # EMERGENCY MAINTENANCE - IMMEDIATE RECOGNITION
-                "power not working": "ELECTRICAL EMERGENCY! I'm creating an urgent service request. What's your address and unit number?",
-                "no power": "POWER OUTAGE! This is urgent. What's your address and unit number?",
-                "don't have power": "POWER OUTAGE! This is urgent. What's your address and unit number?",
-                "have no power": "POWER OUTAGE! This is urgent. What's your address and unit number?",
-                "electricity": "ELECTRICAL ISSUE! This needs attention. What's your address and unit?",
-                "power out": "POWER EMERGENCY! Creating service request. Your address and unit number?",
-                "electrical": "ELECTRICAL PROBLEM! This is priority maintenance. Address and unit please?",
-                "lights not": "ELECTRICAL ISSUE! No lights is urgent. What's your address and unit?",
-                "no electricity": "POWER EMERGENCY! Creating service request. Address and unit?",
+                # EMERGENCY MAINTENANCE - IMMEDIATE RECOGNITION (Human-like responses)
+                "power not working": "Oh no! That's an electrical emergency. Let me get this fixed for you right away. What's your address and unit?",
+                "no power": "That's definitely urgent! I'll create an electrical service request immediately. What's your address and unit?",
+                "don't have power": "I understand how frustrating that must be! Let me get maintenance out there. What's your address and unit?",
+                "have no power": "That's not good at all! I'll get someone on this right away. What's your address and unit number?",
+                "electricity": "Electrical issues can be really concerning. Let me help you with that. What's your address and unit?",
+                "power out": "Power outages are never fun! I'll get this taken care of for you. Address and unit please?",
+                "electrical": "I hear you on the electrical problem. Let me get maintenance scheduled. Address and unit?",
+                "lights not": "No lights definitely needs attention! Let me help you get this sorted. Address and unit?",
+                "no electricity": "That must be really inconvenient! I'll get someone out there. Address and unit?",
                 
-                # OTHER EMERGENCY MAINTENANCE
-                "no heat": "HEATING EMERGENCY! This is urgent in winter. Address and unit for immediate service?",
-                "heat not working": "HEATING ISSUE! Creating urgent service request. What's your address and unit?",
-                "no hot water": "HOT WATER EMERGENCY! This needs immediate attention. Address and unit please?",
-                "water leak": "WATER LEAK! This is urgent - could cause damage. Address and unit right away?",
-                "flooding": "FLOODING EMERGENCY! I'm dispatching maintenance immediately. Address and unit?",
-                "gas leak": "GAS LEAK EMERGENCY! This is extremely urgent. Address and unit for immediate response?",
+                # OTHER EMERGENCY MAINTENANCE (Human-like responses)
+                "no heat": "Oh wow, no heat is really tough! Let me get someone out there quickly. What's your address and unit?",
+                "heat not working": "That's definitely not comfortable! I'll get heating maintenance scheduled right away. Address and unit?",
+                "no hot water": "Hot water issues are always a pain! Let me get this fixed for you. What's your address and unit?",
+                "water leak": "Water leaks can cause real damage! I need to get someone there fast. Address and unit please?",
+                "flooding": "That sounds really stressful! I'm getting emergency maintenance on this immediately. Address and unit?",
+                "gas leak": "Gas leaks are extremely serious! I'm prioritizing this right now. Address and unit for immediate response?",
                 
                 # CLEAR MAINTENANCE ISSUES
                 "broken": "Maintenance issue confirmed! What's broken and what's your address and unit?",
@@ -293,17 +293,17 @@ def create_app():
                 "fix": "Repair needed! What needs fixing and what's your address and unit?",
                 "repair": "Maintenance request confirmed. What needs repair and your address/unit?",
                 
-                # Address confirmation patterns - context aware
-                "targee": "Got it! I'm creating your electrical service request for 122 Targee Street. Maintenance will contact you within 2-4 hours.",
-                "barker": "Perfect! Creating electrical service request for 13 Barker Street. You'll hear from maintenance within 2-4 hours.",
-                "coonley": "Understood! Service request created for 15 Coonley Court electrical issue. Maintenance will call within 2-4 hours.",
-                "south avenue": "Got it! Creating electrical service request for 173 South Avenue. Maintenance will contact you within 2-4 hours.",
-                "maple": "Perfect! Service request submitted for 263A Maple Parkway electrical issue. Maintenance will reach out within 2-4 hours.",
-                "alaska": "Understood! Creating electrical service request for 28 Alaska Street. You'll hear back within 2-4 hours.",
-                "stanley": "Got it! Service request created for 28 Stanley Avenue electrical issue. Maintenance will contact you within 2-4 hours.",
-                "pine street": "Perfect! Creating electrical service request for Pine Street. Maintenance will call within 2-4 hours.",
-                "betty court": "Understood! Service request submitted for 56 Betty Court electrical issue. You'll hear back within 2-4 hours.",
-                "cary avenue": "Got it! Creating electrical service request for 627 Cary Avenue. Maintenance will contact you within 2-4 hours.",
+                # Address confirmation patterns - context aware (Human-like responses)
+                "targee": "Perfect! I've got your electrical service request all set up for 122 Targee Street. Someone from maintenance will give you a call within 2-4 hours.",
+                "barker": "Great! I'm submitting your electrical request for 13 Barker Street right now. Maintenance will reach out within 2-4 hours.",
+                "coonley": "Excellent! Your service request for 15 Coonley Court is all taken care of. You should hear from maintenance within 2-4 hours.",
+                "south avenue": "Perfect! I've created your electrical service request for 173 South Avenue. Maintenance will be in touch within 2-4 hours.",
+                "maple": "Wonderful! Your electrical issue at 263A Maple Parkway is now in the system. Someone will call you within 2-4 hours.",
+                "alaska": "Great! I've got your electrical request for 28 Alaska Street all set. Maintenance will contact you within 2-4 hours.",
+                "stanley": "Perfect! Your service request for 28 Stanley Avenue is submitted. You'll hear from maintenance within 2-4 hours.",
+                "pine street": "Excellent! I've created your electrical request for Pine Street. Maintenance will give you a call within 2-4 hours.",
+                "betty court": "Great! Your electrical service request for 56 Betty Court is all set. Someone will reach out within 2-4 hours.",
+                "cary avenue": "Perfect! I've submitted your electrical request for 627 Cary Avenue. Maintenance will contact you within 2-4 hours.",
                 
                 # Quick confirmations
                 "yes": "Great! What else can I help you with?",
@@ -429,13 +429,13 @@ If they need maintenance or have questions about a specific property, get their 
             
             # Generate response using GPT-4o-mini for speed (faster than gpt-4o)
             response = openai_client.chat.completions.create(
-                model="gpt-4o-mini",  # Fastest OpenAI model
+                model="gpt-4o-mini",  # Fastest OpenAI model for speed
                 messages=[{"role": msg["role"], "content": msg["content"]} for msg in messages],
-                max_tokens=20,  # Ultra-short for maximum speed
-                temperature=0.2,   # Minimal temperature for fastest processing
+                max_tokens=15,  # Ultra-short responses for maximum speed
+                temperature=0.1,   # Minimal temperature for fastest processing
                 presence_penalty=0,
                 frequency_penalty=0,
-                timeout=2  # Even faster timeout - 2 seconds max
+                timeout=1.5  # Ultra-fast timeout - 1.5 seconds max
             )
             
             ai_response = response.choices[0].message.content
@@ -845,12 +845,12 @@ If they need maintenance or have questions about a specific property, get their 
                 # Fallback to Twilio voice
                 response.say(greeting_text, voice='Polly.Matthew-Neural')
             
-            # Wait for speech input with optimized timeouts for instant responses
+            # Wait for speech input with ultra-fast timeouts for instant responses
             response.gather(
                 input='speech',
                 action='/continue-conversation',
-                timeout=3,  # Very short timeout for instant feel
-                speech_timeout=2,  # Faster speech detection
+                timeout=2,  # Ultra-short timeout for instant feel
+                speech_timeout=1,  # Maximum speed speech detection
                 language='en-US'
             )
             
@@ -864,12 +864,12 @@ If they need maintenance or have questions about a specific property, get their 
             else:
                 response.say(checkin_text, voice='Polly.Matthew-Neural')
             
-            # Give another chance to respond with faster timeouts
+            # Give another chance to respond with ultra-fast timeouts
             response.gather(
                 input='speech',
                 action='/continue-conversation',
-                timeout=5,  # Shorter timeout for faster interaction
-                speech_timeout=3,  # Faster speech detection
+                timeout=3,  # Ultra-short timeout for faster interaction
+                speech_timeout=1.5,  # Maximum speed speech detection
                 language='en-US'
             )
             
@@ -1069,13 +1069,13 @@ If they need maintenance or have questions about a specific property, get their 
                 except Exception as e:
                     logger.error(f"Database error updating call: {e}")
             
-            # Continue conversation with optimized timeouts for faster interaction
+            # Continue conversation with ultra-fast timeouts for maximum speed
             response.gather(
                 input='speech',
                 action='/continue-conversation',
                 method='POST',
-                timeout=15,  # Shorter timeout for faster flow
-                speech_timeout=3,  # Faster speech detection
+                timeout=15,  # Reasonable timeout for natural conversation
+                speech_timeout=1.5,  # Ultra-fast speech detection for immediate responses
                 language='en-US'
             )
             

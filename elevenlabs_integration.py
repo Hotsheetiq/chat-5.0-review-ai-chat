@@ -44,16 +44,16 @@ def generate_elevenlabs_audio(text: str, voice_id: str = None, voice_name: str =
         
         data = {
             "text": text,
-            "model_id": "eleven_turbo_v2",  # Fast model for real-time
+            "model_id": "eleven_turbo_v2_5",  # Fastest model for real-time
             "voice_settings": {
-                "stability": 0.75,
-                "similarity_boost": 0.8,
-                "style": 0.5,
-                "use_speaker_boost": True
+                "stability": 0.15,        # Very low for maximum naturalness
+                "similarity_boost": 0.85, # High to maintain voice character
+                "style": 0.10,           # Minimal for fastest, most natural speech
+                "use_speaker_boost": True # Enhanced clarity for phone calls
             }
         }
         
-        response = requests.post(url, json=data, headers=headers, timeout=10)
+        response = requests.post(url, json=data, headers=headers, timeout=5)  # Reduced timeout for speed
         
         if response.status_code == 200:
             # Save audio to temporary file and return path
