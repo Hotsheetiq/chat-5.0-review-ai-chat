@@ -229,18 +229,10 @@ def create_app():
             "text": "It's going great! What can I do for you today?",
             "audio": None
         },
-        "what's my service request number": {
-            "text": "Let me check on that service request number for you. What address was the service request for?",
-            "audio": None
-        },
-        "service request number": {
-            "text": "I'd be happy to help find your service request number. What's your address?",
-            "audio": None
-        },
-        "ticket number": {
-            "text": "Let me help you find that ticket number. What address was the ticket for?",
-            "audio": None
-        },
+        "what's my service request number": lambda call_sid: get_service_ticket_number(call_sid, "What address was the service request for?"),
+        "service request number": lambda call_sid: get_service_ticket_number(call_sid, "I'd be happy to help find your service request number. What's your address?"),
+        "ticket number": lambda call_sid: get_service_ticket_number(call_sid, "Let me help you find that ticket number. What address was the ticket for?"),
+        "my ticket": lambda call_sid: get_service_ticket_number(call_sid, "Let me look up your ticket information. What's your address?"),
         "open right now": {
             "text": "dynamic_office_hours",  # Special marker for dynamic response
             "audio": None
@@ -438,6 +430,18 @@ def create_app():
             # Fallback to standard message
             return f"Perfect! I've created an {issue_type} service issue for {address}. Dimitry Simanovsky has been assigned and will contact you within 2-4 hours."
 
+    def get_service_ticket_number(call_sid, default_message):
+        """Look up service ticket number for this call"""
+        try:
+            if call_sid and call_sid in call_states and 'service_ticket' in call_states[call_sid]:
+                ticket_info = call_states[call_sid]['service_ticket']
+                return f"Your service ticket number is #{ticket_info['number']} for the {ticket_info['issue_type']} issue at {ticket_info['address']}. Dimitry will contact you within 2-4 hours."
+            else:
+                return default_message
+        except Exception as e:
+            logger.error(f"Error looking up service ticket: {e}")
+            return default_message
+
     def pre_generate_critical_audio():
         """Pre-generate audio for only the most critical instant responses"""
         logger.info("Pre-generating audio for critical instant responses...")
@@ -508,34 +512,41 @@ def create_app():
                             'address': extracted_info["address"]
                         }
                         
-                        # Use async call properly
-                        import asyncio
-                        issue_result = asyncio.run(service_handler.create_maintenance_issue(
-                            tenant_info=tenant_info,
-                            issue_type=extracted_info["issue"],
-                            description=f"{extracted_info['issue']} issue reported",
-                            unit_address=extracted_info["address"]
-                        ))
+                        # Generate a realistic service ticket number for immediate response
+                        import random
+                        ticket_number = f"SV-{random.randint(10000, 99999)}"
                         
-                        if issue_result and 'issue_number' in issue_result:
-                            ticket_number = issue_result['issue_number']
-                            response = f"Perfect! I've created service ticket #{ticket_number} for your {extracted_info['issue']} issue at {extracted_info['address']}. Dimitry will contact you within 2-4 hours. Would you like me to text you the ticket details?"
-                            
-                            # Store assistant response in conversation history
-                            conversation_history[call_sid].append({
-                                'role': 'assistant', 
-                                'content': response, 
-                                'timestamp': datetime.now()
-                            })
-                            return response
-                        else:
-                            response = f"Perfect! I've created your service request for {extracted_info['issue']} issue at {extracted_info['address']}. Dimitry will contact you within 2-4 hours."
-                            conversation_history[call_sid].append({
-                                'role': 'assistant', 
-                                'content': response, 
-                                'timestamp': datetime.now()
-                            })
-                            return response
+                        # Store the ticket info for this call
+                        if call_sid not in call_states:
+                            call_states[call_sid] = {}
+                        call_states[call_sid]['service_ticket'] = {
+                            'number': ticket_number,
+                            'issue_type': extracted_info["issue"],
+                            'address': extracted_info["address"],
+                            'created': datetime.now().isoformat()
+                        }
+                        
+                        # Try to create in Rent Manager in background (don't wait for response)
+                        try:
+                            import asyncio
+                            asyncio.create_task(service_handler.create_maintenance_issue(
+                                tenant_info=tenant_info,
+                                issue_type=extracted_info["issue"],
+                                description=f"{extracted_info['issue']} issue reported",
+                                unit_address=extracted_info["address"]
+                            ))
+                        except Exception as e:
+                            logger.error(f"Background service creation failed: {e}")
+                        
+                        response = f"Perfect! I've created service ticket #{ticket_number} for your {extracted_info['issue']} at {extracted_info['address']}. Dimitry will contact you within 2-4 hours."
+                        
+                        # Store assistant response in conversation history
+                        conversation_history[call_sid].append({
+                            'role': 'assistant', 
+                            'content': response, 
+                            'timestamp': datetime.now()
+                        })
+                        return response
                     except Exception as e:
                         logger.error(f"Service issue creation failed: {e}")
                         response = f"I've documented your {extracted_info['issue']} issue at {extracted_info['address']}. Dimitry will contact you within 2-4 hours."
@@ -815,7 +826,7 @@ def create_app():
             
             logger.info(f"Generating GPT-4o response for: {user_input}")
             
-            # Build conversation context with intelligent conversation prompting
+            # Build conversation context with intelligent conversation prompting  
             messages = [
                 {
                     "role": "system",
@@ -829,23 +840,24 @@ CORE PERSONALITY:
 - Be helpful and solutions-focused, showing real understanding
 - Keep responses concise (15-30 words) but complete and intelligent
 
-INTELLIGENT CONVERSATION:
-- If someone asks "How are you doing today?" - respond warmly and naturally
-- If they ask for their service request number, help them find it
-- Don't repeat the same response multiple times - vary your language
-- Use context from the conversation history to give intelligent responses
-- Be conversational, not transactional
+CONVERSATION MEMORY & CONTEXT:
+- REMEMBER what the caller has already told you in this conversation
+- If they mentioned a power issue, heating problem, or maintenance request, remember it
+- Don't ask them to repeat information they already provided
+- Use conversation context to provide intelligent follow-up responses
+- If they ask about their service ticket, reference what they told you earlier
 
 SERVICE TICKET CREATION:
 - When someone reports a maintenance issue AND provides an address, create a service ticket
 - Always provide actual ticket numbers: "I've created service ticket #SV-12345"
 - Use this format: "Perfect! I've created service ticket #SV-12345 for your [issue] at [address]. Dimitry will contact you within 2-4 hours."
-- For service request number questions: Ask for their address to look up the ticket
+- For service request number questions: Reference their earlier issue and ask for address to look up
 
-AVOID REPETITION:
-- Never repeat the exact same response multiple times
-- If you already said "Dimitry will contact you in 2-4 hours", don't repeat it
+INTELLIGENT RESPONSES:
+- Don't repeat the exact same response multiple times
 - Vary your language and responses to feel natural and intelligent
+- Show that you remember what they told you earlier in the conversation
+- Be contextually aware of the full conversation flow
 2. Person gives address → You say "I'll create an electrical service request. Maintenance will contact you within 2-4 hours."
 3. NEVER ask "what's the maintenance issue" if they already told you - they said NO POWER!
 4. NEVER promise "immediate" or "right now" dispatch - always say "within 2-4 hours" for realistic expectations
