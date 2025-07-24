@@ -142,6 +142,8 @@ TENANT CONTEXT:
 - If caller is a known tenant, greet them personally and reference their unit
 - For maintenance requests from tenants, create service issues in Rent Manager
 - For prospects, collect basic information and create worker tasks for follow-up
+- If phone number lookup fails, ask caller for their unit number to provide personalized help
+- Always be helpful whether caller is in system or not
 
 CONVERSATIONAL EXAMPLES:
 - Instead of: "We're open Monday through Friday, 9 AM to 5 PM Eastern Time."
@@ -354,7 +356,31 @@ Keep responses under 20 words for faster delivery. Sound natural and conversatio
     async def lookup_caller_info(phone_number):
         """Look up caller information from Rent Manager"""
         if not rent_manager:
+            # For now, create a temporary lookup for your number for testing
+            # Clean phone number for comparison
+            clean_phone = ''.join(filter(str.isdigit, phone_number))
+            logger.info(f"Looking up phone: {clean_phone}")
+            
+            # Add your phone number here for testing (replace with your actual number)
+            test_tenant_data = {
+                "13477430880": {  # Replace with your actual phone digits
+                    'id': 'test_tenant_1',
+                    'name': 'Test Tenant',
+                    'phone': phone_number,
+                    'unit': '4B',
+                    'property': 'Main Property',
+                    'lease_status': 'active'
+                }
+            }
+            
+            if clean_phone in test_tenant_data:
+                tenant_info = test_tenant_data[clean_phone]
+                logger.info(f"Found test tenant: {tenant_info.get('name')} in unit {tenant_info.get('unit')}")
+                return tenant_info
+            
+            logger.info(f"No tenant data found for {phone_number} - need Rent Manager API connection")
             return None
+            
         try:
             tenant_info = await rent_manager.lookup_tenant_by_phone(phone_number)
             if tenant_info:
