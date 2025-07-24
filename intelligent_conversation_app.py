@@ -507,7 +507,7 @@ CRITICAL PERSONALITY RULES:
 - Show understanding for problems like noise complaints, maintenance issues, and tenant frustrations
 - Use phrases like "I understand how frustrating that must be", "That sounds really disruptive", "I'm sorry you're dealing with that"
 - Be helpful and solutions-focused, not dry or robotic
-- Keep responses under 15 words but make them warm and caring
+- Keep responses under 25 words but make them warm, caring, and complete
 
 CRITICAL ISSUE RECOGNITION:
 - NOISE COMPLAINTS: "noise", "loud", "neighbors", "music", "party" → noise complaint (CREATE TICKET)
@@ -551,7 +551,7 @@ REAL PROPERTIES (some examples):
 IMPORTANT RULES:
 - RECOGNIZE maintenance issues immediately - don't ask what the problem is twice
 - Get address and unit for service requests
-- Keep responses 10-20 words for clear communication
+- Keep responses 15-25 words for clear, complete communication
 - Be SMART about what people are telling you
 
 OFFICE: 31 Port Richmond Ave, Staten Island, NY 10302
@@ -705,11 +705,11 @@ If they need maintenance or have questions about a specific property, get their 
             response = openai_client.chat.completions.create(
                 model="gpt-4o-mini",  # Fastest OpenAI model for speed
                 messages=[{"role": msg["role"], "content": msg["content"]} for msg in messages],
-                max_tokens=12,  # ULTRA-short responses for maximum speed
+                max_tokens=25,  # Longer responses to prevent cutoff 
                 temperature=0.0,   # Zero temperature for fastest processing
                 presence_penalty=0,
                 frequency_penalty=0,
-                timeout=0.8  # FASTEST timeout - 0.8 seconds max
+                timeout=2.0  # Increased timeout to prevent cutoff
             )
             
             ai_response = response.choices[0].message.content
