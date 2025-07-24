@@ -265,6 +265,40 @@ def create_app():
         try:
             # Check for instant responses first (no AI delay)
             user_lower = user_input.lower().strip()
+            
+            # Expand instant response matching for better coverage
+            instant_patterns = {
+                # Address confirmation patterns
+                "targee": "Perfect! What unit number and what maintenance issue can I help you with?",
+                "barker": "Great! What's your unit number and how can I assist you today?", 
+                "coonley": "Excellent! Please tell me your unit number and what you need help with.",
+                "south avenue": "Thanks for confirming! What's your unit and what can I help with?",
+                "maple": "Got it! What unit are you in and what's the issue?",
+                "alaska": "Perfect! Unit number and how can I help you?",
+                "stanley": "Great! What unit and what maintenance do you need?",
+                "pine street": "Confirmed! Unit number and what's the problem?",
+                "betty court": "Thanks! What unit and how can I assist?",
+                "cary avenue": "Perfect! Unit number and what do you need help with?",
+                # Fast maintenance responses
+                "heat": "I'll create an urgent heating service request. What's your exact address and unit?",
+                "hot water": "Hot water issue noted. Confirm your address and unit for priority service.",
+                "leak": "Leak reported - this needs immediate attention. Address and unit please?",
+                "broken": "I'll get this fixed right away. What's broken and what's your unit?",
+                "not working": "Service issue confirmed. What's not working and your unit number?",
+                # Quick confirmations
+                "yes": "Great! What else can I help you with?",
+                "no": "Understood. Anything else I can assist with?",
+                "okay": "Perfect! What's next?",
+                "sure": "Excellent! How else can I help?"
+            }
+            
+            # Check expanded patterns first
+            for pattern, response in instant_patterns.items():
+                if pattern in user_lower:
+                    logger.info(f"Using INSTANT pattern response for: {user_input}")
+                    return response
+            
+            # Check original instant responses
             for key, response_data in INSTANT_RESPONSES.items():
                 if key in user_lower:
                     logger.info(f"Using INSTANT cached response for: {user_input}")
@@ -369,13 +403,13 @@ If they need maintenance or have questions about a specific property, get their 
             
             # Generate response using GPT-4o-mini for speed (faster than gpt-4o)
             response = openai_client.chat.completions.create(
-                model="gpt-4o-mini",  # Faster model for quicker responses
+                model="gpt-4o-mini",  # Fastest OpenAI model
                 messages=[{"role": msg["role"], "content": msg["content"]} for msg in messages],
-                max_tokens=40,  # Shorter for faster generation
-                temperature=0.4,   # Lower for faster, more direct responses
+                max_tokens=20,  # Ultra-short for maximum speed
+                temperature=0.2,   # Minimal temperature for fastest processing
                 presence_penalty=0,
                 frequency_penalty=0,
-                timeout=3  # Force faster response or timeout
+                timeout=2  # Even faster timeout - 2 seconds max
             )
             
             ai_response = response.choices[0].message.content
