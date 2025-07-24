@@ -713,13 +713,41 @@ If they need maintenance or have questions about a specific property, get their 
                 response.dial('(718) 414-6984')
                 return str(response)
             
-            # Generate intelligent AI response using GPT-4o
-            logger.info(f"Generating AI response for: '{speech_result}'")
-            ai_response = generate_intelligent_response(speech_result, call_sid)
-            logger.info(f"AI response generated: {ai_response}")
+            # Check for instant cached responses first (FASTEST PATH)
+            user_lower = speech_result.lower().strip()
+            instant_audio_url = None
+            ai_response = None
             
-            # Use Twilio voice for Chris
-            response.say(ai_response, voice='Polly.Matthew-Neural')
+            logger.info(f"Checking instant responses for: '{user_lower}'")
+            for key, response_data in INSTANT_RESPONSES.items():
+                if key in user_lower:
+                    ai_response = response_data["text"]
+                    instant_audio_url = response_data["audio"]
+                    logger.info(f"INSTANT MATCH! Key: {key}, Audio: {instant_audio_url}")
+                    break
+            
+            # If no instant response, generate AI response
+            if not ai_response:
+                logger.info(f"No instant match, generating AI response for: '{speech_result}'")
+                ai_response = generate_intelligent_response(speech_result, call_sid)
+            
+            logger.info(f"Final AI response: {ai_response}")
+            
+            # Use pre-generated audio or ElevenLabs
+            if instant_audio_url:
+                replit_domain = os.environ.get('REPLIT_DOMAINS', '').split(',')[0] if os.environ.get('REPLIT_DOMAINS') else 'localhost:5000'
+                full_audio_url = f"https://{replit_domain}{instant_audio_url}"
+                response.play(full_audio_url)
+                logger.info(f"Playing instant audio: {full_audio_url}")
+            else:
+                # Generate ElevenLabs audio for new responses
+                audio_url = generate_elevenlabs_audio(ai_response)
+                if audio_url:
+                    replit_domain = os.environ.get('REPLIT_DOMAINS', '').split(',')[0] if os.environ.get('REPLIT_DOMAINS') else 'localhost:5000'
+                    full_audio_url = f"https://{replit_domain}{audio_url}"
+                    response.play(full_audio_url)
+                else:
+                    response.say(ai_response, voice='Polly.Matthew-Neural')
             
             # Check if this needs transfer based on AI response or user request
             if any(word in speech_result.lower() for word in ['transfer', 'human', 'person', 'manager', 'speak to someone']):
@@ -807,12 +835,20 @@ If they need maintenance or have questions about a specific property, get their 
                 instant_audio_url = None
                 ai_response = None
                 
+                # Debug logging
+                logger.info(f"Checking instant responses for: '{user_lower}'")
+                logger.info(f"Available keys: {list(INSTANT_RESPONSES.keys())}")
+                
                 for key, response_data in INSTANT_RESPONSES.items():
                     if key in user_lower:
                         ai_response = response_data["text"]
                         instant_audio_url = response_data["audio"]
-                        logger.info(f"Using INSTANT cached response for: {speech_result}")
+                        logger.info(f"MATCH FOUND! Using INSTANT cached response for: {speech_result}")
+                        logger.info(f"Matched key: {key}, Audio URL: {instant_audio_url}")
                         break
+                
+                if not ai_response:
+                    logger.info(f"No instant match found for: '{user_lower}'")
                 
                 # If no instant response, generate AI response
                 if not ai_response:
