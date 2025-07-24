@@ -140,18 +140,76 @@ class RentManagerAPI:
         try:
             # Clean phone number (remove formatting)
             clean_phone = ''.join(filter(str.isdigit, phone_number))
+            logger.info(f"Searching for tenant with phone: {phone_number} (cleaned: {clean_phone})")
             
-            # Since phone numbers aren't in basic tenant/contact records, 
-            # we need to search by manually checking if your specific phone number
-            # exists in the system. For now, let's implement a workaround by 
-            # asking the user to provide their unit/address info.
+            # Get all tenants
+            endpoint = "/Tenants"
+            tenants = await self._make_request("GET", endpoint)
             
-            logger.info(f"Phone lookup system needs configuration - phone {clean_phone} requires manual tenant association")
-            return None  # Will trigger asking user for their unit info
+            if not tenants or not isinstance(tenants, list):
+                logger.error("Failed to retrieve tenant list")
+                return None
+                
+            logger.info(f"Searching through {len(tenants)} tenants for phone number")
             
-
+            # For each tenant, we need to get their contact information
+            for tenant in tenants:
+                tenant_id = tenant.get('TenantID')
+                if not tenant_id:
+                    continue
+                    
+                try:
+                    # Get tenant contact information
+                    contact_endpoint = f"/Tenants/{tenant_id}/Contacts"
+                    contacts = await self._make_request("GET", contact_endpoint)
+                    
+                    if contacts and isinstance(contacts, list):
+                        for contact in contacts:
+                            contact_phone = contact.get('Phone', '')
+                            # Clean contact phone for comparison
+                            clean_contact_phone = ''.join(filter(str.isdigit, contact_phone))
+                            
+                            # Check for phone match
+                            if clean_contact_phone and (
+                                clean_contact_phone == clean_phone or
+                                clean_contact_phone.endswith(clean_phone[-10:])  # Last 10 digits match
+                            ):
+                                logger.info(f"Found phone match! Tenant: {tenant.get('Name')} - Phone: {contact_phone}")
+                                
+                                # Get unit information for this tenant
+                                unit_endpoint = f"/Tenants/{tenant_id}/Units"
+                                units = await self._make_request("GET", unit_endpoint)
+                                
+                                unit_info = "Unit information unavailable"
+                                if units and isinstance(units, list) and len(units) > 0:
+                                    unit = units[0]  # Get first unit
+                                    unit_name = unit.get('Name', '')
+                                    # Get property info for full address
+                                    property_id = unit.get('PropertyID')
+                                    if property_id:
+                                        prop_endpoint = f"/Properties/{property_id}"
+                                        property_data = await self._make_request("GET", prop_endpoint)
+                                        if property_data:
+                                            property_name = property_data.get('Name', '')
+                                            unit_info = f"Unit {unit_name} at {property_name}"
+                                
+                                return {
+                                    'TenantID': tenant_id,
+                                    'FirstName': tenant.get('FirstName', ''),
+                                    'LastName': tenant.get('LastName', ''),
+                                    'Name': tenant.get('Name', ''),
+                                    'Phone': contact_phone,
+                                    'Unit': unit_info,
+                                    'Status': tenant.get('Status', 'Current'),
+                                    'PropertyID': tenant.get('PropertyID'),
+                                    'Address': unit_info
+                                }
+                                
+                except Exception as e:
+                    logger.warning(f"Error checking contacts for tenant {tenant_id}: {e}")
+                    continue
             
-            logger.info(f"No tenant found after trying all endpoints for phone: {phone_number}")
+            logger.info(f"No tenant found with phone number: {phone_number}")
             return None
             
         except Exception as e:
