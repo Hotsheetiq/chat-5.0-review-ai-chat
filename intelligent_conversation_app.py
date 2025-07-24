@@ -101,9 +101,9 @@ def create_app():
                 "text": text,
                 "model_id": "eleven_turbo_v2",  # Faster model for quicker response
                 "voice_settings": {
-                    "stability": 0.5,          # Less robotic, more natural variation
-                    "similarity_boost": 0.8,   # Higher similarity for softer tone
-                    "style": 0.2,              # Less dramatic, softer style
+                    "stability": 0.3,          # More variation for emotional expression
+                    "similarity_boost": 0.9,   # Higher similarity for consistency
+                    "style": 0.7,              # More expressive and energetic style
                     "use_speaker_boost": True
                 }
             }
