@@ -87,7 +87,7 @@ def create_app():
                 }
             }
             
-            response = requests.post(url, json=data, headers=headers, timeout=8)  # Faster timeout
+            response = requests.post(url, json=data, headers=headers, timeout=5)  # Much faster timeout
             if response.status_code == 200:
                 # Save audio file and return URL
                 audio_filename = f"audio_{hash(text)}.mp3"
@@ -218,14 +218,14 @@ If they need maintenance or have questions about a specific property, get their 
                 "content": user_input
             })
             
-            # Generate response using GPT-4o with optimized parameters  
+            # Generate response using GPT-4o with speed-optimized parameters  
             response = openai_client.chat.completions.create(
                 model="gpt-4o",  # Latest OpenAI model for best conversation
                 messages=[{"role": msg["role"], "content": msg["content"]} for msg in messages],
-                max_tokens=60,  # Shorter for faster responses  
-                temperature=0.7,   # Balanced for speed and naturalness
-                presence_penalty=0.2,  # Encourage new topics
-                frequency_penalty=0.3  # Reduce repetition
+                max_tokens=40,  # Even shorter for sub-2-second responses  
+                temperature=0.5,   # Lower for faster, more focused responses
+                presence_penalty=0.1,  # Reduce processing overhead
+                frequency_penalty=0.2  # Minimal repetition control
             )
             
             ai_response = response.choices[0].message.content
@@ -390,15 +390,8 @@ If they need maintenance or have questions about a specific property, get their 
             
             logger.info(f"Incoming call from: {caller_phone}, CallSid: {call_sid}")
             
-            # Look up tenant information
+            # Skip initial tenant lookup for faster greeting - will handle during conversation
             tenant_info = None
-            if rent_manager:
-                try:
-                    loop = asyncio.new_event_loop()
-                    asyncio.set_event_loop(loop)
-                    tenant_info = loop.run_until_complete(lookup_caller_info(caller_phone))
-                except Exception as e:
-                    logger.error(f"Error looking up tenant: {e}")
             
             # Initialize call state with tenant info
             call_states[call_sid] = {
