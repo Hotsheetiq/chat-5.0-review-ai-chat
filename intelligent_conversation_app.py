@@ -723,9 +723,7 @@ def create_app():
                         # Also check for specific known addresses as backup
                         address_patterns = [
                             (r'29\s*port\s*richmond', "29 Port Richmond Avenue"),
-                            (r'2940', "29 Port Richmond Avenue"),
                             (r'122\s*targee', "122 Targee Street"),
-                            (r'122', "122 Targee Street"),
                             (r'13\s*barker', "13 Barker Street"),
                             (r'15\s*coonley', "15 Coonley Court"),
                             (r'173\s*south', "173 South Avenue"),
@@ -971,11 +969,11 @@ If they need maintenance or have questions about a specific property, get their 
             response = openai_client.chat.completions.create(
                 model="gpt-4o-mini",  # Fastest OpenAI model for speed
                 messages=[{"role": msg["role"], "content": msg["content"]} for msg in messages],
-                max_tokens=25,  # Longer responses to prevent cutoff 
+                max_tokens=150,  # Increased to prevent response cutoff
                 temperature=0.0,   # Zero temperature for fastest processing
                 presence_penalty=0,
                 frequency_penalty=0,
-                timeout=2.0  # Increased timeout to prevent cutoff
+                timeout=3.0  # Increased timeout to prevent cutoff
             )
             
             ai_response = response.choices[0].message.content
