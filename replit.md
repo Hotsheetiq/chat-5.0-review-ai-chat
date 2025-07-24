@@ -114,7 +114,8 @@ The application is designed for cloud deployment with the following consideratio
 - **INSTANT RESPONSES**: Pre-generated audio for common questions delivers sub-1-second responses
 - **PRE-CACHED AUDIO**: Office hours, greetings, and help responses generated on startup
 - **ZERO AI DELAY**: Common questions bypass AI entirely for immediate responses
-- **7 INSTANT RESPONSES**: "are you open", "office hours", "help", "hello", etc.
+- **10 INSTANT RESPONSES**: "are you open", "office hours", "help", "are you a real person", etc.
+- **AI IDENTITY RESPONSES**: Instant answers to "are you human", "who are you", "are you a real person"
 - **TIME-BASED GREETINGS**: Good morning/afternoon/evening based on Eastern Time
 - **PRODUCTION OPTIMIZED**: Chris delivers lightning-fast responses at (888) 641-1102
 

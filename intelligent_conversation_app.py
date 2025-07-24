@@ -160,6 +160,18 @@ def create_app():
         "help": {
             "text": "Of course! I'm here to help with anything you need!",
             "audio": None
+        },
+        "are you a real person": {
+            "text": "I'm Chris, your AI assistant from Grinberg Management! I'm here 24/7 to help with any questions about your apartment!",
+            "audio": None
+        },
+        "are you human": {
+            "text": "I'm Chris, your AI assistant! I'm here around the clock to help you with maintenance, office hours, and any apartment questions!",
+            "audio": None
+        },
+        "who are you": {
+            "text": "I'm Chris from Grinberg Management! I'm an AI assistant here to help with all your apartment needs!",
+            "audio": None
         }
     }
     
