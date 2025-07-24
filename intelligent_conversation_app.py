@@ -681,12 +681,12 @@ If they need maintenance or have questions about a specific property, get their 
                 # Fallback to Twilio voice
                 response.say(greeting_text, voice='Polly.Matthew-Neural')
             
-            # Wait for speech input with shorter timeout for more interactive feel
+            # Wait for speech input with optimized timeouts for instant responses
             response.gather(
                 input='speech',
                 action='/continue-conversation',
-                timeout=5,  # Short timeout so Chris checks in quickly
-                speech_timeout=4,
+                timeout=3,  # Very short timeout for instant feel
+                speech_timeout=2,  # Faster speech detection
                 language='en-US'
             )
             
@@ -700,12 +700,12 @@ If they need maintenance or have questions about a specific property, get their 
             else:
                 response.say(checkin_text, voice='Polly.Matthew-Neural')
             
-            # Give another chance to respond
+            # Give another chance to respond with faster timeouts
             response.gather(
                 input='speech',
                 action='/continue-conversation',
-                timeout=10,
-                speech_timeout=5,
+                timeout=5,  # Shorter timeout for faster interaction
+                speech_timeout=3,  # Faster speech detection
                 language='en-US'
             )
             
@@ -906,13 +906,13 @@ If they need maintenance or have questions about a specific property, get their 
             except Exception as e:
                 logger.error(f"Database error updating call: {e}")
             
-            # Continue conversation instead of auto-transfer
+            # Continue conversation with optimized timeouts for faster interaction
             response.gather(
                 input='speech',
                 action='/continue-conversation',
                 method='POST',
-                timeout=30,
-                speech_timeout=6,
+                timeout=15,  # Shorter timeout for faster flow
+                speech_timeout=3,  # Faster speech detection
                 language='en-US'
             )
             
