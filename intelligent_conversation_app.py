@@ -363,6 +363,106 @@ If they need maintenance or have questions about a specific property, get their 
         ]
         return random.choice(default_responses)
     
+    @app.route('/recording-status', methods=['POST'])
+    def handle_recording_status():
+        """Handle recording status updates from Twilio"""
+        try:
+            recording_url = request.values.get('RecordingUrl', '')
+            recording_sid = request.values.get('RecordingSid', '')
+            call_sid = request.values.get('CallSid', '')
+            recording_duration = request.values.get('RecordingDuration', '0')
+            
+            logger.info(f"Call recording completed: {recording_sid} for call {call_sid}")
+            logger.info(f"Recording URL: {recording_url}, Duration: {recording_duration} seconds")
+            
+            # Store recording information in call state for potential Rent Manager logging
+            if call_sid in call_states:
+                call_states[call_sid]['recording'] = {
+                    'url': recording_url,
+                    'sid': recording_sid,
+                    'duration': recording_duration
+                }
+            
+            return "Recording status received", 200
+            
+        except Exception as e:
+            logger.error(f"Error handling recording status: {e}")
+            return "Error processing recording status", 500
+    
+    @app.route('/transcription-callback', methods=['POST'])
+    def handle_transcription():
+        """Handle transcription callbacks from Twilio"""
+        try:
+            transcription_text = request.values.get('TranscriptionText', '')
+            transcription_url = request.values.get('TranscriptionUrl', '')
+            call_sid = request.values.get('CallSid', '')
+            
+            logger.info(f"Call transcription received for call {call_sid}")
+            logger.info(f"Transcription: {transcription_text[:200]}...")  # Log first 200 chars
+            
+            # Store transcription in call state
+            if call_sid in call_states:
+                call_states[call_sid]['transcription'] = {
+                    'text': transcription_text,
+                    'url': transcription_url
+                }
+                
+                # If we have tenant info, we could log this to Rent Manager
+                tenant_info = call_states[call_sid].get('tenant_info')
+                if tenant_info and rent_manager:
+                    try:
+                        # Create a call log entry in Rent Manager
+                        asyncio.create_task(log_call_to_rent_manager(
+                            call_sid, 
+                            tenant_info, 
+                            transcription_text,
+                            call_states[call_sid].get('recording', {})
+                        ))
+                    except Exception as e:
+                        logger.error(f"Error logging call to Rent Manager: {e}")
+            
+            return "Transcription received", 200
+            
+        except Exception as e:
+            logger.error(f"Error handling transcription: {e}")
+            return "Error processing transcription", 500
+    
+    async def log_call_to_rent_manager(call_sid, tenant_info, transcription, recording_info):
+        """Log call details to Rent Manager for record keeping"""
+        try:
+            if not rent_manager or not tenant_info:
+                return
+                
+            # Create a detailed call log entry
+            call_log = {
+                'tenant_id': tenant_info.get('id'),
+                'call_sid': call_sid,
+                'summary': f"Voice Assistant Call - {transcription[:100]}...",
+                'transcript': transcription,
+                'recording_url': recording_info.get('url', ''),
+                'duration': recording_info.get('duration', '0'),
+                'call_type': 'Voice Assistant',
+                'timestamp': datetime.now().isoformat()
+            }
+            
+            # Add note to tenant record
+            note_result = await rent_manager.add_tenant_note(
+                tenant_info.get('id'),
+                {
+                    'note': f"Tony Voice Assistant Call - Duration: {recording_info.get('duration', 'Unknown')}s\n\nSummary: {transcription[:200]}",
+                    'type': 'call_log',
+                    'timestamp': datetime.now().isoformat()
+                }
+            )
+            
+            if note_result:
+                logger.info(f"Successfully logged call {call_sid} to Rent Manager for tenant {tenant_info.get('name')}")
+            else:
+                logger.warning(f"Failed to log call {call_sid} to Rent Manager")
+                
+        except Exception as e:
+            logger.error(f"Error logging call to Rent Manager: {e}")
+    
     async def lookup_caller_info(phone_number):
         """Look up caller information from Rent Manager"""
         if not rent_manager:
@@ -401,6 +501,17 @@ If they need maintenance or have questions about a specific property, get their 
             }
             
             response = VoiceResponse()
+            
+            # Start call recording for all calls
+            response.record(
+                action='/recording-status',
+                method='POST',
+                max_length=1800,  # 30 minutes max recording
+                play_beep=False,  # No recording beep for natural conversation
+                record_on_answer=True,
+                transcribe=True,  # Enable transcription for better record keeping
+                transcribe_callback='/transcription-callback'
+            )
             
             # Cheerful greeting from Tony
             greeting = "Grinberg Management, this is Tony! How can I help you today?"
