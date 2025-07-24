@@ -104,30 +104,69 @@ class RentManagerAPI:
             # Clean phone number (remove formatting)
             clean_phone = ''.join(filter(str.isdigit, phone_number))
             
-            # Search for tenant by phone number
-            endpoint = f"/tenants/search?phone={clean_phone}"
-            result = await self._make_request("GET", endpoint)
+            # Try multiple endpoints to find tenant data
+            endpoints_to_try = [
+                f"/tenants?phone={clean_phone}",
+                f"/tenants/search?phone={clean_phone}",
+                f"/tenants/lookup?phoneNumber={clean_phone}",
+                f"/residents?phone={clean_phone}"
+            ]
             
-            if result:
-                # Handle both list and dict responses
-                if isinstance(result, list) and len(result) > 0:
-                    tenant = result[0]  # Get first match from list
-                elif isinstance(result, dict) and result.get('tenants'):
-                    tenant = result['tenants'][0]  # Get first match from dict
-                else:
-                    return None
-                logger.info(f"Found tenant: {tenant.get('name', 'Unknown')} for phone {phone_number}")
-                return {
-                    'id': tenant.get('id'),
-                    'name': tenant.get('name'),
-                    'phone': tenant.get('phone'),
-                    'email': tenant.get('email'),
-                    'unit': tenant.get('unit'),
-                    'property': tenant.get('property'),
-                    'lease_status': tenant.get('lease_status', 'active')
-                }
+            for endpoint in endpoints_to_try:
+                logger.debug(f"Trying endpoint: {endpoint}")
+                result = await self._make_request("GET", endpoint)
+                
+                if result:
+                    logger.debug(f"Raw API response: {result}")
+                    
+                    # Handle different response formats
+                    tenant = None
+                    if isinstance(result, list) and len(result) > 0:
+                        tenant = result[0]
+                    elif isinstance(result, dict):
+                        # Try different possible data structure keys
+                        for key in ['tenants', 'residents', 'data', 'results']:
+                            if key in result and result[key]:
+                                if isinstance(result[key], list) and len(result[key]) > 0:
+                                    tenant = result[key][0]
+                                    break
+                                elif isinstance(result[key], dict):
+                                    tenant = result[key]
+                                    break
+                        
+                        # If no nested data, treat the result itself as tenant data
+                        if not tenant and any(field in result for field in ['name', 'firstName', 'lastName', 'id']):
+                            tenant = result
+                    
+                    if tenant:
+                        # Extract tenant information with multiple possible field names
+                        name = (tenant.get('name') or 
+                               f"{tenant.get('firstName', '')} {tenant.get('lastName', '')}".strip() or
+                               tenant.get('fullName', 'Unknown'))
+                        
+                        property_info = (tenant.get('property') or 
+                                       tenant.get('propertyName') or
+                                       tenant.get('address') or
+                                       tenant.get('buildingName', ''))
+                        
+                        unit_info = (tenant.get('unit') or 
+                                   tenant.get('unitNumber') or
+                                   tenant.get('apartmentNumber') or
+                                   tenant.get('suite', ''))
+                        
+                        logger.info(f"Found tenant: {name} in unit {unit_info} at {property_info}")
+                        return {
+                            'id': tenant.get('id') or tenant.get('tenantId'),
+                            'name': name,
+                            'phone': tenant.get('phone') or tenant.get('phoneNumber'),
+                            'email': tenant.get('email') or tenant.get('emailAddress'),
+                            'unit': unit_info,
+                            'property': property_info,
+                            'address': tenant.get('address') or tenant.get('fullAddress'),
+                            'lease_status': tenant.get('lease_status') or tenant.get('leaseStatus', 'active')
+                        }
             
-            logger.info(f"No tenant found for phone number: {phone_number}")
+            logger.info(f"No tenant found after trying all endpoints for phone: {phone_number}")
             return None
             
         except Exception as e:

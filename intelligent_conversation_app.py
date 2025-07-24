@@ -199,8 +199,13 @@ Keep responses under 20 words for faster delivery. Sound natural and conversatio
                     "content": context_message
                 })
             else:
-                # When no tenant data available, handle gracefully
-                no_data_context = "CALLER CONTEXT: This caller's information isn't immediately available. Be helpful and ask for their unit/property details if needed for maintenance requests."
+                # When no tenant data available, handle gracefully and ask for details
+                no_data_context = """CALLER CONTEXT: This caller's phone number isn't in our tenant database. 
+                
+IMPORTANT: Ask for their address or unit information so you can help them properly. Say something like:
+"I'd be happy to help! Could you tell me your address or unit number so I can assist you better?"
+
+If they need maintenance or have questions about a specific property, get their location details first."""
                 messages.append({
                     "role": "system", 
                     "content": no_data_context
