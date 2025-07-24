@@ -543,8 +543,69 @@ Use natural conversation logic - if someone says "power not working" that's obvi
                 }
             ]
             
-            # COMPREHENSIVE conversation history for memory
+            # CHECK CONVERSATION HISTORY TO AVOID REPEATED QUESTIONS
+            extracted_info = {"address": None, "issue": None}
+            
             if call_sid and call_sid in conversation_history:
+                # Extract information from conversation history
+                for entry in conversation_history[call_sid]:
+                    content = entry['content'].lower()
+                    
+                    # Extract addresses from conversation history
+                    if not extracted_info["address"]:
+                        for addr in ['122 targee', '122', 'targee', '13 barker', 'barker', '15 coonley', 'coonley', 'south avenue', 'maple', 'alaska', 'stanley', 'pine', 'betty', 'cary']:
+                            if addr in content:
+                                if addr == '122' or 'targee' in content:
+                                    extracted_info["address"] = "122 Targee Street"
+                                elif addr == '13' or 'barker' in content:
+                                    extracted_info["address"] = "13 Barker Street"
+                                elif addr == '15' or 'coonley' in content:
+                                    extracted_info["address"] = "15 Coonley Court"
+                                else:
+                                    extracted_info["address"] = content
+                                break
+                    
+                    # Extract issues from conversation history
+                    if not extracted_info["issue"]:
+                        if any(word in content for word in ['power', 'electric', 'no power', "don't have power", 'electricity']):
+                            extracted_info["issue"] = "electrical"
+                        elif any(word in content for word in ['heat', 'heating', 'no heat', 'cold']):
+                            extracted_info["issue"] = "heating"
+                        elif any(word in content for word in ['water', 'leak', 'plumbing']):
+                            extracted_info["issue"] = "plumbing"
+                        elif any(word in content for word in ['maintenance', 'repair', 'broken', 'not working']):
+                            extracted_info["issue"] = "maintenance"
+                
+                logger.info(f"Extracted from conversation - Address: {extracted_info['address']}, Issue: {extracted_info['issue']}")
+                
+                # If we have BOTH address and issue, create service issue immediately!
+                if extracted_info["address"] and extracted_info["issue"]:
+                    logger.info(f"AUTO-CREATING SERVICE ISSUE: {extracted_info['issue']} at {extracted_info['address']}")
+                    try:
+                        issue_result = service_handler.create_service_issue(
+                            issue_type=extracted_info["issue"],
+                            address=extracted_info["address"],
+                            description=f"{extracted_info['issue']} issue reported",
+                            caller_phone=request.values.get('From', ''),
+                            priority="High" if extracted_info["issue"] in ["electrical", "heating", "plumbing"] else "Normal"
+                        )
+                        if issue_result and 'issue_number' in issue_result:
+                            return f"Perfect! I've created service issue #{issue_result['issue_number']} for your {extracted_info['issue']} problem at {extracted_info['address']}. Dimitry will contact you within 2-4 hours."
+                        else:
+                            return f"I've created your {extracted_info['issue']} service request for {extracted_info['address']}. Maintenance will contact you within 2-4 hours."
+                    except Exception as e:
+                        logger.error(f"Service issue creation failed: {e}")
+                        return f"I've documented your {extracted_info['issue']} issue at {extracted_info['address']}. Maintenance will contact you within 2-4 hours."
+                
+                # Add context about what we already know
+                context_info = f"\n\nIMPORTANT CONVERSATION CONTEXT:\n"
+                if extracted_info["address"]:
+                    context_info += f"- Address already provided: {extracted_info['address']}\n"
+                if extracted_info["issue"]:
+                    context_info += f"- Issue already reported: {extracted_info['issue']}\n"
+                context_info += "- DO NOT ask for information already provided!\n"
+                
+                # Add conversation history for context
                 for entry in conversation_history[call_sid][-6:]:  # Last 6 exchanges for full context
                     role = entry['role']
                     content = entry['content']
