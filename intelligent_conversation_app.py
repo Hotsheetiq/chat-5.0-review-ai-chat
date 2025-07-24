@@ -38,6 +38,7 @@ if os.environ.get("RENT_MANAGER_USERNAME") and os.environ.get("RENT_MANAGER_PASS
 # Call state tracking
 call_states = {}
 conversation_history = {}
+call_recordings = {}  # Store call recordings for dashboard access
 
 def create_app():
     app = Flask(__name__)
@@ -383,6 +384,16 @@ If they need maintenance or have questions about a specific property, get their 
                     'duration': recording_duration
                 }
             
+            # Store recording for dashboard access
+            call_recordings[call_sid] = {
+                'url': recording_url,
+                'sid': recording_sid,
+                'duration': recording_duration,
+                'phone': call_states.get(call_sid, {}).get('phone', 'Unknown'),
+                'timestamp': datetime.now().isoformat(),
+                'tenant_info': call_states.get(call_sid, {}).get('tenant_info')
+            }
+            
             return "Recording status received", 200
             
         except Exception as e:
@@ -406,6 +417,11 @@ If they need maintenance or have questions about a specific property, get their 
                     'text': transcription_text,
                     'url': transcription_url
                 }
+            
+            # Update recording entry with transcription
+            if call_sid in call_recordings:
+                call_recordings[call_sid]['transcription'] = transcription_text
+                call_recordings[call_sid]['transcription_url'] = transcription_url
                 
                 # If we have tenant info, we could log this to Rent Manager
                 tenant_info = call_states[call_sid].get('tenant_info')
@@ -674,7 +690,7 @@ If they need maintenance or have questions about a specific property, get their 
     
     @app.route('/')
     def dashboard():
-        """Dashboard showing intelligent AI status"""
+        """Dashboard showing intelligent AI status and call recordings"""
         recent_calls = []
         for call_sid, state in list(call_states.items())[-5:]:
             recent_calls.append({
@@ -683,11 +699,25 @@ If they need maintenance or have questions about a specific property, get their 
                 'status': 'Active' if state.get('started') else 'Ended'
             })
         
+        # Recent call recordings (last 10)
+        recent_recordings = []
+        for call_sid, recording in list(call_recordings.items())[-10:]:
+            recent_recordings.append({
+                'call_sid': call_sid[-8:],
+                'phone': recording.get('phone', 'Unknown'),
+                'duration': recording.get('duration', '0'),
+                'timestamp': recording.get('timestamp', ''),
+                'recording_url': recording.get('url', ''),
+                'transcription': recording.get('transcription', '')[:200] if recording.get('transcription') else 'Processing...',
+                'tenant_name': recording.get('tenant_info', {}).get('name', 'Unknown Caller') if recording.get('tenant_info') else 'Unknown Caller'
+            })
+        
         return render_template('intelligent_dashboard.html',
                              openai_connected=bool(OPENAI_API_KEY),
                              elevenlabs_connected=bool(ELEVENLABS_API_KEY),
                              active_calls=len([s for s in call_states.values() if s.get('started')]),
-                             recent_calls=recent_calls)
+                             recent_calls=recent_calls,
+                             recent_recordings=recent_recordings)
     
     @app.route('/test-intelligent')
     def test_intelligent():
