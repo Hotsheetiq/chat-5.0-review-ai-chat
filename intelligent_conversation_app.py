@@ -378,21 +378,21 @@ def create_app():
             # Fallback to standard message
             return f"Perfect! I've created an {issue_type} service issue for {address}. Dimitry Simanovsky has been assigned and will contact you within 2-4 hours."
 
-    def pre_generate_instant_audio():
-        """Pre-generate audio for instant responses on startup"""
-        logger.info("Pre-generating audio for instant responses...")
-        for key, response in INSTANT_RESPONSES.items():
-            if response["audio"] is None:
-                audio_url = generate_elevenlabs_audio(response["text"])
-                if audio_url:
-                    response["audio"] = audio_url
-                    logger.info(f"Pre-generated audio for: {key}")
+    def pre_generate_critical_audio():
+        """Pre-generate audio for only the most critical instant responses"""
+        logger.info("Pre-generating audio for critical instant responses...")
+        critical_responses = [
+            "hello", "hi", "hey", "good morning", "thank you", "thanks", 
+            "are you open", "maintenance", "electrical"
+        ]
+        
+        generated_count = 0
+        # DISABLED: All audio pre-generation to conserve ElevenLabs quota
+        logger.info("All audio pre-generation disabled - using Polly voice instead")
     
-    # Pre-generate audio on startup
-    try:
-        pre_generate_instant_audio()
-    except Exception as e:
-        logger.error(f"Error pre-generating audio: {e}")
+    # DISABLED: Pre-generation to save ElevenLabs quota
+    # Audio will be generated on-demand and cached
+    logger.info("Audio pre-generation disabled to conserve ElevenLabs quota")
 
     def generate_intelligent_response(user_input, call_sid=None):
         """Generate intelligent AI response using GPT-4o with speed optimization"""
@@ -1339,16 +1339,8 @@ If they need maintenance or have questions about a specific property, get their 
             
             greeting_text = f"{time_greeting}! You've reached Grinberg Management, I'm Chris. How can I help you?"
             
-            # Try ElevenLabs for natural voice
-            audio_url = generate_elevenlabs_audio(greeting_text)
-            if audio_url:
-                # Use proper domain for audio serving
-                replit_domain = os.environ.get('REPLIT_DOMAINS', '').split(',')[0] if os.environ.get('REPLIT_DOMAINS') else 'localhost:5000'
-                full_audio_url = f"https://{replit_domain}{audio_url}"
-                response.play(full_audio_url)
-            else:
-                # Fallback to Twilio voice
-                response.say(greeting_text, voice='Polly.Matthew-Neural')
+            # Use Polly voice to conserve ElevenLabs quota
+            response.say(greeting_text, voice='Polly.Matthew-Neural')
             
             # Wait for speech input with ultra-fast timeouts for instant responses
             response.gather(
@@ -1361,13 +1353,7 @@ If they need maintenance or have questions about a specific property, get their 
             
             # Chris checks in after 5 seconds of silence
             checkin_text = "I'm still here! What can I help you with today?"
-            checkin_audio = generate_elevenlabs_audio(checkin_text)
-            if checkin_audio:
-                replit_domain = os.environ.get('REPLIT_DOMAINS', '').split(',')[0] if os.environ.get('REPLIT_DOMAINS') else 'localhost:5000'
-                full_audio_url = f"https://{replit_domain}{checkin_audio}"
-                response.play(full_audio_url)
-            else:
-                response.say(checkin_text, voice='Polly.Matthew-Neural')
+            response.say(checkin_text, voice='Polly.Matthew-Neural')
             
             # Give another chance to respond with ultra-fast timeouts
             response.gather(
@@ -1464,14 +1450,8 @@ If they need maintenance or have questions about a specific property, get their 
                 response.play(full_audio_url)
                 logger.info(f"Playing instant audio: {full_audio_url}")
             else:
-                # Generate ElevenLabs audio for new responses
-                audio_url = generate_elevenlabs_audio(ai_response)
-                if audio_url:
-                    replit_domain = os.environ.get('REPLIT_DOMAINS', '').split(',')[0] if os.environ.get('REPLIT_DOMAINS') else 'localhost:5000'
-                    full_audio_url = f"https://{replit_domain}{audio_url}"
-                    response.play(full_audio_url)
-                else:
-                    response.say(ai_response, voice='Polly.Matthew-Neural')
+                # Use Polly voice to conserve ElevenLabs quota for production calls only
+                response.say(ai_response, voice='Polly.Matthew-Neural')
             
             # Check if this needs transfer based on AI response or user request
             if any(word in speech_result.lower() for word in ['transfer', 'human', 'person', 'manager', 'speak to someone']):
@@ -1600,13 +1580,8 @@ If they need maintenance or have questions about a specific property, get their 
                     full_audio_url = f"https://{replit_domain}{instant_audio_url}"
                     response.play(full_audio_url)
                 else:
-                    audio_url = generate_elevenlabs_audio(ai_response)
-                    if audio_url:
-                        replit_domain = os.environ.get('REPLIT_DOMAINS', '').split(',')[0] if os.environ.get('REPLIT_DOMAINS') else 'localhost:5000'
-                        full_audio_url = f"https://{replit_domain}{audio_url}"
-                        response.play(full_audio_url)
-                    else:
-                        response.say(ai_response, voice='Polly.Matthew-Neural')
+                    # Use Polly voice to conserve ElevenLabs quota
+                    response.say(ai_response, voice='Polly.Matthew-Neural')
             
             # Update active call status asynchronously to avoid blocking response
             # Skip database updates for instant responses to maintain speed
