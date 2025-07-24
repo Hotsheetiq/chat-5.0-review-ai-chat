@@ -520,11 +520,12 @@ NATURAL CONVERSATION FLOW:
 6. Be sympathetic but professional, NEVER excited about problems
 
 CRITICAL CONVERSATION MEMORY:
-- REMEMBER the caller's complaint from the start of the call
-- If they said "no power" DON'T ask "what maintenance issue" again  
-- If they gave an address, DON'T ask for address again
-- CONNECT addresses to known properties: 122 Targee, 13 Barker, 15 Coonley, 173 South Ave, 263A Maple, 28 Alaska, 28 Stanley, Pine Street, 56 Betty Court, 627 Cary
-- When you hear "122" or "Targee" = 122 Targee Street (CREATE SERVICE ISSUE IMMEDIATELY)
+- CHECK CONVERSATION HISTORY FIRST - never ask for information already provided
+- If they said "no power" DON'T ask "what maintenance issue" again - REMEMBER IT!
+- If they gave an address, DON'T ask for address again - USE THE ADDRESS THEY GAVE!
+- CONNECT partial addresses: "122" = 122 Targee Street, "13" = 13 Barker Street, "15" = 15 Coonley Court
+- When you have BOTH issue and address from conversation history - CREATE SERVICE ISSUE IMMEDIATELY
+- NEVER repeat questions - check what they already told you first
 
 REAL PROPERTIES (some examples):
 - 122 Targee Street, 13 Barker Street, 15 Coonley Court, 173 South Avenue, 263A Maple Parkway
@@ -542,9 +543,9 @@ Use natural conversation logic - if someone says "power not working" that's obvi
                 }
             ]
             
-            # Minimal conversation history for speed
+            # COMPREHENSIVE conversation history for memory
             if call_sid and call_sid in conversation_history:
-                for entry in conversation_history[call_sid][-2:]:  # Only last exchange for speed
+                for entry in conversation_history[call_sid][-6:]:  # Last 6 exchanges for full context
                     role = entry['role']
                     content = entry['content']
                     if role in ['user', 'assistant']:
@@ -604,11 +605,11 @@ If they need maintenance or have questions about a specific property, get their 
             response = openai_client.chat.completions.create(
                 model="gpt-4o-mini",  # Fastest OpenAI model for speed
                 messages=[{"role": msg["role"], "content": msg["content"]} for msg in messages],
-                max_tokens=15,  # Ultra-short responses for maximum speed
-                temperature=0.1,   # Minimal temperature for fastest processing
+                max_tokens=12,  # ULTRA-short responses for maximum speed
+                temperature=0.0,   # Zero temperature for fastest processing
                 presence_penalty=0,
                 frequency_penalty=0,
-                timeout=1.5  # Ultra-fast timeout - 1.5 seconds max
+                timeout=0.8  # FASTEST timeout - 0.8 seconds max
             )
             
             ai_response = response.choices[0].message.content
