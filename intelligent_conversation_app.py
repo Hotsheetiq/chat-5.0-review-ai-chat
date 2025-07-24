@@ -402,16 +402,16 @@ def create_app():
             
             # Expand instant response matching for better coverage
             instant_patterns = {
-                # EMERGENCY MAINTENANCE - IMMEDIATE RECOGNITION (Energetic responses)
-                "power not working": "Oh wow! That's definitely an electrical emergency! I'm absolutely getting this fixed for you right away. What's your address and unit?",
-                "no power": "That's super urgent! I'm creating an electrical service request immediately - let's get this sorted! What's your address and unit?",
-                "don't have power": "Oh my goodness, how frustrating! I'm getting maintenance out there right now. What's your address and unit?",
-                "have no power": "That's really not good! I'm getting someone on this immediately. What's your address and unit number?",
-                "electricity": "Electrical issues are definitely concerning! I'm excited to help you get this resolved. What's your address and unit?",
-                "power out": "Power outages are the worst! I'm getting this taken care of for you right away. Address and unit please?",
-                "electrical": "I totally understand the electrical problem! Let me get maintenance scheduled immediately. Address and unit?",
-                "lights not": "No lights is definitely urgent! I'm excited to help you get this sorted out. Address and unit?",
-                "no electricity": "That must be incredibly inconvenient! I'm getting someone out there right away. Address and unit?",
+                # EMERGENCY MAINTENANCE - IMMEDIATE RECOGNITION (SUPER ENERGETIC responses)
+                "power not working": "ELECTRICAL EMERGENCY! I'm getting someone out there RIGHT NOW! What's your address?",
+                "no power": "Oh NO! Power outage is urgent! I'm creating your electrical service request immediately! Address please?",
+                "don't have power": "That's TERRIBLE! I'm getting maintenance on this emergency right away! What's your address?",
+                "have no power": "Electrical emergency! I'm dispatching someone IMMEDIATELY! Address?",
+                "electricity": "ELECTRICAL ISSUE! I'm SO ready to get this fixed fast! What's your address?",
+                "power out": "Power outage emergency! I'm getting someone there ASAP! Address?",
+                "electrical": "ELECTRICAL PROBLEM! I'm getting maintenance scheduled right now! Address?",
+                "lights not": "No lights is urgent! I'm getting this fixed immediately! Address?",
+                "no electricity": "Electrical emergency! Getting someone out there NOW! Address?",
                 
                 # OTHER EMERGENCY MAINTENANCE (Energetic responses)
                 "no heat": "Oh my! No heat is absolutely terrible! I'm getting someone out there super quickly. What's your address and unit?",
@@ -427,17 +427,26 @@ def create_app():
                 "fix": "Repair needed! What needs fixing and what's your address and unit?",
                 "repair": "Maintenance request confirmed. What needs repair and your address/unit?",
                 
-                # Address confirmation patterns with REAL service issue creation
+                # Address confirmation patterns with REAL service issue creation - SMART RECOGNITION
+                "122": lambda: create_real_service_issue("electrical", "122 Targee Street"),
                 "targee": lambda: create_real_service_issue("electrical", "122 Targee Street"),
+                "13 barker": lambda: create_real_service_issue("electrical", "13 Barker Street"),
                 "barker": lambda: create_real_service_issue("electrical", "13 Barker Street"),
+                "15 coonley": lambda: create_real_service_issue("electrical", "15 Coonley Court"),
                 "coonley": lambda: create_real_service_issue("electrical", "15 Coonley Court"),
+                "173": lambda: create_real_service_issue("electrical", "173 South Avenue"),
                 "south avenue": lambda: create_real_service_issue("electrical", "173 South Avenue"),
+                "263": lambda: create_real_service_issue("electrical", "263A Maple Parkway"),
                 "maple": lambda: create_real_service_issue("electrical", "263A Maple Parkway"),
+                "28 alaska": lambda: create_real_service_issue("electrical", "28 Alaska Street"),
                 "alaska": lambda: create_real_service_issue("electrical", "28 Alaska Street"),
+                "28 stanley": lambda: create_real_service_issue("electrical", "28 Stanley Avenue"),
                 "stanley": lambda: create_real_service_issue("electrical", "28 Stanley Avenue"),
-                "pine street": lambda: create_real_service_issue("electrical", "Pine Street"),
-                "betty court": lambda: create_real_service_issue("electrical", "56 Betty Court"),
-                "cary avenue": lambda: create_real_service_issue("electrical", "627 Cary Avenue"),
+                "pine": lambda: create_real_service_issue("electrical", "Pine Street"),
+                "56 betty": lambda: create_real_service_issue("electrical", "56 Betty Court"),
+                "betty": lambda: create_real_service_issue("electrical", "56 Betty Court"),
+                "627": lambda: create_real_service_issue("electrical", "627 Cary Avenue"),
+                "cary": lambda: create_real_service_issue("electrical", "627 Cary Avenue"),
                 
                 # SMS and service confirmations
                 "yes send": lambda call_sid: send_service_sms(call_sid),
@@ -502,10 +511,12 @@ NATURAL CONVERSATION FLOW:
 3. NEVER ask "what's the maintenance issue" if they already said no power/heat/water!
 4. NEVER promise "immediate" dispatch - say "within 2-4 hours" for realistic expectations
 
-CONVERSATION MEMORY:
-- Remember what the caller already told you about their problem
-- Don't repeat questions about issues they already described
-- If they said "no power" at the start, don't ask "what maintenance issue" later!
+CRITICAL CONVERSATION MEMORY:
+- REMEMBER the caller's complaint from the start of the call
+- If they said "no power" DON'T ask "what maintenance issue" again  
+- If they gave an address, DON'T ask for address again
+- CONNECT addresses to known properties: 122 Targee, 13 Barker, 15 Coonley, 173 South Ave, 263A Maple, 28 Alaska, 28 Stanley, Pine Street, 56 Betty Court, 627 Cary
+- When you hear "122" or "Targee" = 122 Targee Street (CREATE SERVICE ISSUE IMMEDIATELY)
 
 REAL PROPERTIES (some examples):
 - 122 Targee Street, 13 Barker Street, 15 Coonley Court, 173 South Avenue, 263A Maple Parkway
