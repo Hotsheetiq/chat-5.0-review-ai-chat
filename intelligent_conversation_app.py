@@ -703,7 +703,8 @@ If they need maintenance or have questions about a specific property, get their 
         try:
             speech_result = request.values.get('SpeechResult', '').strip()
             call_sid = request.values.get('CallSid', 'Unknown')
-            logger.info(f"Speech received: '{speech_result}'")
+            caller_phone = request.values.get('From', 'Unknown')
+            logger.info(f"Continue conversation - Speech: '{speech_result}', Call: {call_sid}, From: {caller_phone}")
             
             response = VoiceResponse()
             
