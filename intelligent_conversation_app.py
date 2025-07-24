@@ -580,46 +580,50 @@ CRITICAL REASONING RULES:
                 for entry in conversation_history[call_sid]:
                     content = entry['content'].lower()
                     
-                    # Extract addresses from conversation history - BETTER DETECTION
+                    # Extract addresses from conversation history - COMPREHENSIVE DETECTION
                     if not extracted_info["address"]:
-                        # Check for full addresses first
-                        if '29 port richmond' in content or '29 port richmond avenue' in content:
-                            extracted_info["address"] = "29 Port Richmond Avenue"
-                        elif '122 targee' in content or '122' in content or 'targee' in content:
-                            extracted_info["address"] = "122 Targee Street"
-                        elif '13 barker' in content or 'barker' in content:
-                            extracted_info["address"] = "13 Barker Street"
-                        elif '15 coonley' in content or 'coonley' in content:
-                            extracted_info["address"] = "15 Coonley Court"
-                        elif 'south avenue' in content:
-                            extracted_info["address"] = "173 South Avenue"
-                        elif 'maple' in content:
-                            extracted_info["address"] = "263A Maple Parkway"
-                        elif 'alaska' in content:
-                            extracted_info["address"] = "28 Alaska Street"
-                        elif 'stanley' in content:
-                            extracted_info["address"] = "28 Stanley Avenue"
-                        elif 'pine' in content:
-                            extracted_info["address"] = "Pine Street"
-                        elif 'betty' in content:
-                            extracted_info["address"] = "56 Betty Court"
-                        elif 'cary' in content:
-                            extracted_info["address"] = "627 Cary Avenue"
+                        # Check for addresses mentioned in conversation
+                        import re
+                        # Look for any address patterns including numbers + street names
+                        address_patterns = [
+                            (r'29\s*port\s*richmond', "29 Port Richmond Avenue"),
+                            (r'2940', "29 Port Richmond Avenue"),  # Partial number detection
+                            (r'122\s*targee', "122 Targee Street"),
+                            (r'122', "122 Targee Street"),
+                            (r'13\s*barker', "13 Barker Street"),
+                            (r'15\s*coonley', "15 Coonley Court"),
+                            (r'173\s*south', "173 South Avenue"),
+                            (r'263\s*maple', "263A Maple Parkway"),
+                            (r'28\s*alaska', "28 Alaska Street"),
+                            (r'28\s*stanley', "28 Stanley Avenue"),
+                            (r'56\s*betty', "56 Betty Court"),
+                            (r'627\s*cary', "627 Cary Avenue"),
+                        ]
+                        
+                        for pattern, address in address_patterns:
+                            if re.search(pattern, content):
+                                extracted_info["address"] = address
+                                logger.info(f"🏠 DETECTED ADDRESS: {address} from pattern: {pattern}")
+                                break
                     
-                    # Extract issues from conversation history - BROADER DETECTION
+                    # Extract issues from conversation history - COMPREHENSIVE DETECTION
                     if not extracted_info["issue"]:
-                        if any(word in content for word in ['noise', 'loud', 'neighbors', 'music', 'party', 'yelling', 'shouting', 'disturbing']):
-                            extracted_info["issue"] = "noise complaint"
-                        elif any(word in content for word in ['power', 'electric', 'electrical', 'no power', "don't have power", 'electricity', 'electrical issue', 'electrical problem']):
-                            extracted_info["issue"] = "electrical"
-                        elif any(word in content for word in ['heat', 'heating', 'no heat', 'cold']):
-                            extracted_info["issue"] = "heating"
-                        elif any(word in content for word in ['water', 'leak', 'plumbing']):
-                            extracted_info["issue"] = "plumbing"
-                        elif any(word in content for word in ['maintenance', 'repair', 'broken', 'not working']):
-                            extracted_info["issue"] = "maintenance"
+                        issue_patterns = [
+                            (['noise', 'loud', 'neighbors', 'music', 'party', 'yelling', 'shouting', 'disturbing'], "noise complaint"),
+                            (['power', 'electric', 'electrical', 'no power', "don't have power", 'electricity', 'electrical issue', 'electrical problem'], "electrical"),
+                            (['heat', 'heating', 'no heat', 'cold'], "heating"),
+                            (['water', 'leak', 'plumbing'], "plumbing"),
+                            (['maintenance', 'repair', 'broken', 'not working'], "maintenance")
+                        ]
+                        
+                        for keywords, issue_type in issue_patterns:
+                            if any(word in content for word in keywords):
+                                extracted_info["issue"] = issue_type
+                                logger.info(f"⚡ DETECTED ISSUE: {issue_type} from keywords in: {content}")
+                                break
                 
-                logger.info(f"Extracted from conversation - Address: {extracted_info['address']}, Issue: {extracted_info['issue']}")
+                logger.info(f"🧠 CONVERSATION ANALYSIS - Address: {extracted_info['address']}, Issue: {extracted_info['issue']}")
+                logger.info(f"📋 CONVERSATION HISTORY: {[entry['content'] for entry in conversation_history[call_sid]]}")
                 
                 # If we have BOTH address and issue, handle appropriately
                 if extracted_info["address"] and extracted_info["issue"]:
@@ -660,16 +664,20 @@ CRITICAL REASONING RULES:
                         logger.error(f"Service issue creation failed: {e}")
                         return f"I've documented your {extracted_info['issue']} issue at {extracted_info['address']}. Someone will contact you within 2-4 hours."
                 
-                # Add context about what we already know
-                context_info = f"\n\nIMPORTANT CONVERSATION CONTEXT:\n"
+                # Add context about what we already know - FORCE MEMORY
+                context_info = f"\n\nCRITICAL CONVERSATION MEMORY:\n"
                 if extracted_info["address"]:
-                    context_info += f"- Address already provided: {extracted_info['address']}\n"
+                    context_info += f"- CONFIRMED ADDRESS: {extracted_info['address']} (ALREADY PROVIDED - DON'T ASK AGAIN!)\n"
                 if extracted_info["issue"]:
-                    context_info += f"- Issue already reported: {extracted_info['issue']}\n"
-                    context_info += f"- CALLER ALREADY TOLD YOU THE PROBLEM - DO NOT ASK AGAIN!\n"
-                    context_info += f"- CRITICAL: They called about {extracted_info['issue']} - don't ask what the problem is!\n"
-                context_info += "- DO NOT ask for information already provided!\n"
-                context_info += "- USE REASONING: If they said 'electrical issue' and gave address, CREATE THE TICKET!\n"
+                    context_info += f"- REPORTED ISSUE: {extracted_info['issue']} (CALLER TOLD YOU THIS - REMEMBER IT!)\n"
+                    context_info += f"- STOP ASKING 'WHAT'S THE PROBLEM' - THEY ALREADY TOLD YOU: {extracted_info['issue']}!\n"
+                
+                if extracted_info["address"] and extracted_info["issue"]:
+                    context_info += f"- YOU HAVE EVERYTHING NEEDED: {extracted_info['issue']} at {extracted_info['address']}\n"
+                    context_info += f"- CREATE THE SERVICE TICKET NOW - DON'T ASK MORE QUESTIONS!\n"
+                
+                context_info += "- THINK: Why would they call? For the issue they mentioned!\n"
+                context_info += "- USE YOUR MEMORY - Check what they said earlier in the conversation!\n"
                 
                 # Add conversation history for context
                 for entry in conversation_history[call_sid][-6:]:  # Last 6 exchanges for full context
