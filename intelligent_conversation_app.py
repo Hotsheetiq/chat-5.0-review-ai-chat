@@ -437,6 +437,8 @@ def create_app():
                 "repair": "Maintenance request confirmed. What needs repair and your address/unit?",
                 
                 # Address confirmation patterns with REAL service issue creation - SMART RECOGNITION
+                "29 port richmond": lambda: create_real_service_issue("electrical", "29 Port Richmond Avenue"),
+                "port richmond": lambda: create_real_service_issue("electrical", "29 Port Richmond Avenue"),
                 "122": lambda: create_real_service_issue("electrical", "122 Targee Street"),
                 "targee": lambda: create_real_service_issue("electrical", "122 Targee Street"),
                 "13 barker": lambda: create_real_service_issue("electrical", "13 Barker Street"),
@@ -578,25 +580,37 @@ CRITICAL REASONING RULES:
                 for entry in conversation_history[call_sid]:
                     content = entry['content'].lower()
                     
-                    # Extract addresses from conversation history
+                    # Extract addresses from conversation history - BETTER DETECTION
                     if not extracted_info["address"]:
-                        for addr in ['122 targee', '122', 'targee', '13 barker', 'barker', '15 coonley', 'coonley', 'south avenue', 'maple', 'alaska', 'stanley', 'pine', 'betty', 'cary']:
-                            if addr in content:
-                                if addr == '122' or 'targee' in content:
-                                    extracted_info["address"] = "122 Targee Street"
-                                elif addr == '13' or 'barker' in content:
-                                    extracted_info["address"] = "13 Barker Street"
-                                elif addr == '15' or 'coonley' in content:
-                                    extracted_info["address"] = "15 Coonley Court"
-                                else:
-                                    extracted_info["address"] = content
-                                break
+                        # Check for full addresses first
+                        if '29 port richmond' in content or '29 port richmond avenue' in content:
+                            extracted_info["address"] = "29 Port Richmond Avenue"
+                        elif '122 targee' in content or '122' in content or 'targee' in content:
+                            extracted_info["address"] = "122 Targee Street"
+                        elif '13 barker' in content or 'barker' in content:
+                            extracted_info["address"] = "13 Barker Street"
+                        elif '15 coonley' in content or 'coonley' in content:
+                            extracted_info["address"] = "15 Coonley Court"
+                        elif 'south avenue' in content:
+                            extracted_info["address"] = "173 South Avenue"
+                        elif 'maple' in content:
+                            extracted_info["address"] = "263A Maple Parkway"
+                        elif 'alaska' in content:
+                            extracted_info["address"] = "28 Alaska Street"
+                        elif 'stanley' in content:
+                            extracted_info["address"] = "28 Stanley Avenue"
+                        elif 'pine' in content:
+                            extracted_info["address"] = "Pine Street"
+                        elif 'betty' in content:
+                            extracted_info["address"] = "56 Betty Court"
+                        elif 'cary' in content:
+                            extracted_info["address"] = "627 Cary Avenue"
                     
-                    # Extract issues from conversation history
+                    # Extract issues from conversation history - BROADER DETECTION
                     if not extracted_info["issue"]:
                         if any(word in content for word in ['noise', 'loud', 'neighbors', 'music', 'party', 'yelling', 'shouting', 'disturbing']):
                             extracted_info["issue"] = "noise complaint"
-                        elif any(word in content for word in ['power', 'electric', 'no power', "don't have power", 'electricity']):
+                        elif any(word in content for word in ['power', 'electric', 'electrical', 'no power', "don't have power", 'electricity', 'electrical issue', 'electrical problem']):
                             extracted_info["issue"] = "electrical"
                         elif any(word in content for word in ['heat', 'heating', 'no heat', 'cold']):
                             extracted_info["issue"] = "heating"
@@ -609,7 +623,8 @@ CRITICAL REASONING RULES:
                 
                 # If we have BOTH address and issue, handle appropriately
                 if extracted_info["address"] and extracted_info["issue"]:
-                    logger.info(f"AUTO-HANDLING ISSUE: {extracted_info['issue']} at {extracted_info['address']}")
+                    logger.info(f"🎫 AUTO-HANDLING ISSUE: {extracted_info['issue']} at {extracted_info['address']}")
+                    logger.info(f"📞 CALL SID: {call_sid} - Creating ticket automatically")
                     
                     # ALL ISSUES get service tickets - including noise complaints
                     try:
@@ -680,7 +695,7 @@ CRITICAL REASONING RULES:
             
             messages.append({
                 "role": "system",
-                "content": office_status
+                "content": office_status + (context_info if call_sid and call_sid in conversation_history else "")
             })
             
             # Add tenant context if available
