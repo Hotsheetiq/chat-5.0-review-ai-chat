@@ -108,7 +108,7 @@ def create_app():
                 }
             }
             
-            response = requests.post(url, json=data, headers=headers, timeout=5)  # Sufficient timeout to avoid failures
+            response = requests.post(url, json=data, headers=headers, timeout=3)  # Faster timeout for quicker audio
             if response.status_code == 200:
                 # Save audio file and return URL
                 audio_filename = f"audio_{hash(text)}.mp3"
@@ -131,16 +131,32 @@ def create_app():
             logger.error(f"ElevenLabs generation error: {e}")
             return None
     
+    # Fast response cache for common questions
+    QUICK_RESPONSES = {
+        "are you open": "We're closed right now, but I'm absolutely here to help! We're open Monday through Friday, 9 to 5!",
+        "what are your hours": "We're open Monday through Friday, 9 AM to 5 PM Eastern Time!",
+        "office hours": "Monday through Friday, 9 to 5! We're closed right now but I'm here to help!",
+        "when do you open": "We open Monday through Friday at 9 AM Eastern Time!",
+        "are you closed": "Yes, we're closed right now, but I'm here to help! We're open Monday through Friday, 9 to 5!"
+    }
+
     def generate_intelligent_response(user_input, call_sid=None):
-        """Generate intelligent AI response using GPT-4o"""
+        """Generate intelligent AI response using GPT-4o with speed optimization"""
         try:
+            # Check for quick responses first to avoid AI delay
+            user_lower = user_input.lower().strip()
+            for key, quick_response in QUICK_RESPONSES.items():
+                if key in user_lower:
+                    logger.info(f"Using cached quick response for: {user_input}")
+                    return quick_response
+            
             if not openai_client:
                 logger.error("No OpenAI client available")
                 return get_smart_fallback(user_input)
             
             logger.info(f"Generating GPT-4o response for: {user_input}")
             
-            # Build conversation context with natural ChatGPT-style prompting
+            # Build conversation context with minimal prompting for speed
             messages = [
                 {
                     "role": "system",
@@ -168,12 +184,12 @@ Be enthusiastic, energetic, and sound genuinely thrilled to assist with anything
                 }
             ]
             
-            # Add recent conversation history for context
+            # Minimal conversation history for speed
             if call_sid and call_sid in conversation_history:
-                for entry in conversation_history[call_sid][-8:]:  # Last 4 exchanges
+                for entry in conversation_history[call_sid][-2:]:  # Only last exchange for speed
                     role = entry['role']
                     content = entry['content']
-                    if role in ['user', 'assistant', 'system']:
+                    if role in ['user', 'assistant']:
                         messages.append({
                             "role": role,
                             "content": content
@@ -226,14 +242,15 @@ If they need maintenance or have questions about a specific property, get their 
                 "content": user_input
             })
             
-            # Generate response using GPT-4o with speed-optimized parameters  
+            # Generate response using GPT-4o-mini for speed (faster than gpt-4o)
             response = openai_client.chat.completions.create(
-                model="gpt-4o",  # Latest OpenAI model for best conversation
+                model="gpt-4o-mini",  # Faster model for quicker responses
                 messages=[{"role": msg["role"], "content": msg["content"]} for msg in messages],
-                max_tokens=50,  # Enough tokens to complete responses without cutting off
-                temperature=0.5,   # More natural variation for energy
-                presence_penalty=0,  # Remove penalties for speed
-                frequency_penalty=0
+                max_tokens=40,  # Shorter for faster generation
+                temperature=0.4,   # Lower for faster, more direct responses
+                presence_penalty=0,
+                frequency_penalty=0,
+                timeout=3  # Force faster response or timeout
             )
             
             ai_response = response.choices[0].message.content
