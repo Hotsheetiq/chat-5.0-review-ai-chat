@@ -520,10 +520,10 @@ If they need maintenance or have questions about a specific property, get their 
             
             # Remove recording to eliminate all webhook callbacks that might cause application error
             
-            # Natural greeting from Chris with ElevenLabs voice
-            greeting = "Hi there, you have reached Grinberg Management, I'm Chris. I'm connecting you with our amazing team at (718) 414-6984!"
+            # Chris's friendly greeting - ready to chat
+            greeting = "Hi there, you have reached Grinberg Management, I'm Chris, how can I help?"
             
-            # Use ElevenLabs for natural human voice
+            # Use ElevenLabs for Chris's natural voice with original settings
             audio_url = generate_elevenlabs_audio(greeting)
             if audio_url:
                 # Use proper Replit domain for audio serving
@@ -534,6 +534,25 @@ If they need maintenance or have questions about a specific property, get their 
                 # Fallback to Twilio voice if ElevenLabs fails
                 response.say(greeting, voice='Polly.Matthew-Neural')
             
+            # Simple speech gathering without complex webhooks - just collect input and transfer
+            response.gather(
+                input='speech',
+                action='/simple-response',
+                method='POST',
+                timeout=10,
+                speech_timeout=3,
+                language='en-US'
+            )
+            
+            # If no speech detected, transfer with friendly message
+            transfer_text = "I'm here if you need anything else! Let me connect you with our team at (718) 414-6984."
+            audio_url = generate_elevenlabs_audio(transfer_text)
+            if audio_url:
+                replit_domain = os.environ.get('REPLIT_DOMAINS', '').split(',')[0] if os.environ.get('REPLIT_DOMAINS') else 'localhost:5000'
+                full_audio_url = f"https://{replit_domain}{audio_url}"
+                response.play(full_audio_url)
+            else:
+                response.say(transfer_text, voice='Polly.Matthew-Neural')
             response.dial('(718) 414-6984')
             
             logger.info(f"Intelligent conversation initiated for {caller_phone}")
@@ -641,14 +660,48 @@ If they need maintenance or have questions about a specific property, get their 
         from flask import send_from_directory
         return send_from_directory('static', filename)
     
-    @app.route('/webhook-debug', methods=['POST'])
-    def webhook_debug():
-        """Debug webhook to see what Twilio is sending"""
-        logger.info(f"Webhook debug - Method: {request.method}")
-        logger.info(f"Webhook debug - Headers: {dict(request.headers)}")
-        logger.info(f"Webhook debug - Form data: {dict(request.form)}")
-        logger.info(f"Webhook debug - Values: {dict(request.values)}")
-        return "OK", 200
+    @app.route('/simple-response', methods=['POST'])
+    def simple_response():
+        """Simple response handler - basic AI conversation then transfer"""
+        try:
+            speech_result = request.values.get('SpeechResult', '').strip()
+            logger.info(f"Speech received: '{speech_result}'")
+            
+            response = VoiceResponse()
+            
+            if speech_result:
+                # Generate a quick AI response
+                ai_response = generate_intelligent_response(speech_result, 'simple')
+                logger.info(f"AI response: {ai_response}")
+                
+                # Use ElevenLabs for natural response
+                audio_url = generate_elevenlabs_audio(ai_response)
+                if audio_url:
+                    replit_domain = os.environ.get('REPLIT_DOMAINS', '').split(',')[0] if os.environ.get('REPLIT_DOMAINS') else 'localhost:5000'
+                    full_audio_url = f"https://{replit_domain}{audio_url}"
+                    response.play(full_audio_url)
+                else:
+                    response.say(ai_response, voice='Polly.Matthew-Neural')
+            
+            # Transfer after response
+            transfer_text = "Let me connect you with our team now!"
+            audio_url = generate_elevenlabs_audio(transfer_text)
+            if audio_url:
+                replit_domain = os.environ.get('REPLIT_DOMAINS', '').split(',')[0] if os.environ.get('REPLIT_DOMAINS') else 'localhost:5000'
+                full_audio_url = f"https://{replit_domain}{audio_url}"
+                response.play(full_audio_url)
+            else:
+                response.say(transfer_text, voice='Polly.Matthew-Neural')
+            response.dial('(718) 414-6984')
+            
+            return str(response)
+            
+        except Exception as e:
+            logger.error(f"Simple response error: {e}")
+            response = VoiceResponse()
+            response.say("Let me connect you with our team at (718) 414-6984.", voice='Polly.Matthew-Neural')
+            response.dial('(718) 414-6984')
+            return str(response)
     
     @app.route('/')
     def dashboard():
