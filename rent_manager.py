@@ -13,9 +13,9 @@ class RentManagerAPI:
     
     def __init__(self, api_key: str):
         self.api_key = api_key
-        self.base_url = "https://api.rentmanager.com/v1"  # Replace with actual Rent Manager API URL
+        self.base_url = "https://grinb-api.rentmanager.com"  # Your actual Rent Manager API URL
         self.headers = {
-            "Authorization": f"Bearer {api_key}",
+            "X-RM12Api-ApiToken": api_key,
             "Content-Type": "application/json",
             "Accept": "application/json"
         }

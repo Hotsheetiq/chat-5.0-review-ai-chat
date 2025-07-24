@@ -172,6 +172,13 @@ Keep responses under 20 words for faster delivery. Sound natural and conversatio
                     "role": "system",
                     "content": context_message
                 })
+            else:
+                # When no tenant data available, handle gracefully
+                no_data_context = "CALLER CONTEXT: This caller's information isn't immediately available. Be helpful and ask for their unit/property details if needed for maintenance requests."
+                messages.append({
+                    "role": "system", 
+                    "content": no_data_context
+                })
             
             # Add current user input
             messages.append({
@@ -490,12 +497,31 @@ Keep responses under 20 words for faster delivery. Sound natural and conversatio
         except Exception as e:
             logger.error(f"Speech handler error: {e}", exc_info=True)
             response = VoiceResponse()
-            error_text = "Let me connect you with our team at (718) 414-6984!"
+            
+            # Graceful error handling - don't disconnect, offer help
+            error_text = "I'm having a small technical moment. Let me help you another way - what can I assist you with today?"
             audio_url = generate_elevenlabs_audio(error_text)
             if audio_url:
                 response.play(f"https://{request.host}{audio_url}")
             else:
                 response.say(error_text, voice='Polly.Matthew-Neural')
+            
+            # Give another chance instead of immediate transfer
+            response.gather(
+                input='speech',
+                action=f'/handle-speech/{call_sid}',
+                method='POST',
+                timeout=10,
+                speech_timeout='auto'
+            )
+            
+            # If still no response, then transfer
+            transfer_text = "Let me connect you with our team at (718) 414-6984!"
+            audio_url = generate_elevenlabs_audio(transfer_text)
+            if audio_url:
+                response.play(f"https://{request.host}{audio_url}")
+            else:
+                response.say(transfer_text, voice='Polly.Matthew-Neural')
             response.dial('(718) 414-6984')
             return str(response)
     
