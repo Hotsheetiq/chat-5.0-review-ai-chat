@@ -571,24 +571,20 @@ If they need maintenance or have questions about a specific property, get their 
             
             response = VoiceResponse()
             
-            # Add simple call recording with status callback
-            response.record(
-                max_length=1800,  # 30 minutes max
-                play_beep=False,
-                record_on_answer=True
-            )
+            # Temporarily remove recording to test if it's causing issues
+            # response.record(
+            #     max_length=1800,  # 30 minutes max
+            #     play_beep=False,
+            #     record_on_answer=True
+            # )
             
-            # Simple reliable greeting that always works
-            response.say("Hi there, you have reached Grinberg Management, I'm Chris, how can I help?", voice='Polly.Matthew-Neural')
+            # Ultra-simple test - just greeting and basic gather
+            response.say("Hello, this is Chris from Grinberg Management. How can I help you?")
             
-            # Wait for user input
+            # Basic gather with minimal options
             response.gather(
                 input='speech',
-                action='/continue-conversation',
-                method='POST',
-                timeout=30,
-                speech_timeout=6,
-                language='en-US'
+                action='/continue-conversation'
             )
             
             logger.info(f"Intelligent conversation initiated for {caller_phone}")
