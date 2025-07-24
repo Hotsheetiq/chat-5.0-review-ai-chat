@@ -32,12 +32,31 @@ def create_app():
     app = Flask(__name__)
     app.secret_key = os.environ.get("SESSION_SECRET", "dev-secret-key")
     
+    # Audio cache for faster responses
+    audio_cache = {}
+    
+    # Pre-generate common responses for instant delivery
+    common_responses = {
+        "greeting": "Grinberg Management, this is Tony! How can I help you today?",
+        "thanks": "You're so welcome! Anything else I can help with?",
+        "goodbye": "Thank you for calling Grinberg Management! Have a wonderful day!",
+        "transfer": "Perfect! I'm connecting you with Diane or Janier right now!",
+        "hours": "We're here Monday through Friday, 9 to 5. What can I help you with?",
+        "maintenance": "Absolutely! What's going on? I'm here to help get that sorted out."
+    }
+    
     def generate_elevenlabs_audio(text, voice_id="pNInz6obpgDQGcFmaJgB"):
-        """Generate audio using ElevenLabs API with Tony voice"""
+        """Generate audio using ElevenLabs API with Tony voice - optimized for speed"""
         try:
             if not ELEVENLABS_API_KEY:
                 logger.warning("No ElevenLabs API key available")
                 return None
+            
+            # Check cache first for faster responses
+            cache_key = f"{voice_id}_{hash(text)}"
+            if cache_key in audio_cache:
+                logger.info("Using cached audio for faster response")
+                return audio_cache[cache_key]
                 
             url = f"https://api.elevenlabs.io/v1/text-to-speech/{voice_id}"
             headers = {
@@ -48,16 +67,16 @@ def create_app():
             
             data = {
                 "text": text,
-                "model_id": "eleven_monolingual_v1",
+                "model_id": "eleven_turbo_v2",  # Faster model for quicker response
                 "voice_settings": {
-                    "stability": 0.5,
-                    "similarity_boost": 0.8,
-                    "style": 0.2,
+                    "stability": 0.7,          # More stable for consistent speech
+                    "similarity_boost": 0.75,  # Good voice similarity
+                    "style": 0.3,              # Slightly more expressive
                     "use_speaker_boost": True
                 }
             }
             
-            response = requests.post(url, json=data, headers=headers)
+            response = requests.post(url, json=data, headers=headers, timeout=8)  # Faster timeout
             if response.status_code == 200:
                 # Save audio file and return URL
                 audio_filename = f"audio_{hash(text)}.mp3"
@@ -67,7 +86,11 @@ def create_app():
                 with open(audio_path, "wb") as f:
                     f.write(response.content)
                 
-                return f"/static/{audio_filename}"
+                audio_url = f"/static/{audio_filename}"
+                # Cache for future use
+                audio_cache[cache_key] = audio_url
+                logger.info(f"Generated and cached new audio: {audio_filename}")
+                return audio_url
             else:
                 logger.error(f"ElevenLabs API error: {response.status_code} - {response.text}")
                 return None
@@ -113,7 +136,7 @@ CONVERSATIONAL EXAMPLES:
 - Instead of: "I can assist you with maintenance requests."
 - Say: "Absolutely! What's going on? I'm here to help get that sorted out."
 
-Keep responses under 25 words but sound completely natural and conversational. Use contractions, casual phrases, and show real understanding like ChatGPT does."""
+Keep responses under 20 words for faster delivery. Sound natural and conversational. Use contractions and casual phrases like ChatGPT does."""
                 }
             ]
             
@@ -138,8 +161,8 @@ Keep responses under 25 words but sound completely natural and conversational. U
             response = openai_client.chat.completions.create(
                 model="gpt-4o",  # Latest OpenAI model for best conversation
                 messages=messages,
-                max_tokens=80,  # Keep responses concise for phone calls
-                temperature=0.85,  # More natural and varied responses
+                max_tokens=60,  # Shorter for faster responses  
+                temperature=0.7,   # Balanced for speed and naturalness
                 presence_penalty=0.2,  # Encourage new topics
                 frequency_penalty=0.3  # Reduce repetition
             )
