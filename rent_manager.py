@@ -108,8 +108,14 @@ class RentManagerAPI:
             endpoint = f"/tenants/search?phone={clean_phone}"
             result = await self._make_request("GET", endpoint)
             
-            if result and result.get('tenants'):
-                tenant = result['tenants'][0]  # Get first match
+            if result:
+                # Handle both list and dict responses
+                if isinstance(result, list) and len(result) > 0:
+                    tenant = result[0]  # Get first match from list
+                elif isinstance(result, dict) and result.get('tenants'):
+                    tenant = result['tenants'][0]  # Get first match from dict
+                else:
+                    return None
                 logger.info(f"Found tenant: {tenant.get('name', 'Unknown')} for phone {phone_number}")
                 return {
                     'id': tenant.get('id'),
