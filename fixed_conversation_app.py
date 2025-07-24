@@ -35,11 +35,21 @@ try:
     from rent_manager import RentManagerAPI
     from service_issue_handler import ServiceIssueHandler
     
-    rent_manager = RentManagerAPI()
+    # Initialize with proper credentials
+    rent_manager_credentials = {
+        'username': os.environ.get('RENT_MANAGER_USERNAME'),
+        'password': os.environ.get('RENT_MANAGER_PASSWORD'),
+        'api_key': os.environ.get('RENT_MANAGER_API_KEY'),
+        'location_id': os.environ.get('RENT_MANAGER_LOCATION_ID')
+    }
+    
+    rent_manager = RentManagerAPI(rent_manager_credentials)
     service_handler = ServiceIssueHandler(rent_manager)
     logger.info("Rent Manager API and Service Handler initialized successfully")
 except Exception as e:
     logger.error(f"Failed to initialize Rent Manager API: {e}")
+    rent_manager = None
+    service_handler = None
 
 # Global state storage
 conversation_history = {}
@@ -153,10 +163,10 @@ def create_app():
         "yes": lambda: "Great! What else can I help you with?",
         "okay": lambda: "Perfect! Anything else?",
         
-        # SMS requests
-        "text me": lambda: send_service_sms(),
-        "send sms": lambda: send_service_sms(),
-        "yes text": lambda: send_service_sms(),
+        # SMS requests - fix function calls
+        "text me": lambda: send_service_sms() if current_service_issue else "I don't have a current service issue to text you about.",
+        "send sms": lambda: send_service_sms() if current_service_issue else "I don't have a current service issue to text you about.",
+        "yes text": lambda: send_service_sms() if current_service_issue else "I don't have a current service issue to text you about.",
     }
     
     def send_service_sms():
@@ -271,10 +281,10 @@ def create_app():
     def get_ai_response(user_input, call_sid):
         """Get intelligent AI response from GPT-4o"""
         try:
-            if not OPENAI_API_KEY:
+            if not OPENAI_API_KEY or 'openai_client' not in globals():
                 return "I'm here to help! What can I do for you today?"
             
-            # Build conversation context
+            # Build conversation context with proper typing
             messages = [
                 {
                     "role": "system", 
@@ -286,23 +296,27 @@ def create_app():
             if call_sid in conversation_history:
                 for entry in conversation_history[call_sid][-3:]:  # Last 3 exchanges for context
                     messages.append({
-                        "role": entry['role'],
-                        "content": entry['content']
+                        "role": entry.get('role', 'user'),
+                        "content": str(entry.get('content', ''))
                     })
             
             # Add current user input
-            messages.append({"role": "user", "content": user_input})
+            messages.append({"role": "user", "content": str(user_input)})
             
-            # Get AI response
-            response = openai_client.chat.completions.create(
-                model="gpt-4o",
-                messages=messages,
-                max_tokens=75,
-                temperature=0.7,
-                timeout=3.0
-            )
-            
-            return response.choices[0].message.content.strip()
+            # Get AI response with proper client check
+            if 'openai_client' in globals() and openai_client:
+                response = openai_client.chat.completions.create(
+                    model="gpt-4o",
+                    messages=messages,
+                    max_tokens=75,
+                    temperature=0.7,
+                    timeout=3.0
+                )
+                
+                result = response.choices[0].message.content
+                return result.strip() if result else "I'm here to help! What can I do for you today?"
+            else:
+                return "I'm here to help! What can I do for you today?"
             
         except Exception as e:
             logger.error(f"AI response error: {e}")
