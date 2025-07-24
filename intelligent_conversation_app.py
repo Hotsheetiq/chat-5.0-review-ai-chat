@@ -578,47 +578,16 @@ If they need maintenance or have questions about a specific property, get their 
                 record_on_answer=True
             )
             
-            # Chris's friendly greeting - ready to chat
-            greeting = "Hi there, you have reached Grinberg Management, I'm Chris, how can I help?"
+            # Simple reliable greeting that always works
+            response.say("Hi there, you have reached Grinberg Management, I'm Chris, how can I help?", voice='Polly.Matthew-Neural')
             
-            # Use ElevenLabs for Chris's natural voice with original settings
-            audio_url = generate_elevenlabs_audio(greeting)
-            if audio_url:
-                # Use proper Replit domain for audio serving
-                replit_domain = os.environ.get('REPLIT_DOMAINS', '').split(',')[0] if os.environ.get('REPLIT_DOMAINS') else 'localhost:5000'
-                full_audio_url = f"https://{replit_domain}{audio_url}"
-                response.play(full_audio_url)
-            else:
-                # Fallback to Twilio voice if ElevenLabs fails
-                response.say(greeting, voice='Polly.Matthew-Neural')
-            
-            # Much longer timeout to avoid automatic transfers
+            # Wait for user input
             response.gather(
                 input='speech',
                 action='/continue-conversation',
                 method='POST',
-                timeout=30,  # Very long timeout - don't transfer unless they want it
-                speech_timeout=6,  # More time for user to speak
-                language='en-US'
-            )
-            
-            # Only if completely silent for 30 seconds, ask if they want to continue
-            continue_text = "I'm still here if you need anything. Would you like me to connect you with our team, or is there something else I can help with?"
-            audio_url = generate_elevenlabs_audio(continue_text)
-            if audio_url:
-                replit_domain = os.environ.get('REPLIT_DOMAINS', '').split(',')[0] if os.environ.get('REPLIT_DOMAINS') else 'localhost:5000'
-                full_audio_url = f"https://{replit_domain}{audio_url}"
-                response.play(full_audio_url)
-            else:
-                response.say(continue_text, voice='Polly.Matthew-Neural')
-            
-            # Give them another full opportunity to speak
-            response.gather(
-                input='speech',
-                action='/continue-conversation',
-                method='POST',
-                timeout=20,
-                speech_timeout=5,
+                timeout=30,
+                speech_timeout=6,
                 language='en-US'
             )
             
