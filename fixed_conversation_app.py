@@ -189,7 +189,7 @@ def create_app():
                     # Run in background - don't block user response
                     def background_creation():
                         try:
-                            if hasattr(service_handler, 'create_maintenance_issue'):
+                            if service_handler and hasattr(service_handler, 'create_maintenance_issue'):
                                 asyncio.run(service_handler.create_maintenance_issue(
                                     tenant_info, issue_type, 
                                     f"{issue_type.title()} issue reported by caller", 
@@ -344,11 +344,12 @@ def create_app():
     def get_ai_response(user_input, call_sid):
         """Get intelligent AI response from GPT-4o"""
         try:
-            if not OPENAI_API_KEY or 'openai_client' not in globals():
+            if not OPENAI_API_KEY:
                 return "I'm here to help! What can I do for you today?"
             
             # Build conversation context with proper typing
-            messages = [
+            from typing import List, Dict, Any
+            messages: List[Dict[str, Any]] = [
                 {
                     "role": "system", 
                     "content": "You are Chris, a professional AI assistant for Grinberg Management property company. You help with maintenance requests, office hours, and property questions. Be friendly, helpful, and concise. Keep responses under 25 words. If someone reports a maintenance issue, ask for their address to create a service ticket."
@@ -366,7 +367,7 @@ def create_app():
             # Add current user input
             messages.append({"role": "user", "content": str(user_input)})
             
-            # Get AI response with proper client check
+            # Get AI response with proper client check  
             if OPENAI_API_KEY and 'openai_client' in globals() and openai_client:
                 response = openai_client.chat.completions.create(
                     model="gpt-4o",
