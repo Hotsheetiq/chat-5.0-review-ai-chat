@@ -520,9 +520,20 @@ If they need maintenance or have questions about a specific property, get their 
             
             # Remove recording to eliminate all webhook callbacks that might cause application error
             
-            # Simplified greeting and immediate transfer - no speech gathering to avoid webhook issues
+            # Natural greeting from Chris with ElevenLabs voice
             greeting = "Hi there, you have reached Grinberg Management, I'm Chris. I'm connecting you with our amazing team at (718) 414-6984!"
-            response.say(greeting, voice='Polly.Matthew-Neural')
+            
+            # Use ElevenLabs for natural human voice
+            audio_url = generate_elevenlabs_audio(greeting)
+            if audio_url:
+                # Use proper Replit domain for audio serving
+                replit_domain = os.environ.get('REPLIT_DOMAINS', '').split(',')[0] if os.environ.get('REPLIT_DOMAINS') else 'localhost:5000'
+                full_audio_url = f"https://{replit_domain}{audio_url}"
+                response.play(full_audio_url)
+            else:
+                # Fallback to Twilio voice if ElevenLabs fails
+                response.say(greeting, voice='Polly.Matthew-Neural')
+            
             response.dial('(718) 414-6984')
             
             logger.info(f"Intelligent conversation initiated for {caller_phone}")
