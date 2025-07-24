@@ -15,7 +15,57 @@
         }
         .status-ok { background-color: #28a745; }
         .status-error { background-color: #dc3545; }
+        .status-warning { background-color: #ffc107; }
+        .caller-card {
+            border-left: 4px solid #28a745;
+            background: rgba(40, 167, 69, 0.1);
+        }
+        .tenant-info {
+            font-size: 0.9em;
+            color: #6c757d;
+        }
     </style>
+    <script>
+        // Auto-refresh active calls every 5 seconds
+        function refreshActiveCalls() {
+            fetch('/api/active-calls')
+                .then(response => response.json())
+                .then(data => {
+                    const container = document.getElementById('active-calls-container');
+                    const countBadge = document.getElementById('active-calls-count');
+                    
+                    countBadge.textContent = data.length;
+                    
+                    if (data.length === 0) {
+                        container.innerHTML = '<p class="text-muted mb-0">No active calls</p>';
+                    } else {
+                        container.innerHTML = data.map(call => `
+                            <div class="caller-card p-3 mb-2 rounded">
+                                <div class="d-flex justify-content-between align-items-start">
+                                    <div>
+                                        <h6 class="mb-1">${call.caller_name}</h6>
+                                        <div class="tenant-info">
+                                            ${call.phone} ${call.tenant_unit ? '• Unit ' + call.tenant_unit : '• Prospect'}
+                                        </div>
+                                        <small class="text-success">${call.current_action}</small>
+                                    </div>
+                                    <div class="text-end">
+                                        <div class="small text-muted">${call.start_time}</div>
+                                        <div class="small">${call.duration}</div>
+                                    </div>
+                                </div>
+                            </div>
+                        `).join('');
+                    }
+                })
+                .catch(console.error);
+        }
+        
+        // Refresh every 5 seconds
+        setInterval(refreshActiveCalls, 5000);
+        // Initial load
+        document.addEventListener('DOMContentLoaded', refreshActiveCalls);
+    </script>
 </head>
 <body class="bg-dark">
     <div class="container mt-4">
@@ -25,7 +75,7 @@
                 <h1 class="h3 mb-0">Chris - AI Assistant</h1>
                 <div class="text-end">
                     <div class="small text-muted">Active Calls</div>
-                    <div class="h2 mb-0 text-success">{{ active_calls }}</div>
+                    <div class="h2 mb-0 text-success" id="active-calls-count">{{ active_calls|length }}</div>
                 </div>
             </div>
             <div class="card-body">
@@ -46,10 +96,48 @@
             </div>
         </div>
 
-        <!-- Call Recordings -->
-        <div class="card">
+        <!-- Active Calls Real-time Display -->
+        {% if active_calls %}
+        <div class="card mb-4">
             <div class="card-header">
-                <h4 class="mb-0">📞 Recent Call Recordings</h4>
+                <h5 class="mb-0">📞 Live Calls</h5>
+            </div>
+            <div class="card-body">
+                <div id="active-calls-container">
+                    {% for call in active_calls %}
+                    <div class="caller-card p-3 mb-2 rounded">
+                        <div class="d-flex justify-content-between align-items-start">
+                            <div>
+                                <h6 class="mb-1">{{ call.caller_name or 'Unknown Caller' }}</h6>
+                                <div class="tenant-info">
+                                    {{ call.phone_number }} {% if call.tenant_unit %}• Unit {{ call.tenant_unit }}{% else %}• Prospect{% endif %}
+                                </div>
+                                <small class="text-success">{{ call.current_action or 'In conversation' }}</small>
+                            </div>
+                            <div class="text-end">
+                                <div class="small text-muted">{{ call.start_time.strftime('%I:%M %p') }}</div>
+                                <div class="small">{{ (moment().utc() - call.start_time).seconds//60 }}m ago</div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Search and Call Recordings -->
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h4 class="mb-0">📞 Call History</h4>
+                <form method="GET" class="d-flex gap-2">
+                    <input type="text" name="phone" placeholder="Search phone..." value="{{ search_phone }}" class="form-control form-control-sm" style="width: 150px;">
+                    <input type="date" name="date" value="{{ search_date }}" class="form-control form-control-sm" style="width: 150px;">
+                    <button type="submit" class="btn btn-sm btn-outline-primary">Search</button>
+                    {% if search_phone or search_date %}
+                        <a href="/" class="btn btn-sm btn-outline-secondary">Clear</a>
+                    {% endif %}
+                </form>
             </div>
             <div class="card-body">
                 {% if call_recordings %}
@@ -58,7 +146,8 @@
                             <thead>
                                 <tr>
                                     <th>Time</th>
-                                    <th>Phone Number</th>
+                                    <th>Caller</th>
+                                    <th>Phone</th>
                                     <th>Duration</th>
                                     <th>Recording</th>
                                 </tr>
@@ -66,9 +155,15 @@
                             <tbody>
                                 {% for recording in call_recordings %}
                                 <tr>
-                                    <td>{{ recording.timestamp.strftime('%m/%d %I:%M %p') if recording.timestamp else 'Unknown' }}</td>
-                                    <td>{{ recording.phone }}</td>
-                                    <td>{{ recording.duration }}s</td>
+                                    <td>{{ recording.start_time.strftime('%m/%d %I:%M %p') if recording.start_time else 'Unknown' }}</td>
+                                    <td>
+                                        <strong>{{ recording.caller_name or 'Unknown' }}</strong>
+                                        {% if recording.tenant_unit %}
+                                            <br><small class="text-muted">Unit {{ recording.tenant_unit }}</small>
+                                        {% endif %}
+                                    </td>
+                                    <td>{{ recording.phone_number }}</td>
+                                    <td>{{ recording.duration or 0 }}s</td>
                                     <td>
                                         {% if recording.recording_url %}
                                             <audio controls style="max-width: 200px;">
@@ -85,7 +180,7 @@
                         </table>
                     </div>
                 {% else %}
-                    <p class="text-muted mb-0">No call recordings yet. Recordings will appear here after calls are completed.</p>
+                    <p class="text-muted mb-0">No call recordings found.{% if search_phone or search_date %} Try adjusting your search criteria.{% endif %}</p>
                 {% endif %}
             </div>
         </div>

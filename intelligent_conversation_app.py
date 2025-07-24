@@ -6,6 +6,7 @@ Provides GPT-4o intelligence with natural conversation quality
 import os
 import logging
 from flask import Flask, request, render_template, jsonify
+from flask_sqlalchemy import SQLAlchemy
 from twilio.twiml.voice_response import VoiceResponse
 from openai import OpenAI
 import json
@@ -43,6 +44,25 @@ call_recordings = {}  # Store call recordings for dashboard access
 def create_app():
     app = Flask(__name__)
     app.secret_key = os.environ.get("SESSION_SECRET", "dev-secret-key")
+    
+    # Database configuration
+    database_url = os.environ.get("DATABASE_URL")
+    if database_url:
+        app.config["SQLALCHEMY_DATABASE_URI"] = database_url
+        app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {
+            "pool_recycle": 300,
+            "pool_pre_ping": True,
+        }
+    else:
+        # Fallback for development without database
+        app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///calls.db"
+    
+    # Import models and initialize database
+    from models import db, CallRecord, ActiveCall
+    db.init_app(app)
+    
+    with app.app_context():
+        db.create_all()
     
     # Audio cache for faster responses
     audio_cache = {}
@@ -496,8 +516,43 @@ If they need maintenance or have questions about a specific property, get their 
             
             logger.info(f"Incoming call from: {caller_phone}, CallSid: {call_sid}")
             
-            # Skip initial tenant lookup for faster greeting - will handle during conversation
+            # Database imports
+            from models import db, CallRecord, ActiveCall
+            
+            # Lookup tenant information for caller display
             tenant_info = None
+            caller_name = "Unknown Caller"
+            tenant_unit = None
+            tenant_id = None
+            
+            if rent_manager:
+                try:
+                    # Quick tenant lookup
+                    tenant_info = rent_manager.lookup_tenant_by_phone(caller_phone)
+                    if tenant_info:
+                        caller_name = f"{tenant_info.get('FirstName', '')} {tenant_info.get('LastName', '')}".strip()
+                        tenant_unit = tenant_info.get('Unit', '')
+                        tenant_id = tenant_info.get('TenantID', '')
+                        logger.info(f"Tenant identified: {caller_name} - Unit {tenant_unit}")
+                except Exception as e:
+                    logger.warning(f"Tenant lookup failed: {e}")
+            
+            # Add to active calls in database
+            try:
+                with app.app_context():
+                    active_call = ActiveCall(
+                        call_sid=call_sid,
+                        phone_number=caller_phone,
+                        caller_name=caller_name,
+                        tenant_unit=tenant_unit,
+                        tenant_id=tenant_id,
+                        call_status='connected',
+                        current_action='Chris greeting caller'
+                    )
+                    db.session.add(active_call)
+                    db.session.commit()
+            except Exception as e:
+                logger.error(f"Database error adding active call: {e}")
             
             # Initialize call state with tenant info
             call_states[call_sid] = {
@@ -709,54 +764,52 @@ If they need maintenance or have questions about a specific property, get their 
     @app.route('/')
     def dashboard():
         """Dashboard showing intelligent AI status and call recordings"""
-        recent_calls = []
-        for call_sid, state in list(call_states.items())[-5:]:
-            recent_calls.append({
-                'call_sid': call_sid[-8:],
-                'phone': state.get('phone', 'Unknown'),
-                'status': 'Active' if state.get('started') else 'Ended'
-            })
+        from models import db, CallRecord, ActiveCall
         
         # Get search parameters
         search_phone = request.args.get('phone', '').strip()
         search_date = request.args.get('date', '').strip()
         
-        # Filter call recordings based on search criteria
-        filtered_recordings = []
-        for call_sid, recording in call_recordings.items():
-            # Apply phone number filter
-            if search_phone and search_phone not in recording.get('phone', ''):
-                continue
-                
-            # Apply date filter
-            if search_date:
-                recording_date = recording.get('timestamp', '')[:10]  # Extract YYYY-MM-DD
-                if search_date != recording_date:
-                    continue
-            
-            filtered_recordings.append({
-                'call_sid': call_sid[-8:],
-                'phone': recording.get('phone', 'Unknown'),
-                'duration': recording.get('duration', '0'),
-                'timestamp': recording.get('timestamp', ''),
-                'recording_url': recording.get('url', ''),
-                'transcription': recording.get('transcription', '')[:200] if recording.get('transcription') else 'Processing...',
-                'tenant_name': recording.get('tenant_info', {}).get('name', 'Unknown Caller') if recording.get('tenant_info') else 'Unknown Caller'
-            })
+        # Get active calls from database
+        active_calls_db = ActiveCall.query.all()
         
-        # Sort by timestamp (newest first) and limit to last 50
-        filtered_recordings.sort(key=lambda x: x['timestamp'], reverse=True)
-        recent_recordings = filtered_recordings[:50]
+        # Get call recordings from database with search filters
+        query = CallRecord.query
+        if search_phone:
+            query = query.filter(CallRecord.phone_number.contains(search_phone))
+        if search_date:
+            from datetime import datetime
+            search_datetime = datetime.strptime(search_date, '%Y-%m-%d').date()
+            query = query.filter(db.func.date(CallRecord.start_time) == search_datetime)
+        
+        call_recordings_db = query.order_by(CallRecord.start_time.desc()).limit(50).all()
         
         return render_template('intelligent_dashboard.html',
                              openai_connected=bool(OPENAI_API_KEY),
                              elevenlabs_connected=bool(ELEVENLABS_API_KEY),
-                             active_calls=len([s for s in call_states.values() if s.get('started')]),
-                             recent_calls=recent_calls,
-                             call_recordings=recent_recordings,
+                             active_calls=active_calls_db,
+                             call_recordings=call_recordings_db,
                              search_phone=search_phone,
-                             search_date=search_date,
-                             total_recordings=len(call_recordings))
+                             search_date=search_date)
+    
+    @app.route('/api/active-calls')
+    def api_active_calls():
+        """API endpoint for real-time active calls data"""
+        from models import ActiveCall
+        active_calls = ActiveCall.query.all()
+        calls_data = []
+        for call in active_calls:
+            calls_data.append({
+                'call_sid': call.call_sid[-8:],
+                'phone': call.phone_number,
+                'caller_name': call.caller_name or 'Unknown Caller',
+                'tenant_unit': call.tenant_unit,
+                'start_time': call.start_time.strftime('%I:%M %p'),
+                'duration': str(datetime.utcnow() - call.start_time).split('.')[0],
+                'status': call.call_status,
+                'current_action': call.current_action or 'In conversation'
+            })
+        return jsonify(calls_data)
     
     @app.route('/test-intelligent')
     def test_intelligent():
