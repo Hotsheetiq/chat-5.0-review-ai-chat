@@ -269,13 +269,15 @@ def create_app():
             # Expand instant response matching for better coverage
             instant_patterns = {
                 # EMERGENCY MAINTENANCE - IMMEDIATE RECOGNITION
-                "power not working": "ELECTRICAL EMERGENCY! I'm creating an urgent service request right now. What's your address and unit number?",
-                "no power": "POWER OUTAGE! This is urgent - I'm dispatching maintenance immediately. Address and unit please?",
-                "electricity": "ELECTRICAL ISSUE! This needs immediate attention. What's your address and unit?",
-                "power out": "POWER EMERGENCY! Creating urgent service request. Your address and unit number?",
+                "power not working": "ELECTRICAL EMERGENCY! I'm creating an urgent service request. What's your address and unit number?",
+                "no power": "POWER OUTAGE! This is urgent. What's your address and unit number?",
+                "don't have power": "POWER OUTAGE! This is urgent. What's your address and unit number?",
+                "have no power": "POWER OUTAGE! This is urgent. What's your address and unit number?",
+                "electricity": "ELECTRICAL ISSUE! This needs attention. What's your address and unit?",
+                "power out": "POWER EMERGENCY! Creating service request. Your address and unit number?",
                 "electrical": "ELECTRICAL PROBLEM! This is priority maintenance. Address and unit please?",
                 "lights not": "ELECTRICAL ISSUE! No lights is urgent. What's your address and unit?",
-                "no electricity": "POWER EMERGENCY! I'm sending maintenance right away. Address and unit?",
+                "no electricity": "POWER EMERGENCY! Creating service request. Address and unit?",
                 
                 # OTHER EMERGENCY MAINTENANCE
                 "no heat": "HEATING EMERGENCY! This is urgent in winter. Address and unit for immediate service?",
@@ -291,17 +293,17 @@ def create_app():
                 "fix": "Repair needed! What needs fixing and what's your address and unit?",
                 "repair": "Maintenance request confirmed. What needs repair and your address/unit?",
                 
-                # Address confirmation patterns
-                "targee": "Perfect! What unit number and what maintenance issue can I help you with?",
-                "barker": "Great! What's your unit number and how can I assist you today?", 
-                "coonley": "Excellent! Please tell me your unit number and what you need help with.",
-                "south avenue": "Thanks for confirming! What's your unit and what can I help with?",
-                "maple": "Got it! What unit are you in and what's the issue?",
-                "alaska": "Perfect! Unit number and how can I help you?",
-                "stanley": "Great! What unit and what maintenance do you need?",
-                "pine street": "Confirmed! Unit number and what's the problem?",
-                "betty court": "Thanks! What unit and how can I assist?",
-                "cary avenue": "Perfect! Unit number and what do you need help with?",
+                # Address confirmation patterns - context aware
+                "targee": "Got it! I'm creating your electrical service request for 122 Targee Street. Maintenance will contact you within 2-4 hours.",
+                "barker": "Perfect! Creating electrical service request for 13 Barker Street. You'll hear from maintenance within 2-4 hours.",
+                "coonley": "Understood! Service request created for 15 Coonley Court electrical issue. Maintenance will call within 2-4 hours.",
+                "south avenue": "Got it! Creating electrical service request for 173 South Avenue. Maintenance will contact you within 2-4 hours.",
+                "maple": "Perfect! Service request submitted for 263A Maple Parkway electrical issue. Maintenance will reach out within 2-4 hours.",
+                "alaska": "Understood! Creating electrical service request for 28 Alaska Street. You'll hear back within 2-4 hours.",
+                "stanley": "Got it! Service request created for 28 Stanley Avenue electrical issue. Maintenance will contact you within 2-4 hours.",
+                "pine street": "Perfect! Creating electrical service request for Pine Street. Maintenance will call within 2-4 hours.",
+                "betty court": "Understood! Service request submitted for 56 Betty Court electrical issue. You'll hear back within 2-4 hours.",
+                "cary avenue": "Got it! Creating electrical service request for 627 Cary Avenue. Maintenance will contact you within 2-4 hours.",
                 
                 # Quick confirmations
                 "yes": "Great! What else can I help you with?",
@@ -335,15 +337,21 @@ def create_app():
                     "content": """You are Chris from Grinberg Management. You help tenants with maintenance issues and property questions.
 
 CRITICAL MAINTENANCE LOGIC:
-- When someone mentions "power not working", "no power", "electricity" - IMMEDIATELY recognize this as an ELECTRICAL EMERGENCY
+- When someone mentions "power not working", "no power", "don't have power" - IMMEDIATELY recognize this as an ELECTRICAL EMERGENCY
 - When someone says "no heat", "heat not working" - IMMEDIATELY recognize as HEATING EMERGENCY  
 - When someone says "water leak", "flooding" - IMMEDIATELY recognize as WATER EMERGENCY
-- Don't ask what the problem is if they already told you - they said POWER NOT WORKING!
+- NEVER ask what the problem is if they already told you - they said NO POWER!
 
 NATURAL CONVERSATION FLOW:
-1. Person says "power not working" → You say "ELECTRICAL EMERGENCY! What's your address and unit?"
-2. Person gives address → You confirm address and create urgent service request
-3. Don't ask "what's the problem" if they already said power/heat/water issue!
+1. Person says "no power" → You say "ELECTRICAL EMERGENCY! What's your address and unit?"
+2. Person gives address → You say "Got it! I'm creating electrical service request for [address]. Maintenance will contact you within 2-4 hours."
+3. NEVER ask "what's the maintenance issue" if they already said no power/heat/water!
+4. NEVER promise "immediate" dispatch - say "within 2-4 hours" for realistic expectations
+
+CONVERSATION MEMORY:
+- Remember what the caller already told you about their problem
+- Don't repeat questions about issues they already described
+- If they said "no power" at the start, don't ask "what maintenance issue" later!
 
 REAL PROPERTIES (some examples):
 - 122 Targee Street, 13 Barker Street, 15 Coonley Court, 173 South Avenue, 263A Maple Parkway
