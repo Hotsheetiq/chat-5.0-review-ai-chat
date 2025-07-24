@@ -535,7 +535,10 @@ If they need maintenance or have questions about a specific property, get their 
             # Use ElevenLabs for natural human voice
             audio_url = generate_elevenlabs_audio(greeting)
             if audio_url:
-                response.play(f"https://{request.host}{audio_url}")
+                # Get the correct public URL for Twilio to access
+                replit_domain = os.environ.get('REPLIT_DOMAINS', '').split(',')[0] if os.environ.get('REPLIT_DOMAINS') else 'localhost:5000'
+                full_audio_url = f"https://{replit_domain}{audio_url}"
+                response.play(full_audio_url)
             else:
                 # Fallback to Twilio voice if ElevenLabs fails
                 response.say(greeting, voice='Polly.Matthew-Neural')
@@ -553,7 +556,9 @@ If they need maintenance or have questions about a specific property, get their 
             fallback_text = "I'm sorry, I didn't catch that. Let me connect you with our wonderful team at (718) 414-6984!"
             audio_url = generate_elevenlabs_audio(fallback_text)
             if audio_url:
-                response.play(f"https://{request.host}{audio_url}")
+                replit_domain = os.environ.get('REPLIT_DOMAINS', '').split(',')[0] if os.environ.get('REPLIT_DOMAINS') else 'localhost:5000'
+                full_audio_url = f"https://{replit_domain}{audio_url}"
+                response.play(full_audio_url)
             else:
                 response.say(fallback_text, voice='Polly.Matthew-Neural')
             response.dial('(718) 414-6984')
@@ -567,7 +572,9 @@ If they need maintenance or have questions about a specific property, get their 
             error_text = "I'm sorry, we're having technical issues. Please call back in a moment."
             audio_url = generate_elevenlabs_audio(error_text)
             if audio_url:
-                response.play(f"https://{request.host}{audio_url}")
+                replit_domain = os.environ.get('REPLIT_DOMAINS', '').split(',')[0] if os.environ.get('REPLIT_DOMAINS') else 'localhost:5000'
+                full_audio_url = f"https://{replit_domain}{audio_url}"
+                response.play(full_audio_url)
             else:
                 response.say(error_text, voice='Polly.Matthew-Neural')
             return str(response)
@@ -585,7 +592,9 @@ If they need maintenance or have questions about a specific property, get their 
                 no_speech_text = "I didn't quite catch that. Let me connect you with our amazing team at (718) 414-6984!"
                 audio_url = generate_elevenlabs_audio(no_speech_text)
                 if audio_url:
-                    response.play(f"https://{request.host}{audio_url}")
+                    replit_domain = os.environ.get('REPLIT_DOMAINS', '').split(',')[0] if os.environ.get('REPLIT_DOMAINS') else 'localhost:5000'
+                    full_audio_url = f"https://{replit_domain}{audio_url}"
+                    response.play(full_audio_url)
                 else:
                     response.say(no_speech_text, voice='Polly.Matthew-Neural')
                 response.dial('(718) 414-6984')
@@ -598,7 +607,9 @@ If they need maintenance or have questions about a specific property, get their 
             # Use ElevenLabs for Chris's natural voice
             audio_url = generate_elevenlabs_audio(ai_response)
             if audio_url:
-                response.play(f"https://{request.host}{audio_url}")
+                replit_domain = os.environ.get('REPLIT_DOMAINS', '').split(',')[0] if os.environ.get('REPLIT_DOMAINS') else 'localhost:5000'
+                full_audio_url = f"https://{replit_domain}{audio_url}"
+                response.play(full_audio_url)
             else:
                 # Fallback to Twilio voice
                 response.say(ai_response, voice='Polly.Matthew-Neural')
