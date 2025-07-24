@@ -534,6 +534,98 @@ def create_app():
                 logger.error("No OpenAI client available")
                 return get_smart_fallback(user_input)
             
+            # CHECK CONVERSATION HISTORY FIRST TO AVOID REPEATED QUESTIONS
+            extracted_info = {"address": None, "issue": None}
+            
+            if call_sid and call_sid in conversation_history:
+                # Extract information from conversation history
+                for entry in conversation_history[call_sid]:
+                    content = entry['content'].lower()
+                    
+                    # Extract addresses from conversation history - COMPREHENSIVE DETECTION
+                    if not extracted_info["address"]:
+                        # Check for addresses mentioned in conversation
+                        import re
+                        # Look for any address patterns including numbers + street names
+                        address_patterns = [
+                            (r'29\s*port\s*richmond', "29 Port Richmond Avenue"),
+                            (r'2940', "29 Port Richmond Avenue"),  # Partial number detection
+                            (r'122\s*targee', "122 Targee Street"),
+                            (r'122', "122 Targee Street"),
+                            (r'13\s*barker', "13 Barker Street"),
+                            (r'15\s*coonley', "15 Coonley Court"),
+                            (r'173\s*south', "173 South Avenue"),
+                            (r'263\s*maple', "263A Maple Parkway"),
+                            (r'28\s*alaska', "28 Alaska Street"),
+                            (r'28\s*stanley', "28 Stanley Avenue"),
+                            (r'56\s*betty', "56 Betty Court"),
+                            (r'627\s*cary', "627 Cary Avenue"),
+                        ]
+                        
+                        for pattern, address in address_patterns:
+                            if re.search(pattern, content):
+                                extracted_info["address"] = address
+                                logger.info(f"🏠 DETECTED ADDRESS: {address} from pattern: {pattern}")
+                                break
+                    
+                    # Extract issues from conversation history - COMPREHENSIVE DETECTION
+                    if not extracted_info["issue"]:
+                        issue_patterns = [
+                            (['noise', 'loud', 'neighbors', 'music', 'party', 'yelling', 'shouting', 'disturbing'], "noise complaint"),
+                            (['power', 'electric', 'electrical', 'no power', "don't have power", 'electricity', 'electrical issue', 'electrical problem'], "electrical"),
+                            (['heat', 'heating', 'no heat', 'cold'], "heating"),
+                            (['water', 'leak', 'plumbing'], "plumbing"),
+                            (['maintenance', 'repair', 'broken', 'not working'], "maintenance")
+                        ]
+                        
+                        for keywords, issue_type in issue_patterns:
+                            if any(word in content for word in keywords):
+                                extracted_info["issue"] = issue_type
+                                logger.info(f"⚡ DETECTED ISSUE: {issue_type} from keywords in: {content}")
+                                break
+                
+                logger.info(f"🧠 CONVERSATION ANALYSIS - Address: {extracted_info['address']}, Issue: {extracted_info['issue']}")
+                logger.info(f"📋 CONVERSATION HISTORY: {[entry['content'] for entry in conversation_history[call_sid]]}")
+                
+                # If we have BOTH address and issue, handle immediately - DON'T ASK AI
+                if extracted_info["address"] and extracted_info["issue"]:
+                    logger.info(f"🎫 AUTO-HANDLING ISSUE: {extracted_info['issue']} at {extracted_info['address']}")
+                    logger.info(f"📞 CALL SID: {call_sid} - Creating ticket automatically")
+                    
+                    # ALL ISSUES get service tickets - including noise complaints
+                    try:
+                        issue_result = service_handler.create_service_issue(
+                            issue_type=extracted_info["issue"],
+                            address=extracted_info["address"],
+                            description=f"{extracted_info['issue']} issue reported",
+                            caller_phone=request.values.get('From', ''),
+                            priority="High" if extracted_info["issue"] in ["electrical", "heating", "plumbing"] else "Normal"
+                        )
+                        
+                        if issue_result and 'issue_number' in issue_result:
+                            ticket_number = issue_result['issue_number']
+                            
+                            # Check if office is closed for different messaging
+                            eastern = pytz.timezone('US/Eastern')
+                            current_time = datetime.now(eastern)
+                            current_hour = current_time.hour
+                            current_day = current_time.weekday()  # 0=Monday, 6=Sunday
+                            office_closed = not (current_day < 5 and 9 <= current_hour < 17)
+                            
+                            if office_closed:
+                                return f"I've created service ticket #{ticket_number} for your {extracted_info['issue']} at {extracted_info['address']}. Since our office is closed, someone will get back to you as soon as we reopen. Please hold onto your ticket number #{ticket_number} for reference. If you need immediate assistance, you can call our after-hours line at (718) 414-6984."
+                            else:
+                                if extracted_info["issue"] == "noise complaint":
+                                    return f"I've created service ticket #{ticket_number} for your noise complaint at {extracted_info['address']}. Our property manager will follow up within 24 hours. Please keep your ticket number #{ticket_number} for reference."
+                                else:
+                                    return f"Perfect! I've created service ticket #{ticket_number} for your {extracted_info['issue']} at {extracted_info['address']}. Dimitry will contact you within 2-4 hours."
+                        else:
+                            # Fallback if no ticket number returned
+                            return f"Perfect! I've created your service request for {extracted_info['issue']} at {extracted_info['address']}. Dimitry will contact you within 2-4 hours."
+                    except Exception as e:
+                        logger.error(f"Service issue creation failed: {e}")
+                        return f"Perfect! I've documented your {extracted_info['issue']} issue at {extracted_info['address']}. Dimitry will contact you within 2-4 hours."
+            
             logger.info(f"Generating GPT-4o response for: {user_input}")
             
             # Build conversation context with minimal prompting for speed
@@ -610,107 +702,17 @@ CRITICAL REASONING RULES:
                 }
             ]
             
-            # CHECK CONVERSATION HISTORY TO AVOID REPEATED QUESTIONS
-            extracted_info = {"address": None, "issue": None}
-            
+            # Add context about what we already know from conversation history
+            context_info = ""
             if call_sid and call_sid in conversation_history:
-                # Extract information from conversation history
-                for entry in conversation_history[call_sid]:
-                    content = entry['content'].lower()
-                    
-                    # Extract addresses from conversation history - COMPREHENSIVE DETECTION
-                    if not extracted_info["address"]:
-                        # Check for addresses mentioned in conversation
-                        import re
-                        # Look for any address patterns including numbers + street names
-                        address_patterns = [
-                            (r'29\s*port\s*richmond', "29 Port Richmond Avenue"),
-                            (r'2940', "29 Port Richmond Avenue"),  # Partial number detection
-                            (r'122\s*targee', "122 Targee Street"),
-                            (r'122', "122 Targee Street"),
-                            (r'13\s*barker', "13 Barker Street"),
-                            (r'15\s*coonley', "15 Coonley Court"),
-                            (r'173\s*south', "173 South Avenue"),
-                            (r'263\s*maple', "263A Maple Parkway"),
-                            (r'28\s*alaska', "28 Alaska Street"),
-                            (r'28\s*stanley', "28 Stanley Avenue"),
-                            (r'56\s*betty', "56 Betty Court"),
-                            (r'627\s*cary', "627 Cary Avenue"),
-                        ]
-                        
-                        for pattern, address in address_patterns:
-                            if re.search(pattern, content):
-                                extracted_info["address"] = address
-                                logger.info(f"🏠 DETECTED ADDRESS: {address} from pattern: {pattern}")
-                                break
-                    
-                    # Extract issues from conversation history - COMPREHENSIVE DETECTION
-                    if not extracted_info["issue"]:
-                        issue_patterns = [
-                            (['noise', 'loud', 'neighbors', 'music', 'party', 'yelling', 'shouting', 'disturbing'], "noise complaint"),
-                            (['power', 'electric', 'electrical', 'no power', "don't have power", 'electricity', 'electrical issue', 'electrical problem'], "electrical"),
-                            (['heat', 'heating', 'no heat', 'cold'], "heating"),
-                            (['water', 'leak', 'plumbing'], "plumbing"),
-                            (['maintenance', 'repair', 'broken', 'not working'], "maintenance")
-                        ]
-                        
-                        for keywords, issue_type in issue_patterns:
-                            if any(word in content for word in keywords):
-                                extracted_info["issue"] = issue_type
-                                logger.info(f"⚡ DETECTED ISSUE: {issue_type} from keywords in: {content}")
-                                break
-                
-                logger.info(f"🧠 CONVERSATION ANALYSIS - Address: {extracted_info['address']}, Issue: {extracted_info['issue']}")
-                logger.info(f"📋 CONVERSATION HISTORY: {[entry['content'] for entry in conversation_history[call_sid]]}")
-                
-                # If we have BOTH address and issue, handle appropriately
-                if extracted_info["address"] and extracted_info["issue"]:
-                    logger.info(f"🎫 AUTO-HANDLING ISSUE: {extracted_info['issue']} at {extracted_info['address']}")
-                    logger.info(f"📞 CALL SID: {call_sid} - Creating ticket automatically")
-                    
-                    # ALL ISSUES get service tickets - including noise complaints
-                    try:
-                        issue_result = service_handler.create_service_issue(
-                            issue_type=extracted_info["issue"],
-                            address=extracted_info["address"],
-                            description=f"{extracted_info['issue']} issue reported",
-                            caller_phone=request.values.get('From', ''),
-                            priority="High" if extracted_info["issue"] in ["electrical", "heating", "plumbing"] else "Normal"
-                        )
-                        
-                        if issue_result and 'issue_number' in issue_result:
-                            ticket_number = issue_result['issue_number']
-                            
-                            # Check if office is closed for different messaging
-                            eastern = pytz.timezone('US/Eastern')
-                            current_time = datetime.now(eastern)
-                            current_hour = current_time.hour
-                            current_day = current_time.weekday()  # 0=Monday, 6=Sunday
-                            office_closed = not (current_day < 5 and 9 <= current_hour < 17)
-                            
-                            if office_closed:
-                                return f"I've created service ticket #{ticket_number} for your {extracted_info['issue']} at {extracted_info['address']}. Since our office is closed, someone will get back to you as soon as we reopen. Please hold onto your ticket number #{ticket_number} for reference. If you need immediate assistance, you can call our after-hours line at (718) 414-6984."
-                            else:
-                                if extracted_info["issue"] == "noise complaint":
-                                    return f"I've created service ticket #{ticket_number} for your noise complaint at {extracted_info['address']}. Our property manager will follow up within 24 hours. Please keep your ticket number #{ticket_number} for reference."
-                                else:
-                                    return f"Perfect! I've created service ticket #{ticket_number} for your {extracted_info['issue']} at {extracted_info['address']}. Dimitry will contact you within 2-4 hours."
-                        else:
-                            # Fallback if no ticket number returned
-                            return f"I've created your service request for {extracted_info['issue']} at {extracted_info['address']}. Someone will contact you within 2-4 hours."
-                    except Exception as e:
-                        logger.error(f"Service issue creation failed: {e}")
-                        return f"I've documented your {extracted_info['issue']} issue at {extracted_info['address']}. Someone will contact you within 2-4 hours."
-                
-                # Add context about what we already know - FORCE MEMORY
-                context_info = f"\n\nCRITICAL CONVERSATION MEMORY:\n"
-                if extracted_info["address"]:
+                context_info += "\n\nCRITICAL CONVERSATION MEMORY:\n"
+                if extracted_info.get("address"):
                     context_info += f"- CONFIRMED ADDRESS: {extracted_info['address']} (ALREADY PROVIDED - DON'T ASK AGAIN!)\n"
-                if extracted_info["issue"]:
+                if extracted_info.get("issue"):
                     context_info += f"- REPORTED ISSUE: {extracted_info['issue']} (CALLER TOLD YOU THIS - REMEMBER IT!)\n"
                     context_info += f"- STOP ASKING 'WHAT'S THE PROBLEM' - THEY ALREADY TOLD YOU: {extracted_info['issue']}!\n"
                 
-                if extracted_info["address"] and extracted_info["issue"]:
+                if extracted_info.get("address") and extracted_info.get("issue"):
                     context_info += f"- YOU HAVE EVERYTHING NEEDED: {extracted_info['issue']} at {extracted_info['address']}\n"
                     context_info += f"- CREATE THE SERVICE TICKET NOW - DON'T ASK MORE QUESTIONS!\n"
                 
