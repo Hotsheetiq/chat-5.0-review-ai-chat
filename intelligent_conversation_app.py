@@ -529,25 +529,9 @@ If they need maintenance or have questions about a specific property, get their 
                 transcribe_callback='/transcription-callback'
             )
             
-            # Cheerful greeting from Chris
-            greeting = "Hi there, you have reached Grinberg Management, I'm Chris, how can I help?"
-            
-            # Temporarily use Twilio voice to test if issue is with audio serving
+            # Simplified greeting and immediate transfer - no speech gathering to avoid webhook issues
+            greeting = "Hi there, you have reached Grinberg Management, I'm Chris. I'm connecting you with our amazing team at (718) 414-6984!"
             response.say(greeting, voice='Polly.Matthew-Neural')
-            
-            # Gather input for intelligent conversation
-            response.gather(
-                input='speech',
-                action=f'/handle-speech/{call_sid}',
-                method='POST',
-                timeout=15,  # Longer timeout to give user time to speak
-                speech_timeout=5,  # Shorter speech timeout for quicker response
-                language='en-US'  # Explicitly set language for better recognition
-            )
-            
-            # Fallback if no speech detected  
-            fallback_text = "I'm sorry, I didn't catch that. Let me connect you with our wonderful team at (718) 414-6984!"
-            response.say(fallback_text, voice='Polly.Matthew-Neural')
             response.dial('(718) 414-6984')
             
             logger.info(f"Intelligent conversation initiated for {caller_phone}")
