@@ -113,15 +113,22 @@ def generate_elevenlabs_audio(text):
         return None
 
 def create_voice_response(text):
-    """Create TwiML voice response with ElevenLabs first, Polly fallback"""
-    # Try ElevenLabs for natural human voice
-    audio_url = generate_elevenlabs_audio(text)
-    
-    if audio_url:
-        # Use natural ElevenLabs voice
-        return f'<Play>{request.url_root.rstrip("/")}{audio_url}</Play>'
-    else:
-        # Fallback to Polly if ElevenLabs unavailable
+    """Create TwiML voice response - TEMPORARILY USING POLLY ONLY TO PREVENT ERRORS"""
+    try:
+        # TEMPORARY: Skip ElevenLabs to prevent error messages during quota exceeded
+        # This ensures reliable voice output without any error messages
+        logger.info(f"🎙️ Using Polly voice for: '{text[:50]}...'")
+        return f'<Say voice="Polly.Matthew-Neural">{text}</Say>'
+        
+        # ElevenLabs integration ready when quota available:
+        # audio_url = generate_elevenlabs_audio(text)
+        # if audio_url:
+        #     full_url = f"https://{os.environ.get('REPL_SLUG', 'localhost')}.replit.app{audio_url}"
+        #     return f'<Play>{full_url}</Play>'
+        
+    except Exception as e:
+        logger.error(f"Voice response error: {e}")
+        # Safe fallback to Polly
         return f'<Say voice="Polly.Matthew-Neural">{text}</Say>'
 call_states = {}
 current_service_issue = {}
