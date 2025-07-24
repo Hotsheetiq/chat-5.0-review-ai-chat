@@ -472,15 +472,31 @@ def create_app():
                     content = entry['content'].lower()
                     logger.info(f"🔍 ANALYZING: '{content}'")
                     
-                    # Extract addresses from conversation history - DYNAMIC DETECTION
+                    # Extract addresses from conversation history - FIXED PRIORITY DETECTION
                     if not extracted_info["address"]:
                         import re
-                        # Check for street address patterns (numbers + street names)
-                        address_match = re.search(r'(\d+)\s+([\w\s]+(?:street|avenue|ave|road|rd|court|ct|lane|ln|drive|dr|way|place|pl|boulevard|blvd))', content, re.IGNORECASE)
-                        if address_match:
-                            potential_address = f"{address_match.group(1)} {address_match.group(2)}"
-                            extracted_info["address"] = potential_address
-                            logger.info(f"🏠 FOUND ADDRESS: {potential_address}")
+                        
+                        # PRIORITY PATTERNS - Check these first to prevent confusion
+                        priority_patterns = [
+                            r'29\s+port\s+richmond\s+ave',
+                            r'122\s+targee\s+street', 
+                            r'31\s+port\s+richmond\s+ave'
+                        ]
+                        
+                        for pattern in priority_patterns:
+                            priority_match = re.search(pattern, content, re.IGNORECASE)
+                            if priority_match:
+                                extracted_info["address"] = priority_match.group(0)
+                                logger.info(f"🏠 PRIORITY ADDRESS FOUND: {extracted_info['address']}")
+                                break
+                        
+                        # If no priority match, use general pattern (but exclude problematic 2940)
+                        if not extracted_info["address"]:
+                            address_match = re.search(r'(?!2940\s)(\d+)\s+([\w\s]+(?:street|avenue|ave|road|rd|court|ct|lane|ln|drive|dr|way|place|pl|boulevard|blvd))', content, re.IGNORECASE)
+                            if address_match:
+                                potential_address = f"{address_match.group(1)} {address_match.group(2)}"
+                                extracted_info["address"] = potential_address
+                                logger.info(f"🏠 GENERAL ADDRESS FOUND: {potential_address}")
                     
                     # Extract issues from conversation history
                     if not extracted_info["issue"]:
@@ -557,11 +573,22 @@ def create_app():
                         })
                         return response
             
-            # Check for instant responses first (no AI delay)
+            # Check for instant responses first (no AI delay) - BUT ONLY IF NO SERVICE TICKET CREATION NEEDED
             user_lower = user_input.lower().strip()
             
-            # Expand instant response matching for better coverage
-            instant_patterns = {
+            # CRITICAL: Skip instant responses if we're in the middle of a service ticket flow
+            should_skip_instant = False
+            if call_sid and call_sid in conversation_history:
+                for entry in conversation_history[call_sid]:
+                    content = entry['content'].lower()
+                    if any(word in content for word in ['power', 'electrical', 'heat', 'noise', 'maintenance', 'leak']):
+                        should_skip_instant = True
+                        logger.info("🚫 SKIPPING INSTANT RESPONSES - Service ticket flow detected")
+                        break
+            
+            if not should_skip_instant:
+                # Expand instant response matching for better coverage
+                instant_patterns = {
                 # NOISE COMPLAINTS - EMPATHETIC RESPONSES
                 "noise": "I'm sorry you're dealing with noise issues. That's really disruptive. What's your address?",
                 "neighbors": "I understand neighbor issues can be frustrating. Let me help you. What's happening?",
@@ -646,11 +673,11 @@ def create_app():
                     
                     # Address detection - key addresses
                     if not detected_address:
-                        if '29 port richmond' in content or '2940' in content:
+                        if '29 port richmond' in content:
                             detected_address = "29 Port Richmond Avenue"
                             logger.info(f"🏠 FOUND ADDRESS: {detected_address}")
                         elif '122' in content or 'targee' in content:
-                            detected_address = "122 Targee Street"
+                            detected_address = "122 Targee Street" 
                             logger.info(f"🏠 FOUND ADDRESS: {detected_address}")
                     
                     # Issue detection - electrical focus  
@@ -724,12 +751,13 @@ def create_app():
                                 pattern_matched = True
                                 break
                         
-                        # Only if no pattern matched, try general address detection
+                        # Only if no pattern matched, try general address detection (but exclude 2940)
                         if not pattern_matched:
-                            address_match = re.search(r'(\d+)\s+([\w\s]+(?:street|avenue|ave|road|rd|court|ct|lane|ln|drive|dr|way|place|pl|boulevard|blvd))', content, re.IGNORECASE)
+                            address_match = re.search(r'(?!2940\s)(\d+)\s+([\w\s]+(?:street|avenue|ave|road|rd|court|ct|lane|ln|drive|dr|way|place|pl|boulevard|blvd))', content, re.IGNORECASE)
                             if address_match:
                                 potential_address = f"{address_match.group(1)} {address_match.group(2)}"
                                 logger.info(f"🔍 GENERAL ADDRESS DETECTED: {potential_address}")
+                                extracted_info["address"] = potential_address
                             
                             # Try to lookup this address in Rent Manager to validate it and find tenant
                             try:
