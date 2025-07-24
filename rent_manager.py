@@ -13,7 +13,7 @@ class RentManagerAPI:
     
     def __init__(self, api_key: str):
         self.api_key = api_key
-        self.base_url = "https://grinb-api.rentmanager.com"  # Your actual Rent Manager API URL
+        self.base_url = "https://grinb.api.rentmanager.com"  # Correct format from HttpClientHelper.cs
         self.headers = {
             "X-RM12Api-ApiToken": api_key,
             "Content-Type": "application/json",
