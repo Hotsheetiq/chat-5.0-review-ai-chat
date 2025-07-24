@@ -27,6 +27,10 @@ from openai import OpenAI
 if OPENAI_API_KEY:
     openai_client = OpenAI(api_key=OPENAI_API_KEY)
 
+# ElevenLabs Configuration - NO QUOTA LIMITS
+ELEVENLABS_BASE_URL = "https://api.elevenlabs.io/v1"
+CHRIS_VOICE_ID = "pNInz6obpgDQGcFmaJgB"  # Professional Adam voice for Chris
+
 # Initialize Rent Manager and Service Handler
 rent_manager = None
 service_handler = None
@@ -53,6 +57,72 @@ except Exception as e:
 
 # Global state storage
 conversation_history = {}
+
+def generate_elevenlabs_audio(text):
+    """Generate natural human voice using ElevenLabs - NO QUOTA RESTRICTIONS"""
+    if not ELEVENLABS_API_KEY:
+        logger.warning("No ElevenLabs API key available")
+        return None
+        
+    try:
+        url = f"{ELEVENLABS_BASE_URL}/text-to-speech/{CHRIS_VOICE_ID}"
+        headers = {
+            "Accept": "audio/mpeg",
+            "Content-Type": "application/json",
+            "xi-api-key": ELEVENLABS_API_KEY.strip().strip('"')  # Clean API key
+        }
+        
+        data = {
+            "text": text,
+            "model_id": "eleven_turbo_v2_5",  # Fastest model for real-time
+            "voice_settings": {
+                "stability": 0.75,        # High stability for consistent voice
+                "similarity_boost": 0.85, # Natural voice consistency
+                "style": 0.25,           # Professional, warm tone
+                "use_speaker_boost": True # Enhanced clarity for phone calls
+            }
+        }
+        
+        logger.info(f"🎙️ Generating ElevenLabs audio for: '{text[:50]}...'")
+        response = requests.post(url, json=data, headers=headers, timeout=5)
+        
+        if response.status_code == 200:
+            # Save audio file and return play URL
+            import uuid
+            
+            # Create unique filename
+            audio_filename = f"chris_audio_{uuid.uuid4().hex[:8]}.mp3"
+            audio_path = f"static/{audio_filename}"
+            
+            # Ensure static directory exists
+            os.makedirs("static", exist_ok=True)
+            
+            # Save audio file
+            with open(audio_path, "wb") as f:
+                f.write(response.content)
+            
+            logger.info(f"✅ ElevenLabs audio generated: {audio_filename}")
+            # Return play URL for Twilio
+            return f"/static/{audio_filename}"
+        else:
+            logger.error(f"ElevenLabs API error: {response.status_code} - {response.text[:200]}")
+            return None
+            
+    except Exception as e:
+        logger.error(f"ElevenLabs generation error: {e}")
+        return None
+
+def create_voice_response(text):
+    """Create TwiML voice response with ElevenLabs first, Polly fallback"""
+    # Try ElevenLabs for natural human voice
+    audio_url = generate_elevenlabs_audio(text)
+    
+    if audio_url:
+        # Use natural ElevenLabs voice
+        return f'<Play>{request.url_root.rstrip("/")}{audio_url}</Play>'
+    else:
+        # Fallback to Polly if ElevenLabs unavailable
+        return f'<Say voice="Polly.Matthew-Neural">{text}</Say>'
 call_states = {}
 current_service_issue = {}
 
@@ -309,11 +379,18 @@ def create_app():
             logger.info(f"📞 CALL {call_sid}: '{user_input}' from {caller_phone}")
             
             if not user_input:
-                return """<?xml version="1.0" encoding="UTF-8"?>
+                # Use ElevenLabs for natural voice responses
+                no_input_text = "I didn't catch that. Could you repeat what you need help with?"
+                listening_text = "I'm listening..."
+                
+                no_input_voice = create_voice_response(no_input_text)
+                listening_voice = create_voice_response(listening_text)
+                
+                return f"""<?xml version="1.0" encoding="UTF-8"?>
                 <Response>
-                    <Say voice="Polly.Matthew-Neural">I didn't catch that. Could you repeat what you need help with?</Say>
+                    {no_input_voice}
                     <Gather input="speech" timeout="5" speechTimeout="2">
-                        <Say voice="Polly.Matthew-Neural">I'm listening...</Say>
+                        {listening_voice}
                     </Gather>
                 </Response>"""
             
@@ -361,21 +438,27 @@ def create_app():
                 'timestamp': datetime.now()
             })
             
-            # Return TwiML response - NEVER HANG UP
+            # Return TwiML response with ElevenLabs natural voice - NEVER HANG UP
+            main_voice = create_voice_response(response_text)
+            followup_voice = create_voice_response("What else can I help you with?")
+            
             return f"""<?xml version="1.0" encoding="UTF-8"?>
             <Response>
-                <Say voice="Polly.Matthew-Neural">{response_text}</Say>
+                {main_voice}
                 <Gather input="speech" timeout="10" speechTimeout="3">
-                    <Say voice="Polly.Matthew-Neural">What else can I help you with?</Say>
+                    {followup_voice}
                 </Gather>
                 <Redirect>/handle-speech/{call_sid}</Redirect>
             </Response>"""
             
         except Exception as e:
             logger.error(f"Speech handling error: {e}")
-            return """<?xml version="1.0" encoding="UTF-8"?>
+            error_text = "I'm sorry, I had a technical issue. How can I help you?"
+            error_voice = create_voice_response(error_text)
+            
+            return f"""<?xml version="1.0" encoding="UTF-8"?>
             <Response>
-                <Say voice="Polly.Matthew-Neural">I'm sorry, I had a technical issue. How can I help you?</Say>
+                {error_voice}
                 <Gather input="speech" timeout="5" speechTimeout="2"/>
             </Response>"""
     
@@ -392,8 +475,9 @@ def create_app():
             if call_sid not in conversation_history:
                 conversation_history[call_sid] = []
             
-            # Greeting
+            # Greeting with ElevenLabs natural voice
             greeting = "Hi there, you've reached Grinberg Management. I'm Chris, how can I help you today?"
+            listening = "I'm listening..."
             
             conversation_history[call_sid].append({
                 'role': 'assistant',
@@ -401,11 +485,15 @@ def create_app():
                 'timestamp': datetime.now()
             })
             
+            # Create natural voice responses
+            greeting_voice = create_voice_response(greeting)
+            listening_voice = create_voice_response(listening)
+            
             return f"""<?xml version="1.0" encoding="UTF-8"?>
             <Response>
-                <Say voice="Polly.Matthew-Neural">{greeting}</Say>
+                {greeting_voice}
                 <Gather input="speech" timeout="10" speechTimeout="3">
-                    <Say voice="Polly.Matthew-Neural">I'm listening...</Say>
+                    {listening_voice}
                 </Gather>
                 <Redirect>/handle-speech/{call_sid}</Redirect>
             </Response>"""
