@@ -16,6 +16,7 @@ import requests
 import base64
 import asyncio
 from rent_manager import RentManagerAPI
+from address_matcher import AddressMatcher
 
 # Configure logging
 logging.basicConfig(level=logging.DEBUG)
@@ -30,17 +31,19 @@ openai_client = OpenAI(api_key=OPENAI_API_KEY) if OPENAI_API_KEY else None
 
 # Initialize Rent Manager client with proper credentials
 rent_manager = None
+address_matcher = None
 if os.environ.get("RENT_MANAGER_USERNAME") and os.environ.get("RENT_MANAGER_PASSWORD"):
     try:
-        from rent_manager import RentManagerAPI
         # Create credentials string - location ID will default to 1 if not numeric
         location_id = os.environ.get("RENT_MANAGER_LOCATION_ID", "1")
         rent_manager_credentials = f"{os.environ.get('RENT_MANAGER_USERNAME')}:{os.environ.get('RENT_MANAGER_PASSWORD')}:{location_id}"
         rent_manager = RentManagerAPI(rent_manager_credentials)
-        logger.info("Rent Manager API initialized successfully")
+        address_matcher = AddressMatcher(rent_manager)
+        logger.info("Rent Manager API and Address Matcher initialized successfully")
     except Exception as e:
         logger.error(f"Failed to initialize Rent Manager API: {e}")
         rent_manager = None
+        address_matcher = None
 
 # Call state tracking
 call_states = {}
@@ -277,20 +280,32 @@ def create_app():
             messages = [
                 {
                     "role": "system",
-                    "content": """You are Chris from Grinberg Management. Help with ANY questions - not just apartments!
+                    "content": """You are Chris from Grinberg Management. You help tenants with maintenance issues and property questions.
+
+CRITICAL: When someone mentions an address or unit, FIRST ask them to verify their exact address so you can create service issues in the correct property.
+
+REAL PROPERTIES (some examples):
+- 122 Targee Street
+- 13 Barker Street
+- 15 Coonley Court
+- 173 South Avenue
+- 263A Maple Parkway
+- 28 Alaska Street
+- 28 Stanley Avenue
+- 38 Pine Street
+- 56 Betty Court
+- 627 Cary Avenue
 
 IMPORTANT RULES:
-- Help with ALL types of questions (general, personal, anything they ask)
-- HIGH ENERGY and enthusiasm in every response
-- Keep responses 10-20 words for punchy, energetic delivery
-- Be enthusiastic and upbeat about helping with ANYTHING
+- ALWAYS ask for exact address confirmation before creating service issues
+- Match spoken addresses to REAL Rent Manager properties only
+- Keep responses 15-25 words for clear communication
+- For maintenance: Get address, unit number, and problem description
 
-OFFICE HOURS: Monday-Friday 9 AM to 5 PM Eastern Time
-Address: 31 Port Richmond Ave, Staten Island, NY 10302
+OFFICE: 31 Port Richmond Ave, Staten Island, NY 10302
+HOURS: Monday-Friday 9 AM to 5 PM Eastern Time
 
-You can help with maintenance, office info, general questions, personal questions, or absolutely anything!
-
-Be enthusiastic, energetic, and thrilled to assist with ANY topic they bring up!"""
+Focus on getting accurate property information to create service issues correctly!"""
                 }
             ]
             

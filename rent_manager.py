@@ -104,6 +104,59 @@ class RentManagerAPI:
             logger.error(f"Unexpected error with Rent Manager API: {e}")
             return None
     
+    async def get_all_properties(self) -> List[Dict[str, Any]]:
+        """
+        Get all properties from Rent Manager for address matching.
+        Returns list of properties with names, addresses, and IDs.
+        """
+        try:
+            endpoint = "/Properties"
+            properties = await self._make_request("GET", endpoint)
+            
+            if properties and isinstance(properties, list):
+                logger.info(f"Retrieved {len(properties)} properties from Rent Manager")
+                return properties
+            else:
+                logger.error("Failed to retrieve properties")
+                return []
+                
+        except Exception as e:
+            logger.error(f"Error getting all properties: {e}")
+            return []
+
+    async def find_property_by_address(self, spoken_address: str) -> Optional[Dict[str, Any]]:
+        """
+        Find a property by matching spoken address to real Rent Manager properties.
+        """
+        try:
+            # Get all properties
+            properties = await self.get_all_properties()
+            if not properties:
+                return None
+            
+            # Clean spoken address for matching
+            spoken_clean = spoken_address.lower().strip()
+            
+            # Try to match property by name (which contains the address)
+            for prop in properties:
+                prop_name = prop.get('Name', '').lower()
+                prop_address = prop.get('Address', '').lower()
+                
+                # Check if spoken address matches property name or address
+                if (spoken_clean in prop_name or 
+                    prop_name in spoken_clean or
+                    any(word in prop_name for word in spoken_clean.split() if len(word) > 2)):
+                    
+                    logger.info(f"Found property match: {prop.get('Name')} for spoken: {spoken_address}")
+                    return prop
+            
+            logger.info(f"No property match found for: {spoken_address}")
+            return None
+            
+        except Exception as e:
+            logger.error(f"Error finding property by address {spoken_address}: {e}")
+            return None
+
     async def lookup_tenant_by_unit(self, unit_info: str) -> Optional[Dict[str, Any]]:
         """
         Look up tenant by unit number or address information.
