@@ -473,7 +473,45 @@ def create_app():
                 "sure": "Excellent! How else can I help?"
             }
             
-            # Check expanded patterns first
+            # PRIORITY 1: Check conversation history for automatic ticket creation
+            def check_conversation_for_auto_ticket():
+                if not call_sid or call_sid not in conversation_history:
+                    return None
+                    
+                detected_address = None
+                detected_issue = None
+                
+                for entry in conversation_history[call_sid]:
+                    content = entry['content'].lower()
+                    
+                    # Address detection - key addresses
+                    if not detected_address:
+                        if '29 port richmond' in content or '2940' in content:
+                            detected_address = "29 Port Richmond Avenue"
+                            logger.info(f"🏠 FOUND ADDRESS: {detected_address}")
+                        elif '122' in content or 'targee' in content:
+                            detected_address = "122 Targee Street"
+                            logger.info(f"🏠 FOUND ADDRESS: {detected_address}")
+                    
+                    # Issue detection - electrical focus  
+                    if not detected_issue:
+                        if any(word in content for word in ['power', 'electrical', 'electricity', 'no power']):
+                            detected_issue = "electrical"
+                            logger.info(f"⚡ FOUND ISSUE: {detected_issue}")
+                
+                # If we have BOTH issue and address from conversation, create ticket NOW
+                if detected_address and detected_issue:
+                    logger.info(f"🎫 AUTO-CREATING TICKET: {detected_issue} at {detected_address}")
+                    return create_real_service_issue(detected_issue, detected_address)
+                
+                return None
+            
+            # Check for auto-ticket creation FIRST
+            auto_ticket = check_conversation_for_auto_ticket()
+            if auto_ticket:
+                return auto_ticket
+            
+            # PRIORITY 2: Check expanded patterns 
             for pattern, response in instant_patterns.items():
                 if pattern in user_lower:
                     logger.info(f"Using INSTANT pattern response for: {user_input}")
@@ -486,7 +524,7 @@ def create_app():
                             return response()
                     return response
             
-            # Check original instant responses
+            # PRIORITY 3: Check original instant responses
             for key, response_data in INSTANT_RESPONSES.items():
                 if key in user_lower:
                     logger.info(f"Using INSTANT cached response for: {user_input}")
