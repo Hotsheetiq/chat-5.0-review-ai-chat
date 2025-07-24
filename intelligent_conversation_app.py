@@ -556,13 +556,7 @@ If they need maintenance or have questions about a specific property, get their 
             logger.error(f"Call handler error: {e}", exc_info=True)
             response = VoiceResponse()
             error_text = "I'm sorry, we're having technical issues. Please call back in a moment."
-            audio_url = generate_elevenlabs_audio(error_text)
-            if audio_url:
-                replit_domain = os.environ.get('REPLIT_DOMAINS', '').split(',')[0] if os.environ.get('REPLIT_DOMAINS') else 'localhost:5000'
-                full_audio_url = f"https://{replit_domain}{audio_url}"
-                response.play(full_audio_url)
-            else:
-                response.say(error_text, voice='Polly.Matthew-Neural')
+            response.say(error_text, voice='Polly.Matthew-Neural')
             return str(response)
     
     @app.route('/handle-speech/<call_sid>', methods=['POST'])
@@ -576,13 +570,7 @@ If they need maintenance or have questions about a specific property, get their 
             
             if not speech_result:
                 no_speech_text = "I didn't quite catch that. Let me connect you with our amazing team at (718) 414-6984!"
-                audio_url = generate_elevenlabs_audio(no_speech_text)
-                if audio_url:
-                    replit_domain = os.environ.get('REPLIT_DOMAINS', '').split(',')[0] if os.environ.get('REPLIT_DOMAINS') else 'localhost:5000'
-                    full_audio_url = f"https://{replit_domain}{audio_url}"
-                    response.play(full_audio_url)
-                else:
-                    response.say(no_speech_text, voice='Polly.Matthew-Neural')
+                response.say(no_speech_text, voice='Polly.Matthew-Neural')
                 response.dial('(718) 414-6984')
                 return str(response)
             
@@ -590,26 +578,13 @@ If they need maintenance or have questions about a specific property, get their 
             ai_response = generate_intelligent_response(speech_result, call_sid)
             logger.info(f"Intelligent AI response: {ai_response}")
             
-            # Use ElevenLabs for Chris's natural voice
-            audio_url = generate_elevenlabs_audio(ai_response)
-            if audio_url:
-                replit_domain = os.environ.get('REPLIT_DOMAINS', '').split(',')[0] if os.environ.get('REPLIT_DOMAINS') else 'localhost:5000'
-                full_audio_url = f"https://{replit_domain}{audio_url}"
-                response.play(full_audio_url)
-            else:
-                # Fallback to Twilio voice
-                response.say(ai_response, voice='Polly.Matthew-Neural')
+            # Use Twilio voice for Chris
+            response.say(ai_response, voice='Polly.Matthew-Neural')
             
             # Check if this needs transfer based on AI response or user request
             if any(word in speech_result.lower() for word in ['transfer', 'human', 'person', 'manager', 'speak to someone']):
                 transfer_text = "Perfect! I'm connecting you with Diane or Janier right now!"
-                audio_url = generate_elevenlabs_audio(transfer_text)
-                if audio_url:
-                    replit_domain = os.environ.get('REPLIT_DOMAINS', '').split(',')[0] if os.environ.get('REPLIT_DOMAINS') else 'localhost:5000'
-                    full_audio_url = f"https://{replit_domain}{audio_url}"
-                    response.play(full_audio_url)
-                else:
-                    response.say(transfer_text, voice='Polly.Matthew-Neural')
+                response.say(transfer_text, voice='Polly.Matthew-Neural')
                 response.dial('(718) 414-6984')
             elif any(word in ai_response.lower() for word in ['transfer', '414-6984', 'connect you']):
                 response.dial('(718) 414-6984')
@@ -625,13 +600,7 @@ If they need maintenance or have questions about a specific property, get their 
                 
                 # Only say goodbye if they haven't responded for a while
                 still_here_text = "I'm still here if you need anything else! Or I can connect you with our team at (718) 414-6984."
-                audio_url = generate_elevenlabs_audio(still_here_text)
-                if audio_url:
-                    replit_domain = os.environ.get('REPLIT_DOMAINS', '').split(',')[0] if os.environ.get('REPLIT_DOMAINS') else 'localhost:5000'
-                    full_audio_url = f"https://{replit_domain}{audio_url}"
-                    response.play(full_audio_url)
-                else:
-                    response.say(still_here_text, voice='Polly.Matthew-Neural')
+                response.say(still_here_text, voice='Polly.Matthew-Neural')
                 
                 # Give one more chance to continue
                 response.gather(
@@ -644,13 +613,7 @@ If they need maintenance or have questions about a specific property, get their 
                 
                 # Final fallback
                 goodbye_text = "Thank you for calling Grinberg Management! Have a wonderful day!"
-                audio_url = generate_elevenlabs_audio(goodbye_text)
-                if audio_url:
-                    replit_domain = os.environ.get('REPLIT_DOMAINS', '').split(',')[0] if os.environ.get('REPLIT_DOMAINS') else 'localhost:5000'
-                    full_audio_url = f"https://{replit_domain}{audio_url}"
-                    response.play(full_audio_url)
-                else:
-                    response.say(goodbye_text, voice='Polly.Matthew-Neural')
+                response.say(goodbye_text, voice='Polly.Matthew-Neural')
             
             return str(response)
             
@@ -660,13 +623,7 @@ If they need maintenance or have questions about a specific property, get their 
             
             # Graceful error handling - don't disconnect, offer help
             error_text = "I'm having a small technical moment. Let me help you another way - what can I assist you with today?"
-            audio_url = generate_elevenlabs_audio(error_text)
-            if audio_url:
-                replit_domain = os.environ.get('REPLIT_DOMAINS', '').split(',')[0] if os.environ.get('REPLIT_DOMAINS') else 'localhost:5000'
-                full_audio_url = f"https://{replit_domain}{audio_url}"
-                response.play(full_audio_url)
-            else:
-                response.say(error_text, voice='Polly.Matthew-Neural')
+            response.say(error_text, voice='Polly.Matthew-Neural')
             
             # Give another chance instead of immediate transfer
             response.gather(
@@ -679,13 +636,7 @@ If they need maintenance or have questions about a specific property, get their 
             
             # If still no response, then transfer
             transfer_text = "Let me connect you with our team at (718) 414-6984!"
-            audio_url = generate_elevenlabs_audio(transfer_text)
-            if audio_url:
-                replit_domain = os.environ.get('REPLIT_DOMAINS', '').split(',')[0] if os.environ.get('REPLIT_DOMAINS') else 'localhost:5000'
-                full_audio_url = f"https://{replit_domain}{audio_url}"
-                response.play(full_audio_url)
-            else:
-                response.say(transfer_text, voice='Polly.Matthew-Neural')
+            response.say(transfer_text, voice='Polly.Matthew-Neural')
             response.dial('(718) 414-6984')
             return str(response)
     
