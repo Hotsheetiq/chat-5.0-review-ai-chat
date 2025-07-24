@@ -786,10 +786,31 @@ If they need maintenance or have questions about a specific property, get their 
     def dashboard():
         """Dashboard showing intelligent AI status and call recordings"""
         from models import db, CallRecord, ActiveCall
+        from datetime import datetime, timedelta
         
         # Get search parameters
         search_phone = request.args.get('phone', '').strip()
         search_date = request.args.get('date', '').strip()
+        
+        # Clean up old active calls (older than 5 minutes)
+        cutoff_time = datetime.utcnow() - timedelta(minutes=5)
+        old_calls = ActiveCall.query.filter(ActiveCall.last_activity < cutoff_time).all()
+        for old_call in old_calls:
+            # Move to call records
+            call_record = CallRecord(
+                call_sid=old_call.call_sid,
+                phone_number=old_call.phone_number,
+                caller_name=old_call.caller_name,
+                tenant_unit=old_call.tenant_unit,
+                tenant_id=old_call.tenant_id,
+                start_time=old_call.start_time,
+                end_time=datetime.utcnow(),
+                duration=int((datetime.utcnow() - old_call.start_time).total_seconds()),
+                call_status='completed'
+            )
+            db.session.add(call_record)
+            db.session.delete(old_call)
+        db.session.commit()
         
         # Get active calls from database
         active_calls_db = ActiveCall.query.all()
@@ -799,11 +820,13 @@ If they need maintenance or have questions about a specific property, get their 
         if search_phone:
             query = query.filter(CallRecord.phone_number.contains(search_phone))
         if search_date:
-            from datetime import datetime
             search_datetime = datetime.strptime(search_date, '%Y-%m-%d').date()
             query = query.filter(db.func.date(CallRecord.start_time) == search_datetime)
         
         call_recordings_db = query.order_by(CallRecord.start_time.desc()).limit(50).all()
+        
+        # Convert timezone to EST for display
+        eastern = pytz.timezone('US/Eastern')
         
         return render_template('intelligent_dashboard.html',
                              openai_connected=bool(OPENAI_API_KEY),
@@ -816,17 +839,47 @@ If they need maintenance or have questions about a specific property, get their 
     @app.route('/api/active-calls')
     def api_active_calls():
         """API endpoint for real-time active calls data"""
-        from models import ActiveCall
+        from models import db, ActiveCall, CallRecord
+        from datetime import datetime, timedelta
+        
+        # Clean up old active calls (older than 5 minutes)
+        cutoff_time = datetime.utcnow() - timedelta(minutes=5)
+        old_calls = ActiveCall.query.filter(ActiveCall.last_activity < cutoff_time).all()
+        for old_call in old_calls:
+            # Move to call records
+            call_record = CallRecord(
+                call_sid=old_call.call_sid,
+                phone_number=old_call.phone_number,
+                caller_name=old_call.caller_name,
+                tenant_unit=old_call.tenant_unit,
+                tenant_id=old_call.tenant_id,
+                start_time=old_call.start_time,
+                end_time=datetime.utcnow(),
+                duration=int((datetime.utcnow() - old_call.start_time).total_seconds()),
+                call_status='completed'
+            )
+            db.session.add(call_record)
+            db.session.delete(old_call)
+        db.session.commit()
+        
+        # Get current active calls
         active_calls = ActiveCall.query.all()
         calls_data = []
+        eastern = pytz.timezone('US/Eastern')
+        
         for call in active_calls:
+            # Convert to Eastern time for display
+            eastern_time = call.start_time.replace(tzinfo=pytz.UTC).astimezone(eastern)
+            duration = datetime.utcnow() - call.start_time
+            duration_str = f"{int(duration.total_seconds() // 60)}m {int(duration.total_seconds() % 60)}s"
+            
             calls_data.append({
                 'call_sid': call.call_sid[-8:],
                 'phone': call.phone_number,
                 'caller_name': call.caller_name or 'Unknown Caller',
                 'tenant_unit': call.tenant_unit,
-                'start_time': call.start_time.strftime('%I:%M %p'),
-                'duration': str(datetime.utcnow() - call.start_time).split('.')[0],
+                'start_time': eastern_time.strftime('%I:%M %p'),
+                'duration': duration_str,
                 'status': call.call_status,
                 'current_action': call.current_action or 'In conversation'
             })
