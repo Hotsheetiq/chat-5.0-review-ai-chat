@@ -578,13 +578,27 @@ If they need maintenance or have questions about a specific property, get their 
             #     record_on_answer=True
             # )
             
-            # Ultra-simple test - just greeting and basic gather
-            response.say("Hello, this is Chris from Grinberg Management. How can I help you?")
+            # Chris's natural voice greeting with ElevenLabs
+            greeting_text = "Hi there, you have reached Grinberg Management, I'm Chris, how can I help?"
             
-            # Basic gather with minimal options
+            # Try ElevenLabs for natural voice
+            audio_url = generate_elevenlabs_audio(greeting_text)
+            if audio_url:
+                # Use proper domain for audio serving
+                replit_domain = os.environ.get('REPLIT_DOMAINS', '').split(',')[0] if os.environ.get('REPLIT_DOMAINS') else 'localhost:5000'
+                full_audio_url = f"https://{replit_domain}{audio_url}"
+                response.play(full_audio_url)
+            else:
+                # Fallback to Twilio voice
+                response.say(greeting_text, voice='Polly.Matthew-Neural')
+            
+            # Wait for speech input
             response.gather(
                 input='speech',
-                action='/continue-conversation'
+                action='/continue-conversation',
+                timeout=30,
+                speech_timeout=6,
+                language='en-US'
             )
             
             logger.info(f"Intelligent conversation initiated for {caller_phone}")
