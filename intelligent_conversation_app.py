@@ -509,11 +509,12 @@ CRITICAL PERSONALITY RULES:
 - Be helpful and solutions-focused, not dry or robotic
 - Keep responses under 15 words but make them warm and caring
 
-CRITICAL MAINTENANCE LOGIC:
-- When someone mentions "power not working", "no power", "don't have power" - recognize as electrical issue
-- When someone says "no heat", "heat not working" - recognize as heating issue  
-- When someone says "water leak", "flooding" - recognize as water issue
-- NEVER ask what the problem is if they already told you - they said NO POWER!
+CRITICAL ISSUE RECOGNITION:
+- NOISE COMPLAINTS: "noise", "loud", "neighbors", "music", "party" → noise complaint (NOT maintenance)
+- ELECTRICAL: "power not working", "no power", "don't have power" → electrical maintenance
+- HEATING: "no heat", "heat not working" → heating maintenance
+- PLUMBING: "water leak", "flooding" → plumbing maintenance
+- NEVER ask what the problem is if they already told you - listen to what they actually said!
 
 SERVICE ISSUE CREATION RULES:
 - When creating service issues, provide issue number: "I've created service issue #SV-12345"
@@ -577,7 +578,9 @@ Use natural conversation logic - if someone says "power not working" that's obvi
                     
                     # Extract issues from conversation history
                     if not extracted_info["issue"]:
-                        if any(word in content for word in ['power', 'electric', 'no power', "don't have power", 'electricity']):
+                        if any(word in content for word in ['noise', 'loud', 'neighbors', 'music', 'party', 'yelling', 'shouting', 'disturbing']):
+                            extracted_info["issue"] = "noise complaint"
+                        elif any(word in content for word in ['power', 'electric', 'no power', "don't have power", 'electricity']):
                             extracted_info["issue"] = "electrical"
                         elif any(word in content for word in ['heat', 'heating', 'no heat', 'cold']):
                             extracted_info["issue"] = "heating"
@@ -588,24 +591,30 @@ Use natural conversation logic - if someone says "power not working" that's obvi
                 
                 logger.info(f"Extracted from conversation - Address: {extracted_info['address']}, Issue: {extracted_info['issue']}")
                 
-                # If we have BOTH address and issue, create service issue immediately!
+                # If we have BOTH address and issue, handle appropriately
                 if extracted_info["address"] and extracted_info["issue"]:
-                    logger.info(f"AUTO-CREATING SERVICE ISSUE: {extracted_info['issue']} at {extracted_info['address']}")
-                    try:
-                        issue_result = service_handler.create_service_issue(
-                            issue_type=extracted_info["issue"],
-                            address=extracted_info["address"],
-                            description=f"{extracted_info['issue']} issue reported",
-                            caller_phone=request.values.get('From', ''),
-                            priority="High" if extracted_info["issue"] in ["electrical", "heating", "plumbing"] else "Normal"
-                        )
-                        if issue_result and 'issue_number' in issue_result:
-                            return f"Perfect! I've created service issue #{issue_result['issue_number']} for your {extracted_info['issue']} problem at {extracted_info['address']}. Dimitry will contact you within 2-4 hours."
-                        else:
-                            return f"I've created your {extracted_info['issue']} service request for {extracted_info['address']}. Maintenance will contact you within 2-4 hours."
-                    except Exception as e:
-                        logger.error(f"Service issue creation failed: {e}")
-                        return f"I've documented your {extracted_info['issue']} issue at {extracted_info['address']}. Maintenance will contact you within 2-4 hours."
+                    logger.info(f"AUTO-HANDLING ISSUE: {extracted_info['issue']} at {extracted_info['address']}")
+                    
+                    # Handle noise complaints differently from maintenance issues
+                    if extracted_info["issue"] == "noise complaint":
+                        return f"I understand you're dealing with noise issues at {extracted_info['address']}. That's really disruptive. I'll document this complaint and have our property manager follow up with you within 24 hours about addressing this with your neighbors."
+                    else:
+                        # Handle maintenance issues with service ticket creation
+                        try:
+                            issue_result = service_handler.create_service_issue(
+                                issue_type=extracted_info["issue"],
+                                address=extracted_info["address"],
+                                description=f"{extracted_info['issue']} issue reported",
+                                caller_phone=request.values.get('From', ''),
+                                priority="High" if extracted_info["issue"] in ["electrical", "heating", "plumbing"] else "Normal"
+                            )
+                            if issue_result and 'issue_number' in issue_result:
+                                return f"Perfect! I've created service issue #{issue_result['issue_number']} for your {extracted_info['issue']} problem at {extracted_info['address']}. Dimitry will contact you within 2-4 hours."
+                            else:
+                                return f"I've created your {extracted_info['issue']} service request for {extracted_info['address']}. Maintenance will contact you within 2-4 hours."
+                        except Exception as e:
+                            logger.error(f"Service issue creation failed: {e}")
+                            return f"I've documented your {extracted_info['issue']} issue at {extracted_info['address']}. Maintenance will contact you within 2-4 hours."
                 
                 # Add context about what we already know
                 context_info = f"\n\nIMPORTANT CONVERSATION CONTEXT:\n"
