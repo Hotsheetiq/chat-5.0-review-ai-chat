@@ -1,0 +1,220 @@
+
+
+<!DOCTYPE html>
+<html class="fixed sidebar-left-collapsed">
+<head>
+   <meta charset="UTF-8">
+
+   <title>Rent Manager 12 Web API Documentation</title>
+   <meta name="keywords" content="RentManger API Documentation"/>
+   <meta name="description" content="Rent Manager 12 Web API Documentation">
+   <meta name="author" content="lcs.com">
+
+   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
+
+   <link href="https://fonts.googleapis.com/css?family=Open+Sans:300,400,600,700,800|Shadows+Into+Light" rel="stylesheet" type="text/css">
+
+   <link rel="stylesheet" href="/Areas/HelpPage/LCSExtensions/Theme/ApiTheme/content/vendor/bootstrap/css/bootstrap.css"/>
+   <link rel="stylesheet" href="/Areas/HelpPage/LCSExtensions/Theme/ApiTheme/content/vendor/font-awesome/css/font-awesome.css"/>
+   <link rel="stylesheet" href="/Areas/HelpPage/LCSExtensions/Theme/ApiTheme/content/vendor/jquery-ui/css/ui-lightness/jquery-ui-1.10.4.custom.css"/>
+   <link rel="stylesheet" href="/Areas/HelpPage/LCSExtensions/Theme/ApiTheme/content/vendor/bootstrap-multiselect/bootstrap-multiselect.css"/>
+
+   <!-- Theme -->
+   <link rel="stylesheet" href="/Areas/HelpPage/LCSExtensions/Theme/ApiTheme/content/css/theme.css"/>
+   <link rel="stylesheet" href="/Areas/HelpPage/LCSExtensions/Theme/ApiTheme/content/css/skins/default.css"/>
+   <link rel="stylesheet" href="/Areas/HelpPage/LCSExtensions/Theme/ApiTheme/content/css/theme-custom.css"/>
+
+
+   
+   
+   <script src="/Areas/HelpPage/LCSExtensions/Theme/ApiTheme/content/vendor/modernizr/modernizr.js"></script>
+
+   
+   <script src="/Areas/HelpPage/LCSExtensions/Theme/ApiTheme/content/vendor/jquery/jquery.js"></script>
+   
+
+   
+   <link type="text/css" href="/Areas/HelpPage/HelpPage.css" rel="stylesheet"/>
+   <script>
+         function storeSelectedLocationID() {
+            var locations = document.getElementById("LocationID");
+            var selectedLocationID = locations.options[locations.selectedIndex].value;
+            localStorage.setItem("locationID", selectedLocationID);
+         };
+   </script>
+
+
+
+</head>
+<body>
+<section class="body">
+
+   <!-- start: header -->
+   <header class="header">
+      <div class="logo-container">
+         <a href="/Help" class="logo">
+            <img src="/Areas/HelpPage/LCSExtensions/Theme/ApiTheme/content/images/rmlogo.png" height="35" alt="Rent Manager 12 Web API Documentation"/>
+         </a>
+         <div class="visible-xs toggle-sidebar-left" data-toggle-class="sidebar-left-opened" data-target="html" data-fire-event="sidebar-left-opened">
+            <i class="fa fa-bars" aria-label="Toggle sidebar"></i>
+         </div>
+      </div>
+   </header>
+   <!-- end: header -->
+
+   <div class="inner-wrapper">
+      <!-- start: sidebar -->
+      <aside id="sidebar-left" class="sidebar-left">
+
+         <div class="sidebar-header">
+            <div class="sidebar-title">
+               <a href="">
+                  <i class="" aria-hidden="true"></i>
+               </a>
+               <span>Navigation</span>
+            </div>
+            <div class="sidebar-toggle hidden-xs" data-toggle-class="sidebar-left-collapsed" data-target="html" data-fire-event="sidebar-left-toggle">
+               <i class="fa fa-bars" aria-label="Toggle sidebar"></i>
+            </div>
+         </div>
+
+         <div class="nano">
+            <div class="nano-content">
+               <nav id="menu" class="nav-main" role="navigation">
+                  <ul class="nav nav-main">
+
+                           <li>
+                              <a href="/Help">
+                                 <i class="fa fa-sign-in" aria-hidden="true"></i>
+                                 <span>Login</span>
+                              </a>
+                           </li>
+
+                  </ul>
+               </nav>
+
+            </div>
+
+         </div>
+
+      </aside>
+      <!-- end: sidebar -->
+      <!-- start: page -->
+      <section role="main" class="content-body">
+   <header class="page-header">
+      <h2>Welcome to the Rent Manager 12 Web API</h2>
+
+      <div class="right-wrapper pull-right">
+         
+
+         <span>&nbsp;&nbsp;&nbsp;</span>
+
+      </div>
+   </header>
+
+   <section class="body-sign">
+      <div class="center-sign" style="top: -20px">
+
+         <div class="panel panel-sign">
+
+            <div class="panel-body">
+               <h4>Please Log In</h4>
+
+               <!-- Form -->
+
+<form action="/Help/Login?returnUrl=%2FHelp" autocomplete="off" method="post"><input name="__RequestVerificationToken" type="hidden" value="uxZ3zzbyModn9AWeO2Ffi3RyYJScZ1Olljm1epm-rhT5B_HsugHpLp-Si_igsAJ7I02fR59g4o-kWDkFNaYXeROykAeS588Hdjb31WTCQZo1" />               <div id="ErrorMessage" style="color: red;">
+                                 </div>
+                  <div class="form-group mb-lg">
+                        <div>
+                           <label for="LocationID">Location</label>
+                        </div>
+                        <div>
+                           <select class="select2-drop-mask" data-val="true" data-val-number="The field LocationID must be a number." data-val-required="The LocationID field is required." id="LocationID" name="LocationID" style="width:100%"><option value="1">Grinberg Management &amp; Development LLC</option>
+<option value="4">Deed Logic LLC</option>
+<option value="6">PADOWL LLC</option>
+<option value="7">PRSI</option>
+<option value="10">Richmond County Management LLC</option>
+<option value="2">Sima Properties</option>
+<option value="3">SINY Development LLC</option>
+</select>
+                        </div>
+                  </div>
+                  <div class="form-group mb-lg">
+                     <label>Username</label>
+                     <div>
+                        <input name="Username" type="text" class="form-control" />
+                     </div>
+                     <span class="field-validation-valid" data-valmsg-for="Username" data-valmsg-replace="true"></span>
+                  </div>
+                  <div class="form-group mb-lg">
+                     <div class="clearfix">
+                        <label class="pull-left">Password</label>
+                     </div>
+                     <div>
+                        <input name="Password" type="password" class="form-control" />
+                     </div>
+                     <span class="field-validation-valid" data-valmsg-for="Password" data-valmsg-replace="true"></span>
+                  </div>
+                  <div class="row">
+                     <div class="col-sm-12 text-right">
+                        <button type="submit" class="btn btn-primary hidden-xs" style="margin-bottom: 5px;" onclick="storeSelectedLocationID()">Log In</button>
+                        <button type="submit" class="btn btn-primary btn-block btn-lg visible-xs mt-lg" style="margin-bottom: 5px;" onclick="storeSelectedLocationID()">Log In</button>
+                        <button class="pull-left btn btn-primary" type="button" data-toggle="collapse" data-target="#partner" aria-expanded="false" aria-controls="partner">Partner Login</button>
+                     </div>
+                  </div>
+</form>                    
+                 
+                 <div class="collapse" id="partner">
+<form action="/Help/PartnerLogin?returnUrl=%2FHelp" autocomplete="off" method="post"><input name="__RequestVerificationToken" type="hidden" value="Jw5iQXsC1XMYsd12Gom4_l8aHnI2PbDdzI37bNwGGQH7FvCY0YtZMkLYgi4X-zd4ghjGJ6Q0cLcUl9FNPhtfTOjtLjBCqLaXn_25Tmldhn81" />                       <div class="form-group mb-lg">
+                          <div class="clearfix">
+                             <label class="pull-left">Partner Token</label>
+                          </div>
+                          <div>
+                             <input name="PartnerToken" type="text" class="form-control" />
+                          </div>
+                       </div>
+                       <div class="row">
+                          <div class="col-sm-12 text-right">
+                             <button type="submit" class="btn btn-primary hidden-xs" style="margin-bottom: 5px;" onclick="storeSelectedLocationID()">Partner Log In</button>
+                             <button type="submit" class="btn btn-primary btn-block btn-lg visible-xs mt-lg" style="margin-bottom: 5px;" onclick="storeSelectedLocationID()">Log In</button>
+                          </div>
+                       </div>
+</form>                 </div>
+
+            </div>
+         </div>
+      </div>
+   </section>
+
+</section>
+
+
+      <!-- end: page -->
+
+   </div>
+
+</section>
+
+<!-- Scripts -->
+<script src="/Areas/HelpPage/LCSExtensions/Theme/ApiTheme/content/vendor/jquery-browser-mobile/jquery.browser.mobile.js"></script>
+<script src="/Areas/HelpPage/LCSExtensions/Theme/ApiTheme/content/vendor/bootstrap/js/bootstrap.js"></script>
+<script src="/Areas/HelpPage/LCSExtensions/Theme/ApiTheme/content/vendor/nanoscroller/nanoscroller.js"></script>
+<script src="/Areas/HelpPage/LCSExtensions/Theme/ApiTheme/content/vendor/jquery-placeholder/jquery.placeholder.js"></script>
+<script src="/Areas/HelpPage/LCSExtensions/Theme/ApiTheme/content/vendor/jquery-autosize/jquery.autosize.js"></script>
+
+<script src="/Areas/HelpPage/LCSExtensions/Theme/ApiTheme/content/vendor/jquery-ui/js/jquery-ui-1.10.4.custom.js"></script>
+<script src="/Areas/HelpPage/LCSExtensions/Theme/ApiTheme/content/vendor/jquery-ui-touch-punch/jquery.ui.touch-punch.js"></script>
+<script src="/Areas/HelpPage/LCSExtensions/Theme/ApiTheme/content/vendor/jquery-appear/jquery.appear.js"></script>
+<script src="/Areas/HelpPage/LCSExtensions/Theme/ApiTheme/content/vendor/bootstrap-multiselect/bootstrap-multiselect.js"></script>
+
+<!-- Theme Settings -->
+<script src="/Areas/HelpPage/LCSExtensions/Theme/ApiTheme/content/js/theme.js"></script>
+
+<!-- Theme Extensions -->
+<script src="/Areas/HelpPage/LCSExtensions/Theme/ApiTheme/content/js/theme.custom.js"></script>
+
+<!-- Theme Initialization -->
+<script src="/Areas/HelpPage/LCSExtensions/Theme/ApiTheme/content/js/theme.init.js"></script>
+
+</body>
+</html>
