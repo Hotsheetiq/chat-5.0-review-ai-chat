@@ -490,13 +490,28 @@ def create_app():
                                 logger.info(f"🏠 PRIORITY ADDRESS FOUND: {extracted_info['address']}")
                                 break
                         
-                        # If no priority match, use general pattern (but exclude problematic 2940)
+                        # If no priority match, use general pattern with MANDATORY API VERIFICATION
                         if not extracted_info["address"]:
                             address_match = re.search(r'(?!2940\s)(\d+)\s+([\w\s]+(?:street|avenue|ave|road|rd|court|ct|lane|ln|drive|dr|way|place|pl|boulevard|blvd))', content, re.IGNORECASE)
                             if address_match:
                                 potential_address = f"{address_match.group(1)} {address_match.group(2)}"
-                                extracted_info["address"] = potential_address
-                                logger.info(f"🏠 GENERAL ADDRESS FOUND: {potential_address}")
+                                logger.info(f"🔍 POTENTIAL ADDRESS FOUND: {potential_address}")
+                                
+                                # CRITICAL SECURITY: Must verify against Rent Manager API
+                                try:
+                                    from address_matcher import AddressMatcher
+                                    matcher = AddressMatcher(rent_manager)
+                                    verified_address = matcher.find_match(potential_address)
+                                    
+                                    if verified_address:
+                                        extracted_info["address"] = verified_address  
+                                        logger.info(f"✅ VERIFIED ADDRESS: {verified_address} (from: {potential_address})")
+                                    else:
+                                        logger.warning(f"❌ SECURITY BLOCK: {potential_address} not found in Rent Manager - REJECTED")
+                                        # DO NOT SET ADDRESS - force Chris to ask for clarification
+                                except Exception as e:
+                                    logger.error(f"Address verification failed for {potential_address}: {e}")
+                                    # DO NOT SET ADDRESS if verification fails
                     
                     # Extract issues from conversation history
                     if not extracted_info["issue"]:
@@ -516,7 +531,7 @@ def create_app():
                 
                 logger.info(f"🧠 MEMORY RESULT - Address: {extracted_info['address']}, Issue: {extracted_info['issue']}")
                 
-                # If we have BOTH address and issue, create service ticket immediately
+                # If we have BOTH verified address and issue, create service ticket immediately
                 if extracted_info["address"] and extracted_info["issue"]:
                     logger.info(f"🎫 CREATING SERVICE TICKET: {extracted_info['issue']} at {extracted_info['address']}")
                     
@@ -572,6 +587,31 @@ def create_app():
                             'timestamp': datetime.now()
                         })
                         return response
+                
+                # If we have an issue but unverified address, ask for clarification
+                if extracted_info["issue"] and not extracted_info["address"]:
+                    # Check if user mentioned an address that couldn't be verified
+                    mentioned_address = None
+                    for entry in conversation_history[call_sid]:
+                        content = entry['content'].lower()
+                        import re
+                        address_match = re.search(r'(\d+)\s+([\w\s]+(?:street|avenue|ave|road|rd|court|ct|lane|ln|drive|dr|way|place|pl|boulevard|blvd))', content, re.IGNORECASE)
+                        if address_match:
+                            mentioned_address = f"{address_match.group(1)} {address_match.group(2)}"
+                            break
+                    
+                    if mentioned_address:
+                        response = f"I'm sorry, but I couldn't find '{mentioned_address}' in our property system. Could you please double-check the address or provide your full address including street name?"
+                    else:
+                        response = f"I understand you have a {extracted_info['issue']} issue. What's your address so I can create a service ticket?"
+                    
+                    # Store assistant response in conversation history
+                    conversation_history[call_sid].append({
+                        'role': 'assistant', 
+                        'content': response, 
+                        'timestamp': datetime.now()
+                    })
+                    return response
             
             # Check for instant responses first (no AI delay) - BUT ONLY IF NO SERVICE TICKET CREATION NEEDED
             user_lower = user_input.lower().strip()
@@ -671,14 +711,31 @@ def create_app():
                 for entry in conversation_history[call_sid]:
                     content = entry['content'].lower()
                     
-                    # Address detection - key addresses
+                    # Address detection with API verification - CRITICAL SECURITY
                     if not detected_address:
+                        # Extract potential addresses and verify against Rent Manager API
+                        potential_addresses = []
+                        
                         if '29 port richmond' in content:
-                            detected_address = "29 Port Richmond Avenue"
-                            logger.info(f"🏠 FOUND ADDRESS: {detected_address}")
+                            potential_addresses.append("29 Port Richmond Avenue")
                         elif '122' in content or 'targee' in content:
-                            detected_address = "122 Targee Street" 
-                            logger.info(f"🏠 FOUND ADDRESS: {detected_address}")
+                            potential_addresses.append("122 Targee Street")
+                        
+                        # Verify each potential address against Rent Manager API
+                        for potential_address in potential_addresses:
+                            try:
+                                from address_matcher import AddressMatcher
+                                matcher = AddressMatcher(rent_manager)
+                                verified_address = matcher.find_match(potential_address)
+                                
+                                if verified_address:
+                                    detected_address = verified_address
+                                    logger.info(f"✅ VERIFIED ADDRESS: {verified_address}")
+                                    break
+                                else:
+                                    logger.warning(f"❌ UNVERIFIED ADDRESS: {potential_address} not in Rent Manager - REJECTED")
+                            except Exception as e:
+                                logger.error(f"Address verification failed for {potential_address}: {e}")
                     
                     # Issue detection - electrical focus  
                     if not detected_issue:
@@ -686,7 +743,7 @@ def create_app():
                             detected_issue = "electrical"
                             logger.info(f"⚡ FOUND ISSUE: {detected_issue}")
                 
-                # If we have BOTH issue and address from conversation, create ticket NOW
+                # If we have BOTH verified address and issue from conversation, create ticket NOW
                 if detected_address and detected_issue:
                     logger.info(f"🎫 AUTO-CREATING TICKET: {detected_issue} at {detected_address}")
                     return create_real_service_issue(detected_issue, detected_address)
@@ -733,76 +790,72 @@ def create_app():
                     if not extracted_info["address"]:
                         import re
                         
-                        # First check specific known addresses patterns for priority matching
+                        # Extract potential address from conversation
+                        potential_addresses = []
+                        
+                        # Check for any address-like patterns
                         address_patterns = [
-                            (r'29\s*port\s*richmond', "29 Port Richmond Avenue"),
-                            (r'122\s*targee', "122 Targee Street"), 
-                            (r'13\s*barker', "13 Barker Street"),
-                            (r'15\s*coonley', "15 Coonley Court"),
-                            (r'173\s*south', "173 South Avenue"),
-                            (r'263\s*maple', "263A Maple Parkway"),
+                            r'(\d+)\s*(port\s*richmond\s*(?:ave|avenue)?)',
+                            r'(\d+)\s*(targee\s*(?:st|street)?)',
+                            r'(\d+)\s*(barker\s*(?:st|street)?)',
+                            r'(\d+)\s*(coonley\s*(?:ct|court)?)',
+                            r'(\d+)\s*(south\s*(?:ave|avenue)?)',
+                            r'(\d+)\s*(maple\s*(?:pkwy|parkway)?)',
+                            r'(\d+)\s+([\w\s]+(?:street|avenue|ave|road|rd|court|ct|lane|ln|drive|dr|way|place|pl|boulevard|blvd))'
                         ]
                         
-                        pattern_matched = False
-                        for pattern, address in address_patterns:
-                            if re.search(pattern, content, re.IGNORECASE):
-                                extracted_info["address"] = address
-                                logger.info(f"🏠 PRIORITY PATTERN MATCHED: {address}")
-                                pattern_matched = True
-                                break
+                        for pattern in address_patterns:
+                            match = re.search(pattern, content, re.IGNORECASE)
+                            if match:
+                                if len(match.groups()) == 2:
+                                    potential_address = f"{match.group(1)} {match.group(2)}"
+                                else:
+                                    potential_address = match.group(0)
+                                potential_addresses.append(potential_address.strip())
+                                logger.info(f"🔍 POTENTIAL ADDRESS FOUND: {potential_address}")
                         
-                        # Only if no pattern matched, try general address detection (but exclude 2940)
-                        if not pattern_matched:
-                            address_match = re.search(r'(?!2940\s)(\d+)\s+([\w\s]+(?:street|avenue|ave|road|rd|court|ct|lane|ln|drive|dr|way|place|pl|boulevard|blvd))', content, re.IGNORECASE)
-                            if address_match:
-                                potential_address = f"{address_match.group(1)} {address_match.group(2)}"
-                                logger.info(f"🔍 GENERAL ADDRESS DETECTED: {potential_address}")
-                                extracted_info["address"] = potential_address
-                            
-                            # Try to lookup this address in Rent Manager to validate it and find tenant
+                        # Now verify each potential address against Rent Manager API
+                        verified_address = None
+                        for potential_address in potential_addresses:
                             try:
                                 from address_matcher import AddressMatcher
-                                matcher = AddressMatcher(rent_manager_api)
-                                matched_address = matcher.find_closest_match(potential_address)
+                                matcher = AddressMatcher(rent_manager)
+                                verified_address = matcher.find_match(potential_address)
                                 
-                                if matched_address:
-                                    extracted_info["address"] = matched_address
-                                    logger.info(f"🏠 VERIFIED ADDRESS: {matched_address} (matched from: {potential_address})")
-                                    
-                                    # Now try to lookup tenant information for this address
-                                    try:
-                                        # Get the phone number from the request
-                                        caller_phone = request.values.get('From', '').replace('+1', '').replace('-', '').replace('(', '').replace(')', '').replace(' ', '')
-                                        
-                                        # Look up tenant by phone number using sync wrapper
-                                        import asyncio
-                                        try:
-                                            tenant_lookup = asyncio.run(rent_manager_api.lookup_tenant_by_phone(caller_phone))
-                                        except Exception as async_error:
-                                            logger.error(f"Async tenant lookup failed: {async_error}")
-                                            tenant_lookup = None
-                                        
-                                        if tenant_lookup:
-                                            # Store tenant info in call state for future use
-                                            if call_sid not in call_states:
-                                                call_states[call_sid] = {}
-                                            call_states[call_sid]['tenant_info'] = tenant_lookup
-                                            logger.info(f"👤 TENANT FOUND: {tenant_lookup.get('name', 'Unknown')} at {matched_address}")
-                                        else:
-                                            logger.info(f"👤 NO TENANT MATCH: Address {matched_address} found but caller phone {caller_phone} not in tenant database")
-                                    except Exception as tenant_error:
-                                        logger.error(f"Tenant lookup failed: {tenant_error}")
+                                if verified_address:
+                                    extracted_info["address"] = verified_address
+                                    logger.info(f"✅ VERIFIED ADDRESS: {verified_address} (from: {potential_address})")
+                                    break
                                 else:
-                                    # Still use the potential address even if not in database
-                                    extracted_info["address"] = potential_address
-                                    logger.info(f"🏠 USING UNVERIFIED ADDRESS: {potential_address}")
+                                    logger.warning(f"❌ UNVERIFIED ADDRESS: {potential_address} not found in Rent Manager")
                             except Exception as e:
-                                logger.error(f"Address verification failed: {e}")
-                                # Use potential address as fallback
-                                extracted_info["address"] = potential_address
-                                logger.info(f"🏠 FALLBACK ADDRESS: {potential_address}")
+                                logger.error(f"Address verification failed for {potential_address}: {e}")
+                                continue
                         
-                                # (This backup pattern matching is now done above as priority)
+                        # If we found a verified address, also look up tenant information
+                        if verified_address:
+                            try:
+                                # Get the phone number from the request
+                                caller_phone = request.values.get('From', '').replace('+1', '').replace('-', '').replace('(', '').replace(')', '').replace(' ', '')
+                                
+                                # Look up tenant by phone number using sync wrapper
+                                import asyncio
+                                try:
+                                    tenant_lookup = asyncio.run(rent_manager_api.lookup_tenant_by_phone(caller_phone))
+                                except Exception as async_error:
+                                    logger.error(f"Async tenant lookup failed: {async_error}")
+                                    tenant_lookup = None
+                                
+                                if tenant_lookup:
+                                    # Store tenant info in call state for future use
+                                    if call_sid not in call_states:
+                                        call_states[call_sid] = {}
+                                    call_states[call_sid]['tenant_info'] = tenant_lookup
+                                    logger.info(f"👤 TENANT FOUND: {tenant_lookup.get('name', 'Unknown')} at {verified_address}")
+                                else:
+                                    logger.info(f"👤 NO TENANT MATCH: Address {verified_address} found but caller phone {caller_phone} not in tenant database")
+                            except Exception as tenant_error:
+                                logger.error(f"Tenant lookup failed: {tenant_error}")
                     
                     # Extract issues from conversation history - COMPREHENSIVE DETECTION
                     if not extracted_info["issue"]:
