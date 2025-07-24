@@ -146,7 +146,7 @@ def create_app():
     # Instant response cache with pre-generated audio URLs (no AI delay)
     INSTANT_RESPONSES = {
         "are you open": {
-            "text": "We're totally open and ready to help! Monday through Friday, 9 to 5 Eastern! I'm super excited to assist you!",
+            "text": "Yes, we're open Monday through Friday, 9 to 5 Eastern. How can I help you?",
             "audio": None  # Will be generated once and cached
         },
         "what are your hours": {
@@ -162,15 +162,15 @@ def create_app():
             "audio": None
         },
         "are you closed": {
-            "text": "Nope! We're wide open and pumped to help! Monday through Friday, 9 to 5 Eastern! What can I do for you?",
+            "text": "We're open Monday through Friday, 9 to 5 Eastern. What can I help you with?",
             "audio": None
         },
         "hello": {
-            "text": "Hello! I'm Chris and I'm SO excited to help you today! What can I do for you?",
+            "text": "Hello, this is Chris from Grinberg Management. How can I help you?",
             "audio": None
         },
         "help": {
-            "text": "Absolutely! I'm totally pumped to help with anything you need! What's going on?",
+            "text": "I can help with maintenance requests and property questions. What do you need?",
             "audio": None
         },
         "are you a real person": {
@@ -206,11 +206,11 @@ def create_app():
             "audio": None
         },
         "maintenance": {
-            "text": "Absolutely! I'm super excited to help! Tell me what's going on and I'll get that sorted right away!",
+            "text": "I can help with maintenance requests. What's the issue?",
             "audio": None
         },
         "emergency": {
-            "text": "Absolutely! Tell me what's happening and I'll make sure you get immediate help!",
+            "text": "I understand this is urgent. What's the emergency?",
             "audio": None
         },
         "thank you": {
@@ -242,7 +242,7 @@ def create_app():
             "audio": None
         },
         "how are you": {
-            "text": "I'm doing great and ready to help! What can I do for you?",
+            "text": "I'm doing well, thank you. What can I help you with?",
             "audio": None
         }
     }
@@ -493,10 +493,16 @@ def create_app():
                     "role": "system",
                     "content": """You are Chris from Grinberg Management. You help tenants with maintenance issues and property questions.
 
+CRITICAL VOICE DELIVERY RULES:
+- NEVER say you are "excited" or "pumped" about anything - real humans are never excited about tenant problems
+- Keep responses under 12 words to prevent speech interruptions
+- Speak professionally and calmly without artificial enthusiasm
+- Use simple, direct language
+
 CRITICAL MAINTENANCE LOGIC:
-- When someone mentions "power not working", "no power", "don't have power" - IMMEDIATELY recognize this as an ELECTRICAL EMERGENCY
-- When someone says "no heat", "heat not working" - IMMEDIATELY recognize as HEATING EMERGENCY  
-- When someone says "water leak", "flooding" - IMMEDIATELY recognize as WATER EMERGENCY
+- When someone mentions "power not working", "no power", "don't have power" - recognize as electrical issue
+- When someone says "no heat", "heat not working" - recognize as heating issue  
+- When someone says "water leak", "flooding" - recognize as water issue
 - NEVER ask what the problem is if they already told you - they said NO POWER!
 
 SERVICE ISSUE CREATION RULES:
@@ -506,12 +512,12 @@ SERVICE ISSUE CREATION RULES:
 - Example: "Perfect! I've created service issue #SV-12345 for your electrical problem. Dimitry Simanovsky has been assigned and will contact you within 2-4 hours."
 
 NATURAL CONVERSATION FLOW:
-1. Person says "no power" → You say "ELECTRICAL EMERGENCY! What's your address and unit?"
-2. Person gives address → You say "Got it! I'm creating electrical service request for [address]. Maintenance will contact you within 2-4 hours."
-3. NEVER ask "what's the maintenance issue" if they already said no power/heat/water!
+1. Person says "no power" → You say "I understand you're having electrical issues. What's your address?"
+2. Person gives address → You say "I'll create an electrical service request. Maintenance will contact you within 2-4 hours."
+3. NEVER ask "what's the maintenance issue" if they already told you - they said NO POWER!
 4. NEVER promise "immediate" or "right now" dispatch - always say "within 2-4 hours" for realistic expectations
 5. Electrical issues are not always emergencies - could be unpaid bills, minor issues, etc.
-6. Be sympathetic but professional, not overly excited about problems
+6. Be sympathetic but professional, NEVER excited about problems
 
 CRITICAL CONVERSATION MEMORY:
 - REMEMBER the caller's complaint from the start of the call

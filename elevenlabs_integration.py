@@ -46,9 +46,9 @@ def generate_elevenlabs_audio(text: str, voice_id: str = None, voice_name: str =
             "text": text,
             "model_id": "eleven_turbo_v2_5",  # Fastest model for real-time
             "voice_settings": {
-                "stability": 0.55,        # Higher stability for professional, confident delivery
-                "similarity_boost": 0.90, # Consistent professional character
-                "style": 0.40,           # Moderate style for warm but professional tone
+                "stability": 0.75,        # HIGH stability for consistent, clear delivery without interruptions
+                "similarity_boost": 0.85, # Balanced for natural voice consistency
+                "style": 0.25,           # LOW style for calm, professional tone - no artificial excitement
                 "use_speaker_boost": True # Enhanced clarity for phone calls
             }
         }
