@@ -51,6 +51,7 @@ if os.environ.get("RENT_MANAGER_USERNAME") and os.environ.get("RENT_MANAGER_PASS
 call_states = {}
 conversation_history = {}
 call_recordings = {}  # Store call recordings for dashboard access
+current_service_issue = None  # Store last created service issue globally
 
 def create_app():
     app = Flask(__name__)
@@ -246,6 +247,66 @@ def create_app():
         }
     }
     
+    def send_service_sms(call_sid):
+        """Send SMS confirmation for the last created service issue"""
+        try:
+            global current_service_issue
+            
+            if not current_service_issue:
+                return "I don't have a recent service issue to send. Could you tell me what issue you need texted?"
+            
+            # Get caller phone number from call state
+            call_info = call_states.get(call_sid, {})
+            caller_phone = call_info.get('caller_phone')
+            if not caller_phone:
+                return "I need your phone number to send the text. What's your mobile number?"
+            
+            # Use service handler to send SMS
+            if service_handler:
+                import asyncio
+                
+                def run_async_sms():
+                    try:
+                        loop = asyncio.new_event_loop()
+                        asyncio.set_event_loop(loop)
+                        try:
+                            return loop.run_until_complete(
+                                service_handler.send_sms_confirmation(
+                                    caller_phone,
+                                    current_service_issue['issue_number'],
+                                    current_service_issue['issue_type'],
+                                    current_service_issue['address']
+                                )
+                            )
+                        finally:
+                            loop.close()
+                    except RuntimeError:
+                        try:
+                            return asyncio.run(
+                                service_handler.send_sms_confirmation(
+                                    caller_phone,
+                                    current_service_issue['issue_number'],
+                                    current_service_issue['issue_type'],
+                                    current_service_issue['address']
+                                )
+                            )
+                        except Exception as e:
+                            logger.error(f"SMS send error: {e}")
+                            return False
+                
+                success = run_async_sms()
+                
+                if success:
+                    return f"Perfect! I've texted you the details for service issue #{current_service_issue['issue_number']}. Check your phone in a moment!"
+                else:
+                    return f"I had trouble sending the text, but your service issue #{current_service_issue['issue_number']} is confirmed and Dimitry will contact you within 2-4 hours."
+            else:
+                return f"Your service issue #{current_service_issue['issue_number']} is confirmed. Dimitry will contact you within 2-4 hours with updates."
+                
+        except Exception as e:
+            logger.error(f"Error sending service SMS: {e}")
+            return "I had trouble sending the text, but your service issue is confirmed and Dimitry will contact you within 2-4 hours."
+
     def create_real_service_issue(issue_type, address):
         """Create actual service issue in Rent Manager and return confirmation with issue number"""
         try:
@@ -298,7 +359,16 @@ def create_app():
             result = run_async_service_creation()
             
             if result and result.get('success'):
-                return result['confirmation_message']
+                # Store service issue info for potential SMS using a global key
+                global current_service_issue
+                current_service_issue = {
+                    'issue_number': result['issue_number'],
+                    'issue_type': issue_type,
+                    'address': address
+                }
+                
+                # Offer SMS notification
+                return f"{result['confirmation_message']} Would you like me to text you the issue number #{result['issue_number']} for your records?"
             else:
                 # Fallback message if service creation fails
                 return result.get('fallback_message', f"Perfect! I've created an {issue_type} service issue for {address}. Dimitry Simanovsky has been assigned and will contact you within 2-4 hours.")
@@ -369,6 +439,13 @@ def create_app():
                 "betty court": lambda: create_real_service_issue("electrical", "56 Betty Court"),
                 "cary avenue": lambda: create_real_service_issue("electrical", "627 Cary Avenue"),
                 
+                # SMS and service confirmations
+                "yes send": lambda call_sid: send_service_sms(call_sid),
+                "yes text": lambda call_sid: send_service_sms(call_sid),
+                "text me": lambda call_sid: send_service_sms(call_sid),
+                "send sms": lambda call_sid: send_service_sms(call_sid),
+                "yes please": lambda call_sid: send_service_sms(call_sid),
+                
                 # Quick confirmations
                 "yes": "Great! What else can I help you with?",
                 "no": "Understood. Anything else I can assist with?",
@@ -380,9 +457,13 @@ def create_app():
             for pattern, response in instant_patterns.items():
                 if pattern in user_lower:
                     logger.info(f"Using INSTANT pattern response for: {user_input}")
-                    # If response is a function (for service issue creation), call it
+                    # If response is a function (for service issue creation or SMS), call it
                     if callable(response):
-                        return response()
+                        # Some functions need call_sid parameter
+                        if pattern in ["yes send", "yes text", "text me", "send sms", "yes please"]:
+                            return response(call_sid)
+                        else:
+                            return response()
                     return response
             
             # Check original instant responses
@@ -846,6 +927,7 @@ If they need maintenance or have questions about a specific property, get their 
                         # Store tenant info for use in conversation
                         call_states[call_sid] = {
                             'tenant_info': tenant_info,
+                            'caller_phone': caller_phone,
                             'caller_name': caller_name,
                             'tenant_unit': tenant_unit
                         }

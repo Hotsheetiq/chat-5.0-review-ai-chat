@@ -1,9 +1,16 @@
 import asyncio
 import logging
+import os
 from datetime import datetime
 from typing import Dict, Any, Optional
+from twilio.rest import Client
 
 logger = logging.getLogger(__name__)
+
+# Twilio credentials
+TWILIO_ACCOUNT_SID = os.environ.get("TWILIO_ACCOUNT_SID")
+TWILIO_AUTH_TOKEN = os.environ.get("TWILIO_AUTH_TOKEN")
+TWILIO_PHONE_NUMBER = os.environ.get("TWILIO_PHONE_NUMBER")
 
 class ServiceIssueHandler:
     """Handles service issue creation with proper confirmation and issue numbers"""
@@ -39,7 +46,9 @@ class ServiceIssueHandler:
             if result and result.get('success'):
                 logger.info(f"Created service issue {result['issue_number']} assigned to Dimitry")
                 
-                # Return confirmation details
+                # Return confirmation details with SMS option
+                confirmation_msg = f"Perfect! I've created service issue #{result['issue_number']} for your {issue_type.lower()} at {unit_address or tenant_info.get('Unit', 'your unit')}. This has been assigned to Dimitry Simanovsky who will contact you within 2-4 hours."
+                
                 return {
                     'success': True,
                     'issue_number': result['issue_number'],
@@ -47,7 +56,8 @@ class ServiceIssueHandler:
                     'description': description,
                     'priority': priority,
                     'assigned_to': 'Dimitry Simanovsky',
-                    'confirmation_message': f"Perfect! I've created service issue #{result['issue_number']} for your {issue_type.lower()} at {unit_address or tenant_info.get('Unit', 'your unit')}. This has been assigned to Dimitry Simanovsky who will contact you within 2-4 hours."
+                    'confirmation_message': confirmation_msg,
+                    'sms_option': f"Would you like me to text you the issue number #{result['issue_number']} for your records?"
                 }
             else:
                 logger.error("Failed to create service issue in Rent Manager")
@@ -119,3 +129,30 @@ class ServiceIssueHandler:
                 'error': str(e),
                 'fallback_message': "I've made a note of your request and our team will follow up with you."
             }
+    
+    async def send_sms_confirmation(self, phone_number: str, issue_number: str, issue_type: str, address: str) -> bool:
+        """Send SMS confirmation with service issue number"""
+        try:
+            if not all([TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN, TWILIO_PHONE_NUMBER]):
+                logger.warning("Twilio credentials not configured for SMS")
+                return False
+            
+            # Initialize Twilio client
+            client = Client(TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN)
+            
+            # Format SMS message
+            sms_message = f"Grinberg Management Service Confirmation\n\nIssue #{issue_number}\nType: {issue_type.title()}\nLocation: {address}\nAssigned to: Dimitry Simanovsky\n\nDimitry will contact you within 2-4 hours.\n\nQuestions? Call (718) 414-6984"
+            
+            # Send SMS
+            message = client.messages.create(
+                body=sms_message,
+                from_=TWILIO_PHONE_NUMBER,
+                to=phone_number
+            )
+            
+            logger.info(f"SMS confirmation sent successfully. SID: {message.sid}")
+            return True
+            
+        except Exception as e:
+            logger.error(f"Error sending SMS confirmation: {e}")
+            return False
