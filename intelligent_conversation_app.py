@@ -516,6 +516,7 @@ CRITICAL ISSUE RECOGNITION:
 - PLUMBING: "water leak", "flooding" → plumbing maintenance (CREATE TICKET)
 - ALL ISSUES get service tickets with ticket numbers for caller reference
 - NEVER ask what the problem is if they already told you - listen to what they actually said!
+- USE REASONING: If someone calls about electrical issues and confirms address, CREATE THE TICKET!
 
 SERVICE TICKET CREATION RULES:
 - ALL ISSUES get service tickets (maintenance AND noise complaints)
@@ -537,13 +538,15 @@ NATURAL CONVERSATION FLOW:
 5. Electrical issues are not always emergencies - could be unpaid bills, minor issues, etc.
 6. Be sympathetic but professional, NEVER excited about problems
 
-CRITICAL CONVERSATION MEMORY:
+CRITICAL CONVERSATION MEMORY AND REASONING:
 - CHECK CONVERSATION HISTORY FIRST - never ask for information already provided
-- If they said "no power" DON'T ask "what maintenance issue" again - REMEMBER IT!
+- If they said "electrical issue" at start of call DON'T ask "what's the problem" again - REMEMBER IT!
 - If they gave an address, DON'T ask for address again - USE THE ADDRESS THEY GAVE!
+- USE REASONING: "electrical issue" + "confirmed address" = CREATE ELECTRICAL SERVICE TICKET
 - CONNECT partial addresses: "122" = 122 Targee Street, "13" = 13 Barker Street, "15" = 15 Coonley Court
 - When you have BOTH issue and address from conversation history - CREATE SERVICE ISSUE IMMEDIATELY
 - NEVER repeat questions - check what they already told you first
+- THINK LOGICALLY: Why would someone call? They told you at the beginning!
 
 REAL PROPERTIES (some examples):
 - 122 Targee Street, 13 Barker Street, 15 Coonley Court, 173 South Avenue, 263A Maple Parkway
@@ -557,7 +560,13 @@ IMPORTANT RULES:
 OFFICE: 31 Port Richmond Ave, Staten Island, NY 10302
 HOURS: Monday-Friday 9 AM to 5 PM Eastern Time
 
-Use natural conversation logic - if someone says "power not working" that's obviously a maintenance emergency!"""
+Use natural conversation logic - if someone says "power not working" that's obviously a maintenance emergency!
+
+CRITICAL REASONING RULES:
+- LISTEN to what caller said at the start of the call
+- If they said "electrical issue" and gave address - CREATE THE ELECTRICAL TICKET
+- Don't ask "what's the problem" if they already told you at call start
+- Use context and reasoning - why would they call if not for the issue they mentioned?"""
                 }
             ]
             
@@ -642,7 +651,10 @@ Use natural conversation logic - if someone says "power not working" that's obvi
                     context_info += f"- Address already provided: {extracted_info['address']}\n"
                 if extracted_info["issue"]:
                     context_info += f"- Issue already reported: {extracted_info['issue']}\n"
+                    context_info += f"- CALLER ALREADY TOLD YOU THE PROBLEM - DO NOT ASK AGAIN!\n"
+                    context_info += f"- CRITICAL: They called about {extracted_info['issue']} - don't ask what the problem is!\n"
                 context_info += "- DO NOT ask for information already provided!\n"
+                context_info += "- USE REASONING: If they said 'electrical issue' and gave address, CREATE THE TICKET!\n"
                 
                 # Add conversation history for context
                 for entry in conversation_history[call_sid][-6:]:  # Last 6 exchanges for full context
