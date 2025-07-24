@@ -81,9 +81,9 @@ def create_app():
                 "text": text,
                 "model_id": "eleven_turbo_v2",  # Faster model for quicker response
                 "voice_settings": {
-                    "stability": 0.7,          # More stable for consistent speech
-                    "similarity_boost": 0.75,  # Good voice similarity
-                    "style": 0.3,              # Slightly more expressive
+                    "stability": 0.5,          # Less robotic, more natural variation
+                    "similarity_boost": 0.8,   # Higher similarity for softer tone
+                    "style": 0.2,              # Less dramatic, softer style
                     "use_speaker_boost": True
                 }
             }
@@ -124,29 +124,30 @@ def create_app():
             messages = [
                 {
                     "role": "system",
-                    "content": """You are Chris from Grinberg Management. Answer questions DIRECTLY without greetings.
+                    "content": """You are Chris from Grinberg Management. Be helpful and conversational with a soft, friendly tone.
 
-CRITICAL RULES:
-- NO greetings like "Hi", "Hey there", "Hello" when answering questions
-- Answer the exact question asked immediately 
-- Keep responses under 10 words maximum
-- Be helpful but ultra concise
+TONE & STYLE:
+- Speak softly and warmly like a caring friend
+- Use gentle, natural language - not robotic or formal
+- Be conversational and approachable
+- Keep responses 15-25 words for good pacing
+- Sound like a real person, not a phone operator
 
 OFFICE HOURS:
-- Open: Monday-Friday 9-5 Eastern
+- Open: Monday-Friday 9-5 Eastern  
 - Currently CLOSED (after hours)
 
-DIRECT ANSWER EXAMPLES:
+NATURAL RESPONSE EXAMPLES:
 Question: "Are you open?"
-Answer: "Currently closed. Open Monday-Friday 9-5."
+Answer: "We're actually closed right now, but I'm here to help. We're open Monday through Friday, 9 to 5."
 
-Question: "I have maintenance issue"
-Answer: "What's the problem?"
+Question: "I have a maintenance issue"
+Answer: "Oh no, I'm sorry to hear that. Tell me what's happening and I'll help you get it sorted out."
 
-Question: "Can you help?"
-Answer: "Yes, what do you need?"
+Question: "Can you help me?"
+Answer: "Absolutely, I'd be happy to help. What's going on?"
 
-NO EXTRA WORDS. Just answer the question directly."""
+Be warm, caring, and genuinely helpful. Don't sound like a phone system."""
                 }
             ]
             
@@ -212,8 +213,8 @@ If they need maintenance or have questions about a specific property, get their 
             response = openai_client.chat.completions.create(
                 model="gpt-4o",  # Latest OpenAI model for best conversation
                 messages=[{"role": msg["role"], "content": msg["content"]} for msg in messages],
-                max_tokens=15,  # Ultra short for fastest responses
-                temperature=0.1,   # Minimal randomness for speed
+                max_tokens=30,  # Longer responses but still fast
+                temperature=0.4,   # More natural sounding
                 presence_penalty=0,  # Remove penalties for speed
                 frequency_penalty=0
             )
@@ -523,39 +524,35 @@ If they need maintenance or have questions about a specific property, get their 
                 # Fallback to Twilio voice if ElevenLabs fails
                 response.say(greeting, voice='Polly.Matthew-Neural')
             
-            # Extended speech gathering to avoid premature transfers
+            # Much longer timeout to avoid automatic transfers
             response.gather(
                 input='speech',
-                action='/simple-response',
+                action='/continue-conversation',
                 method='POST',
-                timeout=20,  # Longer timeout so Chris doesn't transfer immediately
-                speech_timeout=5,  # More time for user to speak
+                timeout=30,  # Very long timeout - don't transfer unless they want it
+                speech_timeout=6,  # More time for user to speak
                 language='en-US'
             )
             
-            # If no speech detected after extended timeout, offer to wait or transfer
-            wait_text = "I'm here when you're ready! Take your time, or I can connect you with our team if you prefer."
-            audio_url = generate_elevenlabs_audio(wait_text)
+            # Only if completely silent for 30 seconds, ask if they want to continue
+            continue_text = "I'm still here if you need anything. Would you like me to connect you with our team, or is there something else I can help with?"
+            audio_url = generate_elevenlabs_audio(continue_text)
             if audio_url:
                 replit_domain = os.environ.get('REPLIT_DOMAINS', '').split(',')[0] if os.environ.get('REPLIT_DOMAINS') else 'localhost:5000'
                 full_audio_url = f"https://{replit_domain}{audio_url}"
                 response.play(full_audio_url)
             else:
-                response.say(wait_text, voice='Polly.Matthew-Neural')
+                response.say(continue_text, voice='Polly.Matthew-Neural')
             
-            # Give another chance to speak instead of immediate transfer
+            # Give them another full opportunity to speak
             response.gather(
                 input='speech',
-                action='/simple-response',
+                action='/continue-conversation',
                 method='POST',
-                timeout=15,
-                speech_timeout=4,
+                timeout=20,
+                speech_timeout=5,
                 language='en-US'
             )
-            
-            # Only transfer after second timeout
-            response.say("Let me connect you with our team at (718) 414-6984.", voice='Polly.Matthew-Neural')
-            response.dial('(718) 414-6984')
             
             logger.info(f"Intelligent conversation initiated for {caller_phone}")
             return str(response)
@@ -662,9 +659,9 @@ If they need maintenance or have questions about a specific property, get their 
         from flask import send_from_directory
         return send_from_directory('static', filename)
     
-    @app.route('/simple-response', methods=['POST'])
-    def simple_response():
-        """Simple response handler - basic AI conversation then transfer"""
+    @app.route('/continue-conversation', methods=['POST'])
+    def continue_conversation():
+        """Continue conversation - no automatic transfers"""
         try:
             speech_result = request.values.get('SpeechResult', '').strip()
             logger.info(f"Speech received: '{speech_result}'")
@@ -685,16 +682,15 @@ If they need maintenance or have questions about a specific property, get their 
                 else:
                     response.say(ai_response, voice='Polly.Matthew-Neural')
             
-            # Transfer after response
-            transfer_text = "Let me connect you with our team now!"
-            audio_url = generate_elevenlabs_audio(transfer_text)
-            if audio_url:
-                replit_domain = os.environ.get('REPLIT_DOMAINS', '').split(',')[0] if os.environ.get('REPLIT_DOMAINS') else 'localhost:5000'
-                full_audio_url = f"https://{replit_domain}{audio_url}"
-                response.play(full_audio_url)
-            else:
-                response.say(transfer_text, voice='Polly.Matthew-Neural')
-            response.dial('(718) 414-6984')
+            # Continue conversation instead of auto-transfer
+            response.gather(
+                input='speech',
+                action='/continue-conversation',
+                method='POST',
+                timeout=30,
+                speech_timeout=6,
+                language='en-US'
+            )
             
             return str(response)
             
