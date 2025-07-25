@@ -57,6 +57,8 @@ except Exception as e:
 
 # Global state storage
 conversation_history = {}
+# Anti-repetition tracking per call
+response_tracker = {}
 
 def generate_elevenlabs_audio(text):
     """Generate natural human voice using ElevenLabs - NO QUOTA RESTRICTIONS"""
@@ -226,10 +228,22 @@ def create_app():
         "what are your hours": lambda: "We're open Monday through Friday, 9 AM to 5 PM Eastern Time!",
         "hours": lambda: "Our office hours are Monday through Friday, 9 AM to 5 PM Eastern.",
         
-        # Greetings
-        "hello": lambda: "Hi there! I'm Chris from Grinberg Management. How can I help you today?",
-        "hi": lambda: "Hello! I'm Chris. What can I help you with?",
-        "hey": lambda: "Hey there! I'm Chris. How can I assist you?",
+        # Greetings - vary responses to avoid repetition
+        "hello": lambda: random.choice([
+            "Hi there! I'm Chris from Grinberg Management. How can I help you today?",
+            "Hello! Great to hear from you. What can I help you with?",
+            "Hi! I'm Chris, your property assistant. How can I assist you?"
+        ]),
+        "hi": lambda: random.choice([
+            "Hello! I'm Chris. What can I help you with?",
+            "Hi there! How can I assist you today?",
+            "Hey! I'm Chris from Grinberg Management. What's going on?"
+        ]),
+        "hey": lambda: random.choice([
+            "Hey there! I'm Chris. How can I assist you?",
+            "Hello! What can I help you with today?",
+            "Hi! I'm Chris, how can I help?"
+        ]),
         
         # Service information
         "what services": lambda: "I help with maintenance requests, office hours, and property questions. What do you need?",
@@ -368,13 +382,13 @@ def create_app():
             messages: List[Dict[str, Any]] = [
                 {
                     "role": "system", 
-                    "content": "You are Chris, the intelligent AI assistant for Grinberg Management. You're warm, professional, and conversational. Handle maintenance requests by getting the issue type and address to create service tickets. For general questions about office hours, properties, or leasing, provide helpful information. Be natural and engaging, keep responses under 30 words. Never ask redundant questions - if someone gives you both an issue and address, immediately create the service ticket. Show genuine empathy for maintenance issues."
+                    "content": "You are Chris, an intelligent conversational AI assistant for Grinberg Management property company. You're warm, helpful, and genuinely smart - like talking to a real person. Engage naturally in conversation, remember what users tell you, and provide thoughtful responses. For maintenance issues, get the problem type and address to create service tickets. Answer questions about office hours, properties, and leasing with helpful information. Be conversational and vary your responses - never repeat the same phrases. Keep responses natural and under 40 words. Show empathy and intelligence in every interaction."
                 }
             ]
             
-            # Add conversation history for context
+            # Add full conversation history for intelligent context awareness
             if call_sid in conversation_history:
-                for entry in conversation_history[call_sid][-3:]:  # Last 3 exchanges for context
+                for entry in conversation_history[call_sid]:  # Full conversation context
                     messages.append({
                         "role": entry.get('role', 'user'),
                         "content": str(entry.get('content', ''))
@@ -383,18 +397,37 @@ def create_app():
             # Add current user input
             messages.append({"role": "user", "content": str(user_input)})
             
+            # Anti-repetition context
+            if call_sid not in response_tracker:
+                response_tracker[call_sid] = []
+            
+            recent_responses = response_tracker[call_sid][-3:] if call_sid in response_tracker else []
+            if recent_responses:
+                anti_repeat_instruction = f"IMPORTANT: You've recently said: {', '.join(recent_responses)}. Do NOT repeat these exact phrases. Vary your response with different wording."
+                messages.append({"role": "system", "content": anti_repeat_instruction})
+            
             # Get AI response with proper client check  
             if OPENAI_API_KEY and 'openai_client' in globals() and openai_client:
                 response = openai_client.chat.completions.create(
                     model="gpt-4o",
                     messages=messages,
-                    max_tokens=100,
-                    temperature=0.8,
-                    timeout=2.5
+                    max_tokens=120,
+                    temperature=0.9,
+                    timeout=3.0
                 )
                 
-                result = response.choices[0].message.content
-                return result.strip() if result else "I'm here to help! What can I do for you today?"
+                result = response.choices[0].message.content.strip() if response.choices[0].message.content else "I'm here to help! What can I do for you today?"
+                
+                # Track response to prevent repetition
+                if call_sid not in response_tracker:
+                    response_tracker[call_sid] = []
+                response_tracker[call_sid].append(result)
+                
+                # Keep only last 5 responses to prevent memory bloat
+                if len(response_tracker[call_sid]) > 5:
+                    response_tracker[call_sid] = response_tracker[call_sid][-5:]
+                
+                return result
             else:
                 return "I'm here to help! What can I do for you today?"
             
@@ -502,8 +535,21 @@ def create_app():
             if call_sid not in conversation_history:
                 conversation_history[call_sid] = []
             
-            # Greeting with ElevenLabs natural voice - NO redundant listening prompt
-            greeting = "Hi there, you've reached Grinberg Management. I'm Chris, how can I help you today?"
+            # Time-based intelligent greeting
+            eastern = pytz.timezone('US/Eastern')
+            current_time = datetime.now(eastern)
+            current_hour = current_time.hour
+            
+            if 5 <= current_hour < 12:
+                time_greeting = "Good morning"
+            elif 12 <= current_hour < 17:
+                time_greeting = "Good afternoon"  
+            elif 17 <= current_hour < 22:
+                time_greeting = "Good evening"
+            else:
+                time_greeting = "Hello"
+                
+            greeting = f"{time_greeting}, you've reached Grinberg Management. I'm Chris, how can I help you today?"
             
             conversation_history[call_sid].append({
                 'role': 'assistant',
