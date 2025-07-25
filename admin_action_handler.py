@@ -107,27 +107,34 @@ class AdminActionHandler:
                 new_greeting = "It's a great day here at Greenberg Management."
                 logger.info(f"🔧 SPECIFIC MATCH: '{new_greeting}'")
             else:
-                # Enhanced patterns for natural conversation - FIXED to capture complete messages
+                # INTELLIGENT patterns that understand command vs content - FIXED to exclude command words
                 patterns = [
-                    r"change.*greeting.*to\s+say\s+(.+?)(?:\.|$)",  # "change greeting to say X"
-                    r"greeting.*to\s+say\s+(.+?)(?:\.|$)",  # "greeting to say X"  
-                    r"let's change.*greeting.*to\s+say\s+(.+?)(?:\.|$)",  # "let's change greeting to say X"
-                    r"greeting.*to\s+(.+?)(?:\.|$)",  # "greeting to X"
-                    r"change.*(?:greeting.*)?to\s+(.+?)(?:\.|$)",  # "change to X"
-                    r"wanted to say\s+(.+?)(?:\.|$)",  # "wanted to say X"
-                    r"say\s+(.+?)(?:\.|$)"  # "say X"
+                    # Patterns that specifically capture after "say" but exclude the word "say" itself
+                    r"change.*greeting.*to\s+say\s+(.+?)(?:\.|$)",  # "change greeting to say X" -> capture X
+                    r"greeting.*to\s+say\s+(.+?)(?:\.|$)",  # "greeting to say X" -> capture X
+                    r"let's change.*greeting.*to\s+say\s+(.+?)(?:\.|$)",  # "let's change greeting to say X" -> capture X
+                    # Direct greeting patterns without "say"
+                    r"greeting.*to\s+(.+?)(?:\.|$)",  # "greeting to X" -> capture X
+                    r"change.*(?:greeting.*)?to\s+(.+?)(?:\.|$)",  # "change to X" -> capture X
                 ]
                 
                 new_greeting = None
                 for pattern in patterns:
                     match = re.search(pattern, instruction, re.IGNORECASE | re.DOTALL)
                     if match:
-                        new_greeting = match.group(1).strip()
-                        # Clean up common artifacts
-                        new_greeting = new_greeting.strip("'\".,").strip()
+                        captured_text = match.group(1).strip()
+                        
+                        # INTELLIGENT CLEANING: Remove command artifacts but keep natural content
+                        # Remove leading "say" if it got captured accidentally
+                        if captured_text.lower().startswith('say '):
+                            captured_text = captured_text[4:].strip()
+                        
+                        # Clean up punctuation and quotes
+                        new_greeting = captured_text.strip("'\".,").strip()
                         # Remove trailing comma artifacts
                         new_greeting = re.sub(r',\s*$', '', new_greeting)
-                        logger.info(f"🔧 PATTERN MATCH: '{new_greeting}' using '{pattern}'")
+                        
+                        logger.info(f"🔧 INTELLIGENT MATCH: '{new_greeting}' using '{pattern}' from '{captured_text}'")
                         break
                 
                 if not new_greeting:
@@ -309,25 +316,25 @@ class AdminActionHandler:
                         old_greeting = return_match.group(1)
                         content = content.replace(f'return f"{old_greeting}"', f'return f"{old_greeting} {new_greeting}"')
             
-            # Find the actual greeting line and replace it
+            # COMPLETE REPLACEMENT: Find and replace the entire greeting line
             greeting_pattern = r'greeting = f"[^"]*"'
             match = re.search(greeting_pattern, content)
             
             if match:
                 old_line = match.group(0)
-                # Create a complete, natural greeting
-                new_line = f'greeting = f"{{time_greeting}} and thank you for calling Grinberg Management, I\'m Chris. {new_greeting}"'
+                # COMPLETE REPLACEMENT: Create entirely new greeting without keeping old parts
+                new_line = f'greeting = f"{{time_greeting}}, {new_greeting}"'
                 content = content.replace(old_line, new_line)
-                logger.info(f"🔧 FOUND AND REPLACED: '{old_line}' -> '{new_line}'")
+                logger.info(f"🔧 COMPLETE REPLACEMENT: '{old_line}' -> '{new_line}'")
             else:
                 # Fallback: look for the specific pattern we know exists
                 specific_pattern = r'greeting = f"\{time_greeting\}[^"]*"'
                 match = re.search(specific_pattern, content)
                 if match:
                     old_line = match.group(0)
-                    new_line = f'greeting = f"{{time_greeting}} and thank you for calling Grinberg Management, I\'m Chris. {new_greeting}"'
+                    new_line = f'greeting = f"{{time_greeting}}, {new_greeting}"'
                     content = content.replace(old_line, new_line)
-                    logger.info(f"🔧 SPECIFIC PATTERN REPLACED: '{old_line}' -> '{new_line}'")
+                    logger.info(f"🔧 FALLBACK REPLACEMENT: '{old_line}' -> '{new_line}'")
                 else:
                     logger.error(f"Could not find any greeting pattern in file")
                     return False
