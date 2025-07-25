@@ -53,10 +53,12 @@ class AdminActionHandler:
             # Also: "When someone says X, respond with Y" or "Add response for X: Y"
             
             patterns = [
-                r"says? ['\"]([^'\"]+)['\"].*respond.*['\"]([^'\"]+)['\"]",
-                r"when.*says? ['\"]?([^'\"]+)['\"]?.*respond.*['\"]([^'\"]+)['\"]",
-                r"add.*response.*for ['\"]?([^'\"]+)['\"]?[:\-\s]+['\"]([^'\"]+)['\"]",
-                r"if.*says? ['\"]?([^'\"]+)['\"]?.*say ['\"]([^'\"]+)['\"]"
+                r"says?\s+['\"]?([^'\"]+)['\"]?.*respond.*['\"]?([^'\"]+)['\"]?",
+                r"when.*says?\s+['\"]?([^'\"]+)['\"]?.*respond.*['\"]?([^'\"]+)['\"]?",
+                r"add.*response.*for\s+['\"]?([^'\"]+)['\"]?[:\-\s]*['\"]?([^'\"]+)['\"]?",
+                r"if.*says?\s+['\"]?([^'\"]+)['\"]?.*say\s+['\"]?([^'\"]+)['\"]?",
+                r"when someone says\s+([^,]+).*respond.*with\s+(.+)",
+                r"add response.*:\s*when.*says\s+([^,]+).*respond.*with\s+(.+)"
             ]
             
             trigger = None
@@ -64,9 +66,12 @@ class AdminActionHandler:
             
             for pattern in patterns:
                 match = re.search(pattern, instruction, re.IGNORECASE)
-                if match:
+                if match and len(match.groups()) >= 2:
                     trigger = match.group(1).lower().strip()
                     response = match.group(2).strip()
+                    # Clean up quotes and extra characters
+                    trigger = trigger.strip('\'"')
+                    response = response.strip('\'"')
                     break
             
             if trigger and response:
@@ -95,12 +100,22 @@ class AdminActionHandler:
     def modify_greeting(self, instruction):
         """Modify the greeting message"""
         try:
-            # Extract new greeting content
-            match = re.search(r"(?:change|modify).*greeting.*['\"]([^'\"]+)['\"]", instruction, re.IGNORECASE)
+            # Extract new greeting content with flexible patterns
+            patterns = [
+                r"(?:change|modify|update).*greeting.*['\"]([^'\"]+)['\"]",
+                r"greeting.*['\"]([^'\"]+)['\"]",
+                r"greeting.*(?:to|say)\s+([^'\"]+)",
+                r"change.*greeting.*to\s+([^'\"]+)"
+            ]
             
-            if match:
-                new_greeting = match.group(1).strip()
-                
+            new_greeting = None
+            for pattern in patterns:
+                match = re.search(pattern, instruction, re.IGNORECASE)
+                if match:
+                    new_greeting = match.group(1).strip()
+                    break
+            
+            if new_greeting:
                 change = {
                     'type': 'greeting_modification',
                     'new_greeting': new_greeting,
@@ -199,23 +214,37 @@ class AdminActionHandler:
             with open('fixed_conversation_app.py', 'r') as f:
                 content = f.read()
             
-            # Find the INSTANT_RESPONSES dictionary and add new entry
-            # Simple approach: add at the end before closing brace
-            pattern = r'(INSTANT_RESPONSES\s*=\s*{[^}]*)})'
-            
-            if 'INSTANT_RESPONSES' in content:
-                # Add new entry before closing brace
-                old_dict = f'"{trigger}": "{response}",'
-                content = content.replace('INSTANT_RESPONSES = {', f'INSTANT_RESPONSES = {{\n    "{trigger}": "{response}",')
+            # Find the INSTANT_RESPONSES dictionary and add new entry more carefully
+            if 'INSTANT_RESPONSES = {' in content:
+                # Find the closing brace of the dictionary
+                start_pos = content.find('INSTANT_RESPONSES = {')
+                brace_count = 0
+                pos = start_pos + len('INSTANT_RESPONSES = {')
+                
+                # Find the matching closing brace
+                while pos < len(content):
+                    if content[pos] == '{':
+                        brace_count += 1
+                    elif content[pos] == '}':
+                        if brace_count == 0:
+                            break
+                        brace_count -= 1
+                    pos += 1
+                
+                # Insert new entry before the closing brace
+                new_entry = f'    "{trigger}": "{response}",\n'
+                content = content[:pos] + new_entry + content[pos:]
                 
                 # Write back to file
                 with open('fixed_conversation_app.py', 'w') as f:
                     f.write(content)
                 
                 logger.info(f"🔧 REAL CHANGE: Added '{trigger}' -> '{response}' to INSTANT_RESPONSES")
+                return True
             
         except Exception as e:
             logger.error(f"Failed to write instant response to file: {e}")
+            return False
     
     def _write_greeting_to_file(self, new_greeting):
         """Actually write the new greeting to the code file"""

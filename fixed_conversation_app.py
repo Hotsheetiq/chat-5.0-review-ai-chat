@@ -295,7 +295,9 @@ def create_app():
         "text me": lambda: "I'll text you the service details!" if 'current_service_issue' in globals() and current_service_issue else "I don't have a current service issue to text you about.",
         "send sms": lambda: "I'll send you an SMS!" if 'current_service_issue' in globals() and current_service_issue else "I don't have a current service issue to text you about.",
         "yes text": lambda: "Perfect! I'll text you!" if 'current_service_issue' in globals() and current_service_issue else "I don't have a current service issue to text you about.",
-    }
+        "good morning: good morning! how can i help": "?",
+    "good morning: good morning! how can i help": "?",
+}
     
     def send_service_sms():
         """Send SMS confirmation for current service issue - SAFER VERSION"""
@@ -530,12 +532,12 @@ Remember: You have persistent memory across calls and can make actual modificati
                 if is_admin:
                     training_sessions[call_sid] = True
                     logger.info(f"🧠 TRAINING MODE ACTIVATED via DTMF '{dtmf_input}' for {caller_phone}")
-                    response_text = "Training mode activated! I can now make real changes to the system based on your instructions. What would you like me to modify?"
+                    response_text = "Training activated! Say 'when someone says hello respond with hi there' or 'change greeting to welcome message'."
                     main_voice = create_voice_response(response_text)
                     return f"""<?xml version="1.0" encoding="UTF-8"?>
                     <Response>
                         {main_voice}
-                        <Gather input="speech dtmf" timeout="10" speechTimeout="2" dtmfTimeout="1" language="en-US" action="/handle-input/{call_sid}" method="POST">
+                        <Gather input="speech dtmf" timeout="8" speechTimeout="3" dtmfTimeout="1" language="en-US" action="/handle-input/{call_sid}" method="POST">
                         </Gather>
                         <Redirect>/handle-speech/{call_sid}</Redirect>
                     </Response>"""
@@ -565,12 +567,12 @@ Remember: You have persistent memory across calls and can make actual modificati
                 if is_admin:
                     training_sessions[call_sid] = True
                     logger.info(f"🧠 TRAINING MODE ACTIVATED via DTMF '{dtmf_input}' in speech handler for {caller_phone}")
-                    response_text = "Training mode activated! I can now make real changes to the system based on your instructions. What would you like me to modify?"
+                    response_text = "Training mode activated! Give me specific instructions like 'when someone says hello respond with hi there' or 'change greeting to welcome message'."
                     main_voice = create_voice_response(response_text)
                     return f"""<?xml version="1.0" encoding="UTF-8"?>
                     <Response>
                         {main_voice}
-                        <Gather input="speech dtmf" timeout="10" speechTimeout="2" dtmfTimeout="1" language="en-US" action="/handle-input/{call_sid}" method="POST">
+                        <Gather input="speech dtmf" timeout="8" speechTimeout="3" dtmfTimeout="1" language="en-US" action="/handle-input/{call_sid}" method="POST">
                         </Gather>
                         <Redirect>/handle-speech/{call_sid}</Redirect>
                     </Response>"""
