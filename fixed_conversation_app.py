@@ -65,6 +65,13 @@ except Exception as e:
 conversation_history = {}
 # Anti-repetition tracking per call
 response_tracker = {}
+# Admin phone numbers for training access
+ADMIN_PHONE_NUMBERS = [
+    "+13477430880",  # Add your admin phone number here
+    # Add more admin numbers as needed
+]
+# Training mode sessions
+training_sessions = {}
 
 def generate_elevenlabs_audio(text):
     """Generate natural human voice using ElevenLabs - NO QUOTA RESTRICTIONS"""
@@ -377,20 +384,61 @@ def create_app():
         
         return None
     
-    def get_ai_response(user_input, call_sid):
-        """Get intelligent AI response from GPT-4o"""
+    def get_ai_response(user_input, call_sid, caller_phone=None):
+        """Get intelligent AI response from GPT-4o with training mode support"""
         try:
             if not OPENAI_API_KEY:
                 return "I'm here to help! What can I do for you today?"
             
+            # Check if this is a training session
+            is_training_mode = call_sid in training_sessions or (caller_phone and caller_phone in ADMIN_PHONE_NUMBERS and "training" in user_input.lower())
+            
+            # Enable training mode if admin triggers it
+            if caller_phone and caller_phone in ADMIN_PHONE_NUMBERS and "training" in user_input.lower():
+                training_sessions[call_sid] = True
+                is_training_mode = True
+            
             # Build conversation context with proper typing
             from typing import List, Dict, Any
-            messages: List[Dict[str, Any]] = [
-                {
+            messages: List[Dict[str, Any]] = []
+            
+            if is_training_mode:
+                messages.append({
+                    "role": "system", 
+                    "content": """You are Chris, the AI assistant for Grinberg Management, now in ADMIN TRAINING MODE via phone call.
+
+TRAINING MODE ACTIVATED: The admin is calling to train you directly through conversation.
+
+In this mode, you should:
+1. Show your reasoning and thought process out loud
+2. Ask clarifying questions to learn better responses
+3. Acknowledge instructions and explain how you'll apply them
+4. Be self-reflective about your responses and suggest improvements
+5. Engage in natural conversation about improving your customer service
+
+Current capabilities you have:
+- Create real service tickets through Rent Manager API
+- Verify addresses against property database  
+- Remember full conversation history
+- Provide office hours (Mon-Fri 9AM-5PM Eastern Time)
+- Use natural voice (ElevenLabs) for phone calls
+- SMS confirmations for service tickets
+
+You can think out loud, explain your reasoning, ask questions about how to handle scenarios better, and learn from the admin's instructions. Be conversational and eager to improve your service quality.
+
+Examples:
+- "Let me think about that scenario... when a customer reports an electrical emergency, my reasoning is..."
+- "That's a great instruction! I'll remember to always confirm the address first. Should I also ask about the urgency level?"
+- "I'm curious - how should I handle customers who seem frustrated? What tone works best?"
+
+Be natural, thoughtful, and genuinely interested in learning to serve customers better."""
+                })
+            else:
+                messages.append({
                     "role": "system", 
                     "content": "You are Chris, an intelligent conversational AI assistant for Grinberg Management property company. You're warm, helpful, and genuinely smart - like talking to a real person. Engage naturally in conversation, remember everything users tell you, and provide thoughtful, detailed responses. For maintenance issues, get the problem type and address to create service tickets. Answer questions about office hours, properties, and leasing with comprehensive, helpful information. Be conversational and vary your responses - never repeat the same phrases. You can give longer, more detailed responses when needed. Show empathy, intelligence, and genuine care in every interaction."
-                }
-            ]
+                })
+            
             
             # Add full conversation history for intelligent context awareness
             if call_sid in conversation_history:
@@ -499,10 +547,20 @@ def create_app():
                         except Exception as e:
                             logger.error(f"Instant response error for {pattern}: {e}")
                 
-                # PRIORITY 3: AI response if no instant match
+                # PRIORITY 3: AI response if no instant match (or training mode)
                 if not response_text:
-                    response_text = get_ai_response(user_input, call_sid)
-                    logger.info(f"🤖 AI RESPONSE: {response_text}")
+                    # Check if this is training mode
+                    is_admin = caller_phone in ADMIN_PHONE_NUMBERS if caller_phone else False
+                    if is_admin and "training" in user_input.lower():
+                        training_sessions[call_sid] = True
+                        logger.info(f"🧠 TRAINING MODE ACTIVATED for {caller_phone}")
+                    
+                    response_text = get_ai_response(user_input, call_sid, caller_phone)
+                    
+                    if call_sid in training_sessions:
+                        logger.info(f"🧠 TRAINING RESPONSE: {response_text}")
+                    else:
+                        logger.info(f"🤖 AI RESPONSE: {response_text}")
             
             # Store assistant response
             conversation_history[call_sid].append({
@@ -546,6 +604,9 @@ def create_app():
             if call_sid not in conversation_history:
                 conversation_history[call_sid] = []
             
+            # Check if this is an admin phone number
+            is_admin_phone = caller_phone in ADMIN_PHONE_NUMBERS
+            
             # Time-based intelligent greeting
             eastern = pytz.timezone('US/Eastern')
             current_time = datetime.now(eastern)
@@ -559,8 +620,13 @@ def create_app():
                 time_greeting = "Good evening"
             else:
                 time_greeting = "Hello"
-                
-            greeting = f"{time_greeting}, you've reached Grinberg Management. I'm Chris, how can I help you today?"
+            
+            # Special greeting for admin
+            if is_admin_phone:
+                greeting = f"{time_greeting}! You've reached Chris. I'm ready for customer service or training mode - just say 'training mode' to start training me directly through conversation. How can I help you today?"
+                logger.info(f"🔑 ADMIN CALL DETECTED: {caller_phone}")
+            else:
+                greeting = f"{time_greeting}, you've reached Grinberg Management. I'm Chris, how can I help you today?"
             
             conversation_history[call_sid].append({
                 'role': 'assistant',
