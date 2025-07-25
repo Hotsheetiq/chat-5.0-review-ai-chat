@@ -637,8 +637,10 @@ Remember: You have persistent memory across calls and can make actual modificati
                 user_lower = user_input.lower().strip()
                 is_admin = caller_phone in ADMIN_PHONE_NUMBERS if caller_phone else False
                 
-                # FORCE ADMIN DETECTION for admin phones regardless of training mode
-                if not response_text and is_admin:
+                # ENHANCED ADMIN DETECTION - Include blocked admin calls
+                is_potential_admin = is_admin or (caller_phone == "Anonymous" and "+13477430880" in admin_conversation_memory)
+                
+                if not response_text and is_potential_admin:
                     # Enhanced admin detection - check for greeting modification patterns
                     admin_patterns = [
                         r"change.*greeting",
@@ -649,18 +651,25 @@ Remember: You have persistent memory across calls and can make actual modificati
                         r"greeting.*to.*say",
                         r"chris.*change.*greeting",
                         r"let's.*change.*greeting",
-                        r"want.*change.*greeting"
+                        r"want.*change.*greeting",
+                        # Add broader admin patterns
+                        r"create.*service.*ticket",
+                        r"service.*ticket.*yourself",
+                        r"want.*you.*to.*create",
+                        r"need.*service.*request"
                     ]
                     
                     is_admin_command = any(re.search(pattern, user_input, re.IGNORECASE) for pattern in admin_patterns)
                     
-                    logger.info(f"🔧 FORCED ADMIN CHECK: CallSid={call_sid}, Training mode={call_sid in training_sessions}, Admin={is_admin}, Pattern match={is_admin_command}, Input='{user_input}'")
+                    logger.info(f"🔧 ENHANCED ADMIN CHECK: CallSid={call_sid}, Training mode={call_sid in training_sessions}, Admin={is_admin}, Potential_Admin={is_potential_admin}, Pattern match={is_admin_command}, Input='{user_input}'")
                     
                     if is_admin_command:
                         # Ensure training mode is activated
                         training_sessions[call_sid] = True
                         logger.info(f"🔧 FORCED ADMIN PROCESSING + TRAINING ACTIVATED: {user_input}")
-                        admin_action_result = admin_action_handler.execute_admin_action(user_input, caller_phone)
+                        # Use real admin phone for blocked calls
+                        admin_phone = caller_phone if caller_phone != "Anonymous" else "+13477430880"
+                        admin_action_result = admin_action_handler.execute_admin_action(user_input, admin_phone)
                         response_text = admin_action_result if admin_action_result else "I understand you want to change something. Can you be more specific about the new greeting?"
                         logger.info(f"🔧 ADMIN ACTION EXECUTED: {response_text}")
 
@@ -679,10 +688,12 @@ Remember: You have persistent memory across calls and can make actual modificati
                                 logger.error(f"Instant response error for {pattern}: {e}")
                 
                 # PRIORITY 4: General admin actions fallback (training mode only)
-                if not response_text and call_sid in training_sessions and is_admin:
+                if not response_text and call_sid in training_sessions and is_potential_admin:
                     logger.info(f"🔧 ADMIN FALLBACK CHECK: '{user_input}'")
                     # Try general admin action handler anyway
-                    admin_action_result = admin_action_handler.execute_admin_action(user_input, caller_phone)
+                    # Use real admin phone for blocked calls in fallback too
+                    admin_phone = caller_phone if caller_phone != "Anonymous" else "+13477430880"
+                    admin_action_result = admin_action_handler.execute_admin_action(user_input, admin_phone)
                     if admin_action_result and admin_action_result != "No admin action detected":
                         response_text = admin_action_result
                         logger.info(f"🔧 ADMIN FALLBACK EXECUTED: {admin_action_result}")
@@ -706,10 +717,14 @@ Remember: You have persistent memory across calls and can make actual modificati
                 'timestamp': datetime.now()
             })
             
-            # Save admin conversation memory persistently (only for identified numbers)
+            # Save admin conversation memory persistently (include blocked admin calls)
             if caller_phone and caller_phone in ADMIN_PHONE_NUMBERS and caller_phone != "unknown":
                 admin_conversation_memory[caller_phone] = conversation_history[call_sid].copy()
                 logger.info(f"💾 SAVED ADMIN MEMORY: {len(admin_conversation_memory[caller_phone])} messages")
+            elif caller_phone == "Anonymous" and call_sid in training_sessions:
+                # Save blocked admin calls under the admin number for continuity
+                admin_conversation_memory["+13477430880"] = conversation_history[call_sid].copy()
+                logger.info(f"💾 SAVED BLOCKED ADMIN MEMORY: {len(admin_conversation_memory['+13477430880'])} messages")
             
             # Fast response without redundant listening prompts
             main_voice = create_voice_response(response_text)
@@ -749,15 +764,22 @@ Remember: You have persistent memory across calls and can make actual modificati
             # Check if this is an admin phone number (skip blocked/unknown numbers)
             is_admin_phone = caller_phone and caller_phone in ADMIN_PHONE_NUMBERS and caller_phone != "unknown"
             
-            # AUTO-ACTIVATE TRAINING MODE for admin calls
+            # AUTO-ACTIVATE TRAINING MODE for admin calls (including blocked admin calls)
             if is_admin_phone:
                 training_sessions[call_sid] = True
                 logger.info(f"🧠 TRAINING MODE AUTO-ACTIVATED for admin call: {caller_phone}")
+            elif caller_phone == "Anonymous" and "+13477430880" in admin_conversation_memory:
+                training_sessions[call_sid] = True
+                logger.info(f"🧠 TRAINING MODE AUTO-ACTIVATED for blocked admin call")
             
-            # Restore admin conversation memory if available (skip blocked/unknown numbers)
-            if is_admin_phone and caller_phone and caller_phone != "unknown" and caller_phone in admin_conversation_memory:
+            # Restore admin conversation memory if available (including blocked/unknown numbers for admin)
+            if is_admin_phone and caller_phone in admin_conversation_memory:
                 conversation_history[call_sid] = admin_conversation_memory[caller_phone].copy()
                 logger.info(f"🧠 RESTORED ADMIN MEMORY: {len(conversation_history[call_sid])} previous messages")
+            # For blocked numbers calling admin lines, check if they have active memory
+            elif caller_phone == "Anonymous" and "+13477430880" in admin_conversation_memory:
+                conversation_history[call_sid] = admin_conversation_memory["+13477430880"].copy()
+                logger.info(f"🧠 RESTORED BLOCKED ADMIN MEMORY: {len(conversation_history[call_sid])} previous messages")
             
             # Simple professional greeting without time-based components
             greeting = "Hey it's Chris with Grinberg Management. How can I help you today?"
