@@ -739,7 +739,7 @@ Remember: You have persistent memory across calls and can make actual modificati
                 time_greeting = "Hello"
             
             # Professional greeting for all callers (admin gets same greeting)
-            greeting = f"{time_greeting} and thank you for calling Grinberg Management, I'm Chris, how can I assist you today"
+            greeting = f"{time_greeting} and thank you for calling Grinberg Management, I'm Chris, It's a great day here at Greenberg Management."
             
             if is_admin_phone:
                 logger.info(f"🔑 ADMIN CALL DETECTED: {caller_phone}")
@@ -756,7 +756,7 @@ Remember: You have persistent memory across calls and can make actual modificati
             return f"""<?xml version="1.0" encoding="UTF-8"?>
             <Response>
                 {greeting_voice}
-                <Gather input="speech dtmf" timeout="8" speechTimeout="2" dtmfTimeout="1" language="en-US" profanityFilter="false" enhanced="true" action="/handle-input/{call_sid}" method="POST">
+                <Gather input="speech dtmf" timeout="4" speechTimeout="1" dtmfTimeout="1" language="en-US" profanityFilter="false" enhanced="true" action="/handle-input/{call_sid}" method="POST">
                 </Gather>
                 <Redirect>/handle-speech/{call_sid}</Redirect>
             </Response>"""

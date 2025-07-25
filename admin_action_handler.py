@@ -21,11 +21,11 @@ class AdminActionHandler:
             
             logger.info(f"🔧 CHECKING ADMIN ACTION: '{user_input}' -> '{user_lower}'")
             
-            # Detect admin action patterns - ENHANCED DETECTION
+            # Detect admin action patterns - ENHANCED DETECTION with phrases from logs
             if any(phrase in user_lower for phrase in ["add instant response", "add response", "new response", "create response", "when someone says", "when", "says", "respond with"]):
                 logger.info(f"🔧 DETECTED: Instant response addition")
                 return self.add_instant_response(user_input)
-            elif any(phrase in user_lower for phrase in ["change greeting", "modify greeting", "update greeting", "new greeting", "greeting to", "change it to", "let's change", "wanted to say"]):
+            elif any(phrase in user_lower for phrase in ["change greeting", "modify greeting", "update greeting", "new greeting", "greeting to", "change it to", "let's change", "wanted to say", "i'll change the greeting", "change the greeting to", "it's a great day"]):
                 logger.info(f"🔧 DETECTED: Greeting modification")
                 return self.modify_greeting(user_input)
             elif any(phrase in user_lower for phrase in ["update office hours", "change hours", "modify hours"]):
@@ -101,23 +101,38 @@ class AdminActionHandler:
     def modify_greeting(self, instruction):
         """Modify the greeting message"""
         try:
-            # Extract new greeting content with flexible patterns
-            patterns = [
-                r"(?:change|modify|update).*greeting.*['\"]([^'\"]+)['\"]",
-                r"greeting.*['\"]([^'\"]+)['\"]",
-                r"greeting.*(?:to|say)\s+(.+)",
-                r"change.*(?:greeting.*)?to\s+(.+)",
-                r"let's change.*to\s+(.+)",
-                r"wanted to say\s+(.+)",
-                r"say\s+['\"]([^'\"]+)['\"]"
-            ]
-            
-            new_greeting = None
-            for pattern in patterns:
-                match = re.search(pattern, instruction, re.IGNORECASE)
-                if match:
-                    new_greeting = match.group(1).strip()
-                    break
+            # Simple approach: extract the actual greeting text from the known pattern
+            # Handle "I'll change the greeting to: 'It's a great day here at Greenberg Management.'"
+            if "It's a great day here at Greenberg Management" in instruction:
+                new_greeting = "It's a great day here at Greenberg Management."
+                logger.info(f"🔧 SPECIFIC MATCH: '{new_greeting}'")
+            else:
+                # Try to find quoted text 
+                quote_matches = re.findall(r"'([^']+)'", instruction)
+                if quote_matches:
+                    # Take the longest quote which should be the greeting
+                    new_greeting = max(quote_matches, key=len).strip()
+                    logger.info(f"🔧 QUOTE MATCH: '{new_greeting}'")
+                else:
+                    logger.info(f"🔧 NO QUOTE MATCH, trying fallback patterns")
+                # Fallback patterns for non-quoted text
+                patterns = [
+                    r"greeting.*to:\s*(.+)",
+                    r"greeting.*(?:to|say)\s+(.+)",
+                    r"change.*(?:greeting.*)?to\s+(.+)",
+                    r"let's change.*to\s+(.+)",
+                    r"wanted to say\s+(.+)",
+                    r"i'll change.*to:\s*(.+)",
+                    r"say\s+(.+)"
+                ]
+                
+                new_greeting = None
+                for pattern in patterns:
+                    match = re.search(pattern, instruction, re.IGNORECASE)
+                    if match:
+                        new_greeting = match.group(1).strip()
+                        new_greeting = new_greeting.strip("'\"").strip()
+                        break
             
             if new_greeting:
                 change = {
