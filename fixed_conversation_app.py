@@ -876,9 +876,12 @@ Remember: You have persistent memory across calls and can make actual modificati
                         # Look for recent issue detection in conversation
                         recent_messages = conversation_history.get(call_sid, [])[-5:]  # Last 5 messages
                         detected_issue_type = None
+                        logger.info(f"🔍 ADDRESS DETECTED: {user_input} - Checking recent messages for issue type")
+                        for i, msg in enumerate(recent_messages):
+                            logger.info(f"🔍 Message {i}: {msg.get('role', '')} - {msg.get('content', '')[:100]}...")
                         
                         for msg in recent_messages:
-                            if 'assistant' in msg.get('role', '') and ('what\'s your address' in msg.get('content', '').lower() or 'noise complaint' in msg.get('content', '').lower() or 'plumbing issue' in msg.get('content', '').lower() or 'electrical issue' in msg.get('content', '').lower() or 'door issue' in msg.get('content', '').lower()):
+                            if 'assistant' in msg.get('role', '') and ('what\'s your address' in msg.get('content', '').lower() or 'property address' in msg.get('content', '').lower() or 'noise complaint' in msg.get('content', '').lower() or 'plumbing issue' in msg.get('content', '').lower() or 'electrical issue' in msg.get('content', '').lower() or 'door issue' in msg.get('content', '').lower() or 'trouble with your door' in msg.get('content', '').lower()):
                                 content = msg.get('content', '').lower()
                                 if 'noise' in content:
                                     detected_issue_type = "noise complaint"
