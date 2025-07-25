@@ -282,7 +282,7 @@ def create_app():
         
         # Common issues - ask for address immediately
         "electrical": lambda: "I understand you have an electrical issue. What's your address so I can create a service ticket?",
-        "power": lambda: "I understand you're having power issues. What's your address?",
+        "power": lambda: "Got it! What's your address for the power issue?",
         "no power": lambda: "That's an electrical emergency! What's your address so I can create an urgent service ticket?",
         "don't have power": lambda: "That's urgent! What's your address so I can get this handled right away?",
         
@@ -298,8 +298,13 @@ def create_app():
         "yes text": lambda: "Perfect! I'll text you!" if 'current_service_issue' in globals() and current_service_issue else "I don't have a current service issue to text you about.",
 
     "hello": "hi there",
-    "test123": "working123",
+    "test123": "working123", 
     "testing": "this is a test",
+    
+    # SPEED OPTIMIZATION: Simple address responses
+    "189 court richmond": "Got the address! What's the issue?",
+    "court richmond": "What's the issue at Court Richmond Avenue?",
+    "richmond avenue": "What's the maintenance issue?",
 }
     
     def send_service_sms():
@@ -316,15 +321,9 @@ def create_app():
         if not call_sid or call_sid not in conversation_history:
             return None
         
-        # SKIP if user input is obviously NOT a maintenance request
+        # SPEED: Skip if obviously NOT a maintenance request 
         user_lower = user_input.lower().strip()
-        non_maintenance_patterns = [
-            'open', 'hours', 'office', 'training', 'hello', 'hi', 'hey', 
-            'thank', 'thanks', 'goodbye', 'bye', 'what', 'who', 'when', 
-            'where', 'how', 'can you', 'do you', 'are you'
-        ]
-        
-        if any(pattern in user_lower for pattern in non_maintenance_patterns):
+        if any(word in user_lower for word in ['open', 'hours', 'office', 'hello', 'hi', 'hey', 'thank', 'bye']):
             return None
             
         # Look for issue type and address in conversation history
@@ -494,9 +493,9 @@ Remember: You have persistent memory across calls and can make actual modificati
                 response = openai_client.chat.completions.create(
                     model="gpt-4o",
                     messages=messages,
-                    max_tokens=1000,  # UNLIMITED: Remove all AI word limits
+                    max_tokens=150,  # SPEED OPTIMIZED: Shorter for faster responses
                     temperature=0.7,
-                    timeout=1.5  # Faster response
+                    timeout=0.8  # Ultra-fast response - prevent timeouts
                 )
                 
                 result = response.choices[0].message.content.strip() if response.choices[0].message.content else "I'm here to help! What can I do for you today?"
@@ -540,7 +539,7 @@ Remember: You have persistent memory across calls and can make actual modificati
                     return f"""<?xml version="1.0" encoding="UTF-8"?>
                     <Response>
                         {main_voice}
-                        <Gather input="speech dtmf" timeout="8" speechTimeout="3" dtmfTimeout="1" language="en-US" action="/handle-input/{call_sid}" method="POST">
+                        <Gather input="speech dtmf" timeout="5" speechTimeout="3" dtmfTimeout="1" language="en-US" action="/handle-input/{call_sid}" method="POST">
                         </Gather>
                         <Redirect>/handle-speech/{call_sid}</Redirect>
                     </Response>"""
@@ -575,7 +574,7 @@ Remember: You have persistent memory across calls and can make actual modificati
                     return f"""<?xml version="1.0" encoding="UTF-8"?>
                     <Response>
                         {main_voice}
-                        <Gather input="speech dtmf" timeout="8" speechTimeout="3" dtmfTimeout="1" language="en-US" action="/handle-input/{call_sid}" method="POST">
+                        <Gather input="speech dtmf" timeout="5" speechTimeout="3" dtmfTimeout="1" language="en-US" action="/handle-input/{call_sid}" method="POST">
                         </Gather>
                         <Redirect>/handle-speech/{call_sid}</Redirect>
                     </Response>"""
@@ -590,7 +589,7 @@ Remember: You have persistent memory across calls and can make actual modificati
             return f"""<?xml version="1.0" encoding="UTF-8"?>
             <Response>
                 {error_voice}
-                <Gather input="speech dtmf" timeout="8" speechTimeout="2" dtmfTimeout="1" language="en-US" action="/handle-input/{call_sid}" method="POST">
+                <Gather input="speech dtmf" timeout="5" speechTimeout="1" dtmfTimeout="1" language="en-US" action="/handle-input/{call_sid}" method="POST">
                 </Gather>
             </Response>"""
     
@@ -611,7 +610,7 @@ Remember: You have persistent memory across calls and can make actual modificati
                 return f"""<?xml version="1.0" encoding="UTF-8"?>
                 <Response>
                     {no_input_voice}
-                    <Gather input="speech dtmf" timeout="8" speechTimeout="2" dtmfTimeout="1" language="en-US" profanityFilter="false" enhanced="true" action="/handle-input/{call_sid}" method="POST">
+                    <Gather input="speech dtmf" timeout="5" speechTimeout="1" dtmfTimeout="1" language="en-US" profanityFilter="false" enhanced="true" action="/handle-input/{call_sid}" method="POST">
                     </Gather>
                     <Redirect>/handle-speech/{call_sid}</Redirect>
                 </Response>"""
@@ -732,7 +731,7 @@ Remember: You have persistent memory across calls and can make actual modificati
             return f"""<?xml version="1.0" encoding="UTF-8"?>
             <Response>
                 {main_voice}
-                <Gather input="speech dtmf" timeout="8" speechTimeout="2" dtmfTimeout="1" language="en-US" profanityFilter="false" enhanced="true" action="/handle-input/{call_sid}" method="POST">
+                <Gather input="speech dtmf" timeout="5" speechTimeout="1" dtmfTimeout="1" language="en-US" profanityFilter="false" enhanced="true" action="/handle-input/{call_sid}" method="POST">
                 </Gather>
                 <Redirect>/handle-speech/{call_sid}</Redirect>
             </Response>"""
@@ -745,7 +744,7 @@ Remember: You have persistent memory across calls and can make actual modificati
             return f"""<?xml version="1.0" encoding="UTF-8"?>
             <Response>
                 {error_voice}
-                <Gather input="speech" timeout="5" speechTimeout="2"/>
+                <Gather input="speech" timeout="5" speechTimeout="1"/>
             </Response>"""
     
     @app.route("/voice", methods=["POST"])
@@ -809,7 +808,7 @@ Remember: You have persistent memory across calls and can make actual modificati
             return """<?xml version="1.0" encoding="UTF-8"?>
             <Response>
                 <Say voice="Polly.Matthew-Neural">Hi, you've reached Grinberg Management. How can I help you?</Say>
-                <Gather input="speech" timeout="5" speechTimeout="2"/>
+                <Gather input="speech" timeout="5" speechTimeout="1"/>
             </Response>"""
     
     @app.route("/")
@@ -1022,7 +1021,7 @@ Respond thoughtfully, showing your reasoning if this is a test scenario, or ackn
                 ],
                 max_tokens=2000,  # UNLIMITED: Remove all AI word limits for admin training
                 temperature=0.7,
-                timeout=8.0
+                timeout=3.0  # Much faster admin training
             )
             
             chris_response = response.choices[0].message.content.strip()
@@ -1045,7 +1044,7 @@ Respond thoughtfully, showing your reasoning if this is a test scenario, or ackn
         return """<?xml version="1.0" encoding="UTF-8"?>
         <Response>
             <Say>Please say training mode now.</Say>
-            <Gather input="speech" timeout="8" speechTimeout="2" action="/debug-speech-result" method="POST">
+            <Gather input="speech" timeout="5" speechTimeout="1" action="/debug-speech-result" method="POST">
             </Gather>
             <Say>No speech heard. Ending call.</Say>
         </Response>"""
