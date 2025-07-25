@@ -462,6 +462,11 @@ def create_app():
             logger.info(f"🎫 AUTO-CREATING TICKET: {detected_issue} at {detected_address}")
             return create_service_ticket(detected_issue, detected_address)
         
+        # If we have issue but no address, ask for address with context
+        if detected_issue and not detected_address:
+            logger.info(f"🎫 ISSUE DETECTED, ASKING FOR ADDRESS: {detected_issue}")
+            return f"I understand you have a {detected_issue}. What's your property address so I can create the service ticket?"
+        
         return None
     
     def get_ai_response(user_input, call_sid, caller_phone=None):
@@ -677,7 +682,7 @@ Remember: You have persistent memory across calls and can make actual modificati
             # PRIORITY 1: Check conversation memory for auto-ticket creation
             auto_ticket_response = check_conversation_memory(call_sid, user_input)
             if auto_ticket_response:
-                logger.info(f"🎫 AUTO-TICKET CREATED: {auto_ticket_response}")
+                logger.info(f"🎫 AUTO-TICKET or MEMORY RESPONSE: {auto_ticket_response}")
                 response_text = auto_ticket_response
             else:
                 # SKIP speech-based training activation - only use *1 keypad
@@ -763,7 +768,56 @@ Remember: You have persistent memory across calls and can make actual modificati
                                 except Exception as e:
                                     logger.error(f"Instant response error for {pattern}: {e}")
                 
-                # PRIORITY 4: General admin actions fallback (training mode only)
+                # PRIORITY 4: Check if this is just an address response (after issue was detected)
+                if not response_text:
+                    # Check if conversation history has a detected issue and this looks like an address
+                    import re
+                    address_pattern = r'(\d{2,4})\s+([\w\s]+(street|avenue|ave|road|rd|court|ct|lane|ln|drive|dr))'
+                    address_match = re.search(address_pattern, user_input, re.IGNORECASE)
+                    
+                    if address_match:
+                        # Look for recent issue detection in conversation
+                        recent_messages = conversation_history.get(call_sid, [])[-3:]  # Last 3 messages
+                        for msg in recent_messages:
+                            if 'assistant' in msg.get('role', '') and any(word in msg.get('content', '').lower() for word in ['plumbing', 'electrical', 'heating', 'noise']):
+                                # This is an address response to an issue - verify and create ticket
+                                potential_address = f"{address_match.group(1)} {address_match.group(2)}"
+                                logger.info(f"🎫 DETECTED ADDRESS RESPONSE: {potential_address}")
+                                
+                                # Quick address verification
+                                verified_address = None
+                                known_addresses = [
+                                    "29 Port Richmond Avenue", "122 Targee Street", 
+                                    "31 Port Richmond Avenue", "2940 Richmond Avenue",
+                                    "2944 Richmond Avenue", "2938 Richmond Avenue"
+                                ]
+                                for known in known_addresses:
+                                    if potential_address.lower() in known.lower() or known.lower() in potential_address.lower():
+                                        verified_address = known
+                                        break
+                                
+                                if verified_address:
+                                    # Determine issue type from conversation
+                                    issue_type = "maintenance"
+                                    for msg in recent_messages:
+                                        content = msg.get('content', '').lower()
+                                        if any(word in content for word in ['plumbing', 'toilet', 'water', 'leak']):
+                                            issue_type = "plumbing"
+                                            break
+                                        elif any(word in content for word in ['electrical', 'power', 'electricity']):
+                                            issue_type = "electrical"
+                                            break
+                                        elif any(word in content for word in ['heating', 'heat', 'cold']):
+                                            issue_type = "heating"
+                                            break
+                                    
+                                    logger.info(f"🎫 CREATING TICKET: {issue_type} at {verified_address}")
+                                    response_text = create_service_ticket(issue_type, verified_address)
+                                else:
+                                    response_text = f"I couldn't find '{potential_address}' in our property system. Could you provide the correct address?"
+                                break
+
+                # PRIORITY 5: General admin actions fallback (training mode only)
                 if not response_text and call_sid in training_sessions and is_potential_admin:
                     logger.info(f"🔧 ADMIN FALLBACK CHECK: '{user_input}'")
                     # Try general admin action handler anyway
