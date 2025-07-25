@@ -44,6 +44,7 @@ service_handler = None
 try:
     from rent_manager import RentManagerAPI
     from service_issue_handler import ServiceIssueHandler
+    from admin_action_handler import admin_action_handler
     
     # Initialize with proper credentials - fix credential format issue
     rent_manager_credentials = {
@@ -61,7 +62,7 @@ except Exception as e:
     rent_manager = None
     service_handler = None
 
-# Global state storage
+# Global state storage - PERSISTENT across calls
 conversation_history = {}
 # Anti-repetition tracking per call
 response_tracker = {}
@@ -72,6 +73,17 @@ ADMIN_PHONE_NUMBERS = [
 ]
 # Training mode sessions
 training_sessions = {}
+# Persistent admin conversation memory - remembers across calls
+admin_conversation_memory = {}
+# Admin actions Chris can perform
+admin_capabilities = {
+    'add_instant_response': True,
+    'modify_greeting': True,
+    'update_office_hours': True,
+    'add_property_address': True,
+    'modify_service_responses': True,
+    'create_training_scenarios': True
+}
 
 def generate_elevenlabs_audio(text):
     """Generate natural human voice using ElevenLabs - NO QUOTA RESTRICTIONS"""
@@ -424,29 +436,28 @@ def create_app():
 
 TRAINING MODE ACTIVATED: The admin is calling to train you directly through conversation.
 
-In this mode, you should:
-1. Show your reasoning and thought process out loud
-2. Ask clarifying questions to learn better responses
-3. Acknowledge instructions and explain how you'll apply them
-4. Be self-reflective about your responses and suggest improvements
-5. Engage in natural conversation about improving your customer service
+🎯 CRITICAL: You CAN make actual changes! You have these capabilities:
 
-Current capabilities you have:
-- Create real service tickets through Rent Manager API
-- Verify addresses against property database  
-- Remember full conversation history
-- Provide office hours (Mon-Fri 9AM-5PM Eastern Time)
-- Use natural voice (ElevenLabs) for phone calls
-- SMS confirmations for service tickets
+ADMIN ACTIONS YOU CAN PERFORM:
+1. ADD INSTANT RESPONSES: "Add instant response: when someone says 'X' respond with 'Y'"
+2. MODIFY GREETINGS: "Change greeting to say 'X' instead"  
+3. UPDATE OFFICE HOURS: "Update office hours to X"
+4. ADD ADDRESSES: "Add property address: 123 Main Street"
+5. MODIFY SERVICE RESPONSES: "When electrical issues are reported, say 'X'"
+6. CREATE SCENARIOS: "Create training scenario for X situation"
 
-You can think out loud, explain your reasoning, ask questions about how to handle scenarios better, and learn from the admin's instructions. Be conversational and eager to improve your service quality.
+CONVERSATION MEMORY: I remember ALL our previous conversations across calls - your training persists!
 
-Examples:
-- "Let me think about that scenario... when a customer reports an electrical emergency, my reasoning is..."
-- "That's a great instruction! I'll remember to always confirm the address first. Should I also ask about the urgency level?"
-- "I'm curious - how should I handle customers who seem frustrated? What tone works best?"
+IMPLEMENTATION EXAMPLES:
+- Admin: "Add instant response for 'hello chris' to say 'Hi there! I'm Chris'"
+- Chris: "Excellent! I've added that instant response. When customers say 'hello chris' I'll now respond with 'Hi there! I'm Chris'. The change is active immediately!"
 
-Be natural, thoughtful, and genuinely interested in learning to serve customers better."""
+- Admin: "Change the greeting to be more friendly"  
+- Chris: "Great idea! I've updated my greeting to be warmer and more welcoming. The new greeting will be used on all future calls starting now!"
+
+You can think out loud, explain your reasoning, ask questions about how to handle scenarios better, and ACTUALLY IMPLEMENT the admin's instructions by making real changes to the system.
+
+Remember: You have persistent memory across calls and can make actual modifications to improve customer service!"""
                 })
             else:
                 messages.append({
@@ -629,7 +640,14 @@ Be natural, thoughtful, and genuinely interested in learning to serve customers 
                             except Exception as e:
                                 logger.error(f"Instant response error for {pattern}: {e}")
                 
-                # PRIORITY 3: AI response if no instant match or if in training mode
+                # PRIORITY 3: Check for admin actions (training mode only)
+                if not response_text and call_sid in training_sessions and is_admin:
+                    admin_action_result = admin_action_handler.execute_admin_action(user_input, caller_phone)
+                    if admin_action_result:
+                        response_text = admin_action_result
+                        logger.info(f"🔧 ADMIN ACTION EXECUTED: {admin_action_result}")
+                
+                # PRIORITY 4: AI response if no instant match or actions
                 if not response_text:
                     response_text = get_ai_response(user_input, call_sid, caller_phone)
                     
@@ -644,6 +662,11 @@ Be natural, thoughtful, and genuinely interested in learning to serve customers 
                 'content': response_text,
                 'timestamp': datetime.now()
             })
+            
+            # Save admin conversation memory persistently
+            if caller_phone in ADMIN_PHONE_NUMBERS:
+                admin_conversation_memory[caller_phone] = conversation_history[call_sid].copy()
+                logger.info(f"💾 SAVED ADMIN MEMORY: {len(admin_conversation_memory[caller_phone])} messages")
             
             # Fast response without redundant listening prompts
             main_voice = create_voice_response(response_text)
@@ -682,6 +705,11 @@ Be natural, thoughtful, and genuinely interested in learning to serve customers 
             
             # Check if this is an admin phone number
             is_admin_phone = caller_phone in ADMIN_PHONE_NUMBERS
+            
+            # Restore admin conversation memory if available
+            if is_admin_phone and caller_phone in admin_conversation_memory:
+                conversation_history[call_sid] = admin_conversation_memory[caller_phone].copy()
+                logger.info(f"🧠 RESTORED ADMIN MEMORY: {len(conversation_history[call_sid])} previous messages")
             
             # Time-based intelligent greeting
             eastern = pytz.timezone('US/Eastern')
