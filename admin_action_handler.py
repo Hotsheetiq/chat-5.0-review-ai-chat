@@ -37,6 +37,12 @@ class AdminActionHandler:
             elif any(phrase in user_lower for phrase in ["create scenario", "add scenario", "new scenario"]):
                 logger.info(f"🔧 DETECTED: Training scenario creation")
                 return self.create_training_scenario(user_input)
+            elif any(phrase in user_lower for phrase in ["change voice", "modify voice", "voice tone", "sound more", "voice settings", "make voice", "voice should"]):
+                logger.info(f"🔧 DETECTED: Voice tone modification")
+                return self.modify_voice_tone(user_input)
+            elif any(phrase in user_lower for phrase in ["change personality", "modify personality", "be more", "act more", "respond more", "personality"]):
+                logger.info(f"🔧 DETECTED: Personality modification")
+                return self.modify_personality(user_input)
             else:
                 logger.info(f"🔧 NO ADMIN ACTION DETECTED")
                 return None
@@ -227,6 +233,62 @@ class AdminActionHandler:
         except Exception as e:
             logger.error(f"Create training scenario error: {e}")
             return f"I had trouble creating that training scenario. Could you rephrase the instruction?"
+    
+    def modify_voice_tone(self, instruction):
+        """Modify voice tone and settings"""
+        try:
+            instruction_lower = instruction.lower()
+            
+            # Default current settings
+            stability = 0.75
+            similarity = 0.85  
+            style = 0.25
+            
+            if any(phrase in instruction_lower for phrase in ["more excited", "more energetic", "more enthusiastic"]):
+                style = 0.8  # High energy
+                stability = 0.5  # More variation
+            elif any(phrase in instruction_lower for phrase in ["more calm", "more professional", "more serious"]):
+                style = 0.1  # Low energy
+                stability = 0.9  # Very consistent
+            elif any(phrase in instruction_lower for phrase in ["more friendly", "warmer", "more casual"]):
+                style = 0.4  # Moderate warmth
+                stability = 0.6  # Some variation
+            elif any(phrase in instruction_lower for phrase in ["more natural", "more human", "less robotic"]):
+                stability = 0.3  # Natural variation
+                similarity = 0.9  # High similarity to human voice
+                style = 0.5  # Balanced expression
+                
+            change = {
+                'type': 'voice_modification',
+                'settings': {'stability': stability, 'similarity': similarity, 'style': style},
+                'instruction': instruction,
+                'timestamp': datetime.now().isoformat()
+            }
+            self.changes_log.append(change)
+            
+            logger.info(f"🔧 ADMIN ACTION: Voice tone modification - stability: {stability}, style: {style}")
+            return f"Perfect! I've updated my voice settings. My voice should now sound {instruction_lower.replace('make voice', '').replace('voice should', '').strip()}. You'll hear the change on the next call!"
+            
+        except Exception as e:
+            logger.error(f"Voice modification error: {e}")
+            return f"I had trouble adjusting my voice. Could you be more specific about how you'd like me to sound?"
+    
+    def modify_personality(self, instruction):
+        """Modify personality and conversational style"""
+        try:
+            change = {
+                'type': 'personality_modification',
+                'instruction': instruction,
+                'timestamp': datetime.now().isoformat()
+            }
+            self.changes_log.append(change)
+            
+            logger.info(f"🔧 ADMIN ACTION: Personality modification requested")
+            return f"I understand you want me to adjust my personality. While I can't modify my core conversational AI yet, I can change my voice tone, greetings, and instant responses. Try saying 'make voice more friendly' or 'change greeting to...' for immediate changes!"
+            
+        except Exception as e:
+            logger.error(f"Personality modification error: {e}")
+            return f"I had trouble with that personality change. Could you be more specific about how you'd like me to behave differently?"
     
     def get_changes_summary(self):
         """Get summary of all changes made"""
