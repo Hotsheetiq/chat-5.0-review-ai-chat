@@ -10,6 +10,7 @@ from flask import Flask, request, Response, render_template_string
 import os
 import logging
 import requests
+import re
 from datetime import datetime
 import random
 import pytz
@@ -636,7 +637,34 @@ Remember: You have persistent memory across calls and can make actual modificati
                 user_lower = user_input.lower().strip()
                 is_admin = caller_phone in ADMIN_PHONE_NUMBERS if caller_phone else False
                 
-                # PRIORITY 2: Check instant responses (skip if training mode)
+                # FORCE ADMIN DETECTION for admin phones regardless of training mode
+                if not response_text and is_admin:
+                    # Enhanced admin detection - check for greeting modification patterns
+                    admin_patterns = [
+                        r"change.*greeting",
+                        r"modify.*greeting", 
+                        r"update.*greeting",
+                        r"i.*change.*greeting",
+                        r"let.*change.*greeting", 
+                        r"greeting.*to.*say",
+                        r"chris.*change.*greeting",
+                        r"let's.*change.*greeting",
+                        r"want.*change.*greeting"
+                    ]
+                    
+                    is_admin_command = any(re.search(pattern, user_input, re.IGNORECASE) for pattern in admin_patterns)
+                    
+                    logger.info(f"🔧 FORCED ADMIN CHECK: CallSid={call_sid}, Training mode={call_sid in training_sessions}, Admin={is_admin}, Pattern match={is_admin_command}, Input='{user_input}'")
+                    
+                    if is_admin_command:
+                        # Ensure training mode is activated
+                        training_sessions[call_sid] = True
+                        logger.info(f"🔧 FORCED ADMIN PROCESSING + TRAINING ACTIVATED: {user_input}")
+                        admin_action_result = admin_action_handler.execute_admin_action(user_input, caller_phone)
+                        response_text = admin_action_result if admin_action_result else "I understand you want to change something. Can you be more specific about the new greeting?"
+                        logger.info(f"🔧 ADMIN ACTION EXECUTED: {response_text}")
+
+                # PRIORITY 3: Check instant responses (skip if admin command was processed or training mode)
                 if not response_text and call_sid not in training_sessions:
                     for pattern, response_func in INSTANT_RESPONSES.items():
                         if pattern in user_lower:
@@ -650,36 +678,16 @@ Remember: You have persistent memory across calls and can make actual modificati
                             except Exception as e:
                                 logger.error(f"Instant response error for {pattern}: {e}")
                 
-                # PRIORITY 3: Check for admin actions (training mode only) - ENHANCED DETECTION
+                # PRIORITY 4: General admin actions fallback (training mode only)
                 if not response_text and call_sid in training_sessions and is_admin:
-                    # Enhanced admin detection - check for greeting modification patterns
-                    admin_patterns = [
-                        r"change.*greeting",
-                        r"modify.*greeting", 
-                        r"update.*greeting",
-                        r"i.*change.*greeting",
-                        r"let.*change.*greeting",
-                        r"greeting.*to.*say",
-                        r"chris.*change.*greeting"
-                    ]
-                    
-                    is_admin_command = any(re.search(pattern, user_input, re.IGNORECASE) for pattern in admin_patterns)
-                    
-                    logger.info(f"🔧 ADMIN CHECK: Training mode={call_sid in training_sessions}, Admin={is_admin}, Pattern match={is_admin_command}")
-                    
-                    if is_admin_command:
-                        logger.info(f"🔧 FORCED ADMIN PROCESSING: {user_input}")
-                        admin_action_result = admin_action_handler.execute_admin_action(user_input, caller_phone)
-                        response_text = admin_action_result if admin_action_result else "I understand you want to change something. Can you be more specific about the new greeting?"
-                        logger.info(f"🔧 ADMIN ACTION EXECUTED: {response_text}")
+                    logger.info(f"🔧 ADMIN FALLBACK CHECK: '{user_input}'")
+                    # Try general admin action handler anyway
+                    admin_action_result = admin_action_handler.execute_admin_action(user_input, caller_phone)
+                    if admin_action_result and admin_action_result != "No admin action detected":
+                        response_text = admin_action_result
+                        logger.info(f"🔧 ADMIN FALLBACK EXECUTED: {admin_action_result}")
                     else:
-                        # Try general admin action handler anyway
-                        admin_action_result = admin_action_handler.execute_admin_action(user_input, caller_phone)
-                        if admin_action_result and admin_action_result != "No admin action detected":
-                            response_text = admin_action_result
-                            logger.info(f"🔧 ADMIN ACTION EXECUTED: {admin_action_result}")
-                        else:
-                            logger.info(f"🔧 NO ADMIN ACTION MATCHED for: '{user_input}'")
+                        logger.info(f"🔧 NO ADMIN FALLBACK MATCHED for: '{user_input}'")
                 
                 # PRIORITY 4: AI response if no instant match or actions (FASTER TRAINING)
                 if not response_text:
@@ -766,7 +774,7 @@ Remember: You have persistent memory across calls and can make actual modificati
                 time_greeting = "Hello"
             
             # Professional greeting for all callers (admin gets same greeting) 
-            greeting = f"{time_greeting} and thank you for calling Grinberg Management, I'm Chris. Welcome to our property management office"
+            greeting = f"{time_greeting} and thank you for calling Grinberg Management, I'm Chris. Hello and welcome to Grinberg Management Property Services"
             
             if is_admin_phone:
                 logger.info(f"🔑 ADMIN CALL DETECTED: {caller_phone}")
