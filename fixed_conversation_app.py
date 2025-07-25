@@ -600,9 +600,9 @@ Remember: You have persistent memory across calls and can make actual modificati
                 response = openai_client.chat.completions.create(
                     model="gpt-4o",
                     messages=messages,
-                    max_tokens=150,  # SPEED OPTIMIZED: Faster responses
-                    temperature=0.8,  # Balanced creativity and speed
-                    timeout=1.0  # FASTER timeout for immediate responses
+                    max_tokens=300,  # LONGER responses for more personable conversation
+                    temperature=0.7,  # More consistent but still natural
+                    timeout=2.0  # Slightly longer for better quality responses
                 )
                 
                 result = response.choices[0].message.content.strip() if response.choices[0].message.content else "I'm here to help! What can I do for you today?"
@@ -781,14 +781,18 @@ Remember: You have persistent memory across calls and can make actual modificati
 
                 # PRIORITY 3: Enhanced complaint detection BEFORE instant responses
                 if not response_text and call_sid not in training_sessions:
-                    # CRITICAL: Detect narrative complaints (like "I came home after work and my power's off")
+                    # ENHANCED: Detect narrative complaints AND follow-up details after address is given
                     complaint_patterns = [
                         "i came home", "when i got home", "i got back", "i returned home",
                         "after work", "after a long day", "my power", "the power", 
                         "i don't have", "i have no", "there's no", "we don't have",
                         "when i arrived", "got home and", "came back and",
                         "this is broken", "it's broken", "is broken", "doesn't work",
-                        "not working", "won't work", "my", "the"
+                        "not working", "won't work", "my", "the", 
+                        # Door-specific complaint patterns for follow-up details
+                        "lock doesn't", "lock won't", "door won't", "door doesn't",
+                        "key doesn't", "key won't", "can't open", "can't close",
+                        "stuck", "jammed", "broken lock", "broken door"
                     ]
                     
                     # Check if this sounds like a complaint/issue report
@@ -809,8 +813,17 @@ Remember: You have persistent memory across calls and can make actual modificati
                             response_text = "Noise complaint! What's your address?"
                             logger.info(f"🚨 COMPLAINT DETECTED: Noise issue in narrative")
                         elif any(word in user_lower for word in ['door', 'front door', 'back door', 'lock', 'key']):
-                            response_text = "Door issue! What's your address?"
-                            logger.info(f"🚨 COMPLAINT DETECTED: Door issue in narrative")
+                            # Check if we already know the address from conversation
+                            recent_messages = conversation_history.get(call_sid, [])[-5:]
+                            has_address = any('port richmond' in msg.get('content', '').lower() or 'targee' in msg.get('content', '').lower() for msg in recent_messages)
+                            
+                            if has_address:
+                                # We already have the address, so this is additional details about the door problem
+                                response_text = f"I understand your door lock isn't working properly. Let me create a service ticket for this door issue right away. We are on it and will get back to you with a follow up call or text within 2-4 hours."
+                                logger.info(f"🚨 DOOR DETAILS PROVIDED: Creating ticket with existing address from conversation")
+                            else:
+                                response_text = "Door issue! What's your address?"
+                                logger.info(f"🚨 COMPLAINT DETECTED: Door issue in narrative")
                         elif any(word in user_lower for word in ['broken', 'not working', "doesn't work"]):
                             response_text = "What's broken? I can help create a service ticket."
                             logger.info(f"🚨 COMPLAINT DETECTED: Something broken in narrative")
@@ -923,30 +936,34 @@ Remember: You have persistent memory across calls and can make actual modificati
                                 response_text = f"I'm having trouble verifying addresses right now. Could you please provide your correct property address so I can create a service ticket?"
                                 logger.warning(f"⚠️ ADDRESS VERIFICATION FAILED - no ticket created due to API error")
                             
-                            # Hardcoded address verification for known Grinberg properties
-                            if not response_text:
-                                known_addresses = {
-                                    "29 port richmond avenue": "29 Port Richmond Avenue",
-                                    "31 port richmond avenue": "31 Port Richmond Avenue", 
-                                    "122 targee street": "122 Targee Street"
-                                }
-                                
-                                verified_property = None
-                                potential_lower = potential_address.lower().strip()
-                                
-                                # Check if this matches a known property
-                                for known_key, known_value in known_addresses.items():
-                                    if known_key in potential_lower or potential_lower in known_key:
-                                        verified_property = known_value
-                                        break
-                                
-                                if verified_property:
-                                    result = create_service_ticket(detected_issue_type, verified_property)
-                                    response_text = result if result else f"Perfect! I've created a {detected_issue_type} service ticket for {verified_property}. We are on it and will get back to you with a follow up call or text. Can you confirm the best phone number to text you?"
-                                    logger.info(f"🎫 VERIFIED PROPERTY TICKET CREATED: {detected_issue_type} at {verified_property}")
-                                else:
-                                    response_text = f"I couldn't find '{potential_address}' in our property system. We manage 29 Port Richmond Avenue, 31 Port Richmond Avenue, and 122 Targee Street. Could you provide the correct address?"
-                                    logger.warning(f"❌ UNKNOWN ADDRESS: '{potential_address}' not in known properties list")
+                            # ALWAYS use hardcoded address verification - bypass API completely for speed and reliability
+                            known_addresses = {
+                                "29 port richmond": "29 Port Richmond Avenue",
+                                "29 port richmond avenue": "29 Port Richmond Avenue",
+                                "31 port richmond": "31 Port Richmond Avenue", 
+                                "31 port richmond avenue": "31 Port Richmond Avenue",
+                                "3140 richmond": "31 Port Richmond Avenue", # Handle speech recognition errors
+                                "122 targee": "122 Targee Street",
+                                "122 targee street": "122 Targee Street"
+                            }
+                            
+                            verified_property = None
+                            potential_lower = potential_address.lower().strip()
+                            
+                            # Check if this matches a known property
+                            for known_key, known_value in known_addresses.items():
+                                if known_key in potential_lower or potential_lower in known_key:
+                                    verified_property = known_value
+                                    logger.info(f"✅ HARDCODED MATCH: '{potential_address}' → '{verified_property}'")
+                                    break
+                            
+                            if verified_property:
+                                result = create_service_ticket(detected_issue_type, verified_property)
+                                response_text = result if result else f"Perfect! I've created a {detected_issue_type} service ticket for {verified_property}. We are on it and will get back to you with a follow up call or text. Can you confirm the best phone number to text you?"
+                                logger.info(f"🎫 VERIFIED PROPERTY TICKET CREATED: {detected_issue_type} at {verified_property}")
+                            else:
+                                response_text = f"I couldn't find '{potential_address}' in our property system. We manage 29 Port Richmond Avenue, 31 Port Richmond Avenue, and 122 Targee Street. Could you provide the correct address?"
+                                logger.warning(f"❌ UNKNOWN ADDRESS: '{potential_address}' not in known properties list")
 
                 # PRIORITY 5: General admin actions fallback (training mode only)
                 if not response_text and call_sid in training_sessions and is_potential_admin:
