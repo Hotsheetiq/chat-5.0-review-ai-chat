@@ -295,8 +295,8 @@ def create_app():
         "text me": lambda: "I'll text you the service details!" if 'current_service_issue' in globals() and current_service_issue else "I don't have a current service issue to text you about.",
         "send sms": lambda: "I'll send you an SMS!" if 'current_service_issue' in globals() and current_service_issue else "I don't have a current service issue to text you about.",
         "yes text": lambda: "Perfect! I'll text you!" if 'current_service_issue' in globals() and current_service_issue else "I don't have a current service issue to text you about.",
-        "good morning: good morning! how can i help": "?",
-    "good morning: good morning! how can i help": "?",
+
+    "hello": "hi there",
 }
     
     def send_service_sms():

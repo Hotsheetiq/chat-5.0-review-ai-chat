@@ -25,9 +25,14 @@ class AdminActionHandler:
             if any(phrase in user_lower for phrase in ["add instant response", "add response", "new response", "create response"]):
                 logger.info(f"🔧 DETECTED: Instant response addition")
                 return self.add_instant_response(user_input)
-            elif any(phrase in user_lower for phrase in ["change greeting", "modify greeting", "update greeting", "new greeting"]):
-                logger.info(f"🔧 DETECTED: Greeting modification")
-                return self.modify_greeting(user_input)
+            elif any(phrase in user_lower for phrase in ["change greeting", "modify greeting", "update greeting", "new greeting", "when someone says", "when", "says", "respond with"]):
+                # Check if it's an instant response or greeting
+                if "greeting" in user_lower:
+                    logger.info(f"🔧 DETECTED: Greeting modification")
+                    return self.modify_greeting(user_input)
+                else:
+                    logger.info(f"🔧 DETECTED: Instant response addition")
+                    return self.add_instant_response(user_input)
             elif any(phrase in user_lower for phrase in ["update office hours", "change hours", "modify hours"]):
                 logger.info(f"🔧 DETECTED: Office hours update")
                 return self.update_office_hours(user_input)
@@ -53,12 +58,11 @@ class AdminActionHandler:
             # Also: "When someone says X, respond with Y" or "Add response for X: Y"
             
             patterns = [
-                r"says?\s+['\"]?([^'\"]+)['\"]?.*respond.*['\"]?([^'\"]+)['\"]?",
-                r"when.*says?\s+['\"]?([^'\"]+)['\"]?.*respond.*['\"]?([^'\"]+)['\"]?",
-                r"add.*response.*for\s+['\"]?([^'\"]+)['\"]?[:\-\s]*['\"]?([^'\"]+)['\"]?",
-                r"if.*says?\s+['\"]?([^'\"]+)['\"]?.*say\s+['\"]?([^'\"]+)['\"]?",
-                r"when someone says\s+([^,]+).*respond.*with\s+(.+)",
-                r"add response.*:\s*when.*says\s+([^,]+).*respond.*with\s+(.+)"
+                r"when someone says\s+(.+?)\s+respond\s+with\s+(.+)",
+                r"when.*says?\s+(.+?)\s+respond.*with\s+(.+)",
+                r"add.*response.*for\s+(.+?):\s*(.+)",
+                r"if.*says?\s+(.+?)\s+say\s+(.+)",
+                r"says?\s+(.+?)\s+respond.*with\s+(.+)"
             ]
             
             trigger = None
@@ -240,6 +244,11 @@ class AdminActionHandler:
                     f.write(content)
                 
                 logger.info(f"🔧 REAL CHANGE: Added '{trigger}' -> '{response}' to INSTANT_RESPONSES")
+                
+                # Force reload by touching the file
+                import os
+                os.utime('fixed_conversation_app.py', None)
+                
                 return True
             
         except Exception as e:
