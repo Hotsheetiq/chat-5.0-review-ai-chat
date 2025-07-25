@@ -908,21 +908,25 @@ Remember: You have persistent memory across calls and can make actual modificati
                                             logger.info(f"✅ RENT MANAGER API VERIFIED: {verified_address}")
                                             break
                                     
-                                    if verified_address:
-                                        # Create service ticket with verified address
-                                        result = create_service_ticket(detected_issue_type, verified_address)
-                                        response_text = result if result else f"Perfect! I've created a {detected_issue_type} service ticket for {verified_address}. We are on it and will get back to you with a follow up call or text. Can you confirm the best phone number to text you?"
-                                        logger.info(f"🎫 SERVICE TICKET CREATED: {detected_issue_type} at {verified_address}")
-                                    else:
-                                        response_text = f"I couldn't find '{potential_address}' in our property system. Could you provide the correct address?"
-                                        logger.warning(f"❌ ADDRESS '{potential_address}' NOT FOUND in Rent Manager API")
+                                    # Always create service ticket for reasonable address patterns
+                                    result = create_service_ticket(detected_issue_type, potential_address)
+                                    response_text = result if result else f"Perfect! I've created a {detected_issue_type} service ticket for {potential_address}. We are on it and will get back to you with a follow up call or text. Can you confirm the best phone number to text you?"
+                                    logger.info(f"🎫 SERVICE TICKET CREATED: {detected_issue_type} at {potential_address}")
+                                    
+                                    # Note if address verification would have failed (for debugging)
+                                    if not verified_address:
+                                        logger.info(f"📍 ADDRESS VERIFICATION: '{potential_address}' not found in API but ticket created anyway")
                                         
                             except Exception as e:
                                 logger.error(f"Address verification error: {e}")
-                                response_text = f"I'm having trouble verifying '{potential_address}'. Let me create the ticket anyway - we are on it and will get back to you with a follow up call or text. Can you confirm the best phone number to text you?"
+                                # Create ticket anyway when verification fails
+                                result = create_service_ticket(detected_issue_type, potential_address)
+                                response_text = result if result else f"Perfect! I've created a {detected_issue_type} service ticket for {potential_address}. We are on it and will get back to you with a follow up call or text. Can you confirm the best phone number to text you?"
+                                logger.info(f"🎫 SERVICE TICKET CREATED (API error fallback): {detected_issue_type} at {potential_address}")
                             
-                            # Skip API verification for now - create ticket immediately  
+                            # Create ticket anyway if address verification fails but looks valid
                             if not response_text:
+                                # For common addresses, create ticket even if API doesn't find exact match
                                 result = create_service_ticket(detected_issue_type, potential_address)
                                 response_text = result if result else f"Perfect! I've created a {detected_issue_type} service ticket for {potential_address}. We are on it and will get back to you with a follow up call or text. Can you confirm the best phone number to text you?"
                                 logger.info(f"🎫 SERVICE TICKET CREATED: {detected_issue_type} at {potential_address}")
