@@ -298,6 +298,7 @@ def create_app():
 
     "hello": "hi there",
     "test123": "working123",
+    "testing": "this is a test",
 }
     
     def send_service_sms():
@@ -653,7 +654,7 @@ Remember: You have persistent memory across calls and can make actual modificati
                 if not response_text and call_sid in training_sessions and is_admin:
                     logger.info(f"🔧 ADMIN CHECK: Training mode={call_sid in training_sessions}, Admin={is_admin}")
                     admin_action_result = admin_action_handler.execute_admin_action(user_input, caller_phone)
-                    if admin_action_result:
+                    if admin_action_result and admin_action_result != "No admin action detected":
                         response_text = admin_action_result
                         logger.info(f"🔧 ADMIN ACTION EXECUTED: {admin_action_result}")
                     else:
@@ -719,6 +720,11 @@ Remember: You have persistent memory across calls and can make actual modificati
             # Check if this is an admin phone number (skip blocked/unknown numbers)
             is_admin_phone = caller_phone and caller_phone in ADMIN_PHONE_NUMBERS and caller_phone != "unknown"
             
+            # AUTO-ACTIVATE TRAINING MODE for admin calls
+            if is_admin_phone:
+                training_sessions[call_sid] = True
+                logger.info(f"🧠 TRAINING MODE AUTO-ACTIVATED for admin call: {caller_phone}")
+            
             # Restore admin conversation memory if available (skip blocked/unknown numbers)
             if is_admin_phone and caller_phone and caller_phone != "unknown" and caller_phone in admin_conversation_memory:
                 conversation_history[call_sid] = admin_conversation_memory[caller_phone].copy()
@@ -739,7 +745,7 @@ Remember: You have persistent memory across calls and can make actual modificati
                 time_greeting = "Hello"
             
             # Professional greeting for all callers (admin gets same greeting)
-            greeting = f"{time_greeting} and thank you for calling Grinberg Management, I'm Chris, It's a great day here at Greenberg Management."
+            greeting = f"{time_greeting} and thank you for calling Grinberg Management, I'm Chris, our office"
             
             if is_admin_phone:
                 logger.info(f"🔑 ADMIN CALL DETECTED: {caller_phone}")

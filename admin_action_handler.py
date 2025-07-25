@@ -25,7 +25,7 @@ class AdminActionHandler:
             if any(phrase in user_lower for phrase in ["add instant response", "add response", "new response", "create response", "when someone says", "when", "says", "respond with"]):
                 logger.info(f"🔧 DETECTED: Instant response addition")
                 return self.add_instant_response(user_input)
-            elif any(phrase in user_lower for phrase in ["change greeting", "modify greeting", "update greeting", "new greeting", "greeting to", "change it to", "let's change", "wanted to say", "i'll change the greeting", "change the greeting to", "it's a great day"]):
+            elif any(phrase in user_lower for phrase in ["change greeting", "modify greeting", "update greeting", "new greeting", "greeting to", "change it to", "let's change", "wanted to say", "i'll change the greeting", "change the greeting to", "it's a great day", "lets change the greeting", "i change the greeting"]):
                 logger.info(f"🔧 DETECTED: Greeting modification")
                 return self.modify_greeting(user_input)
             elif any(phrase in user_lower for phrase in ["update office hours", "change hours", "modify hours"]):
