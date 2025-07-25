@@ -74,7 +74,7 @@ def generate_elevenlabs_audio(text):
         
         data = {
             "text": text,
-            "model_id": "eleven_turbo_v2_5",  # Fastest model for real-time
+            "model_id": "eleven_multilingual_v2",  # More cost-effective model
             "voice_settings": {
                 "stability": 0.75,        # High stability for consistent voice
                 "similarity_boost": 0.85, # Natural voice consistency
@@ -102,8 +102,10 @@ def generate_elevenlabs_audio(text):
                 f.write(response.content)
             
             logger.info(f"✅ ElevenLabs audio generated: {audio_filename}")
-            # Return play URL for Twilio
-            return f"/static/{audio_filename}"
+            # Return full external URL for Twilio playback
+            replit_domain = os.environ.get('REPLIT_DOMAINS', '3442ef02-e255-4239-86b6-df0f7a6e4975-00-1w63nn4pu7btq.picard.replit.dev')
+            full_audio_url = f"https://{replit_domain}/static/{audio_filename}"
+            return full_audio_url
         else:
             logger.error(f"ElevenLabs API error: {response.status_code} - {response.text[:200]}")
             return None
@@ -113,16 +115,18 @@ def generate_elevenlabs_audio(text):
         return None
 
 def create_voice_response(text):
-    """Create TwiML voice response - TEMPORARILY USING POLLY ONLY TO PREVENT ERRORS"""
+    """Create TwiML voice response - USING ELEVENLABS EXCLUSIVELY"""
     try:
-        # TEMPORARY: Skip ElevenLabs to prevent error messages during quota exceeded
-        # This ensures reliable voice output without any error messages
-        logger.info(f"🎙️ Using Polly voice for: '{text[:50]}...'")
-        return f'<Say voice="Polly.Matthew-Neural">{text}</Say>'
-        
-        # ElevenLabs integration ready when quota available:
-        # audio_url = generate_elevenlabs_audio(text)
-        # if audio_url:
+        # Generate ElevenLabs audio
+        audio_url = generate_elevenlabs_audio(text)
+        if audio_url:
+            # Use ElevenLabs natural human voice
+            logger.info(f"✅ Using ElevenLabs voice for: '{text[:50]}...'")
+            return f'<Play>{audio_url}</Play>'
+        else:
+            # ElevenLabs quota exceeded - provide user feedback
+            logger.error(f"❌ ElevenLabs quota exceeded - need to purchase more credits")
+            return f'<Say voice="Polly.Matthew-Neural">I apologize, but our premium voice system requires additional credits. {text}</Say>'
         #     full_url = f"https://{os.environ.get('REPL_SLUG', 'localhost')}.replit.app{audio_url}"
         #     return f'<Play>{full_url}</Play>'
         
