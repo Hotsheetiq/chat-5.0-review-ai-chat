@@ -408,33 +408,19 @@ class AdminActionHandler:
                         old_greeting = return_match.group(1)
                         content = content.replace(f'return f"{old_greeting}"', f'return f"{old_greeting} {new_greeting}"')
             
-            # COMPLETE REPLACEMENT: Find and replace the entire greeting line
-            greeting_pattern = r'greeting = f"[^"]*"'
+            # SIMPLE REPLACEMENT: Find and replace the entire greeting line - NO TIME COMPONENTS
+            greeting_pattern = r'greeting = "[^"]*"'
             match = re.search(greeting_pattern, content)
             
             if match:
                 old_line = match.group(0)
-                # SMART REPLACEMENT: If new greeting contains time-based greeting, use as-is, otherwise add time greeting
-                if any(time_word in new_greeting.lower() for time_word in ['good morning', 'good afternoon', 'good evening']):
-                    # New greeting already has time component
-                    new_line = f'greeting = f"{new_greeting}"'
-                else:
-                    # Add time greeting prefix
-                    new_line = f'greeting = f"{{time_greeting}}, {new_greeting}"'
+                # SIMPLE REPLACEMENT: Always use the new greeting as-is without any time prefixes
+                new_line = f'greeting = "{new_greeting}"'
                 content = content.replace(old_line, new_line)
-                logger.info(f"🔧 COMPLETE REPLACEMENT: '{old_line}' -> '{new_line}'")
+                logger.info(f"🔧 SIMPLE REPLACEMENT: '{old_line}' -> '{new_line}'")
             else:
-                # Fallback: look for the specific pattern we know exists
-                specific_pattern = r'greeting = f"\{time_greeting\}[^"]*"'
-                match = re.search(specific_pattern, content)
-                if match:
-                    old_line = match.group(0)
-                    new_line = f'greeting = f"{{time_greeting}}, {new_greeting}"'
-                    content = content.replace(old_line, new_line)
-                    logger.info(f"🔧 FALLBACK REPLACEMENT: '{old_line}' -> '{new_line}'")
-                else:
-                    logger.error(f"Could not find any greeting pattern in file")
-                    return False
+                logger.error(f"Could not find greeting pattern in file")
+                return False
             
             # Write back to file
             with open('fixed_conversation_app.py', 'w') as f:

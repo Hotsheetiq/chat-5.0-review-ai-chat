@@ -494,7 +494,7 @@ Remember: You have persistent memory across calls and can make actual modificati
                 response = openai_client.chat.completions.create(
                     model="gpt-4o",
                     messages=messages,
-                    max_tokens=50,  # Much shorter for speed
+                    max_tokens=1000,  # UNLIMITED: Remove all AI word limits
                     temperature=0.7,
                     timeout=1.5  # Faster response
                 )
@@ -759,22 +759,8 @@ Remember: You have persistent memory across calls and can make actual modificati
                 conversation_history[call_sid] = admin_conversation_memory[caller_phone].copy()
                 logger.info(f"🧠 RESTORED ADMIN MEMORY: {len(conversation_history[call_sid])} previous messages")
             
-            # Time-based intelligent greeting
-            eastern = pytz.timezone('US/Eastern')
-            current_time = datetime.now(eastern)
-            current_hour = current_time.hour
-            
-            if 5 <= current_hour < 12:
-                time_greeting = "Good morning"
-            elif 12 <= current_hour < 17:
-                time_greeting = "Good afternoon"  
-            elif 17 <= current_hour <= 23:
-                time_greeting = "Good evening"
-            else:
-                time_greeting = "Hello"
-            
-            # Professional greeting for all callers (admin gets same greeting) 
-            greeting = f"{time_greeting}, hey, it's Chris with Greenberg management. What can I do for you"
+            # Simple professional greeting without time-based components
+            greeting = "Hey it's Chris with Grinberg Management. How can I help you today?"
             
             if is_admin_phone:
                 logger.info(f"🔑 ADMIN CALL DETECTED: {caller_phone}")
@@ -1012,7 +998,7 @@ Respond thoughtfully, showing your reasoning if this is a test scenario, or ackn
                     {"role": "system", "content": training_prompt},
                     {"role": "user", "content": message}
                 ],
-                max_tokens=600,  # More tokens for detailed reasoning
+                max_tokens=2000,  # UNLIMITED: Remove all AI word limits for admin training
                 temperature=0.7,
                 timeout=8.0
             )
