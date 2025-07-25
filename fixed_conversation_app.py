@@ -280,11 +280,17 @@ def create_app():
         "what can you help with": lambda: "I can help with maintenance requests, office hours, and property questions. What's happening?",
         "maintenance": lambda: "I understand you need maintenance help. What's the issue and what's your address?",
         
-        # Common issues - ask for address immediately
+        # Power/electrical issues - immediate recognition
         "electrical": lambda: "I understand you have an electrical issue. What's your address so I can create a service ticket?",
         "power": lambda: "Got it! What's your address for the power issue?",
         "no power": lambda: "That's an electrical emergency! What's your address so I can create an urgent service ticket?",
         "don't have power": lambda: "That's urgent! What's your address so I can get this handled right away?",
+        "power off": lambda: "Power outage! What's your address for this electrical emergency?",
+        "power is off": lambda: "Emergency electrical issue! What's your address?",
+        "powers off": lambda: "Power outage emergency! What's your address?",
+        "electricity": lambda: "Electrical issue! What's your address so I can create a service ticket?",
+        "lights": lambda: "Lighting issue! What's your address for the electrical problem?",
+        "no electricity": lambda: "Electrical emergency! What's your address?",
         
         # Thanks and confirmations
         "thank you": lambda: "You're welcome! Anything else I can help with?",
@@ -703,19 +709,41 @@ Remember: You have persistent memory across calls and can make actual modificati
                         response_text = admin_action_result if admin_action_result else "I understand you want to change something. Can you be more specific about the new greeting?"
                         logger.info(f"🔧 ADMIN ACTION EXECUTED: {response_text}")
 
-                # PRIORITY 3: Check instant responses (skip if admin command was processed or training mode)
+                # PRIORITY 3: Enhanced complaint detection BEFORE instant responses
                 if not response_text and call_sid not in training_sessions:
-                    for pattern, response_func in INSTANT_RESPONSES.items():
-                        if pattern in user_lower:
-                            try:
-                                if callable(response_func):
-                                    response_text = response_func()
-                                else:
-                                    response_text = response_func
-                                logger.info(f"⚡ INSTANT RESPONSE: {pattern}")
-                                break
-                            except Exception as e:
-                                logger.error(f"Instant response error for {pattern}: {e}")
+                    # CRITICAL: Detect narrative complaints (like "I came home after work and my power's off")
+                    complaint_patterns = [
+                        "i came home", "when i got home", "i got back", "i returned home",
+                        "after work", "after a long day", "my power", "the power", 
+                        "i don't have", "i have no", "there's no", "we don't have",
+                        "when i arrived", "got home and", "came back and"
+                    ]
+                    
+                    # Check if this sounds like a complaint/issue report
+                    is_complaint = any(pattern in user_lower for pattern in complaint_patterns)
+                    
+                    if is_complaint:
+                        # Look for power/electrical keywords in the complaint
+                        if any(word in user_lower for word in ['power', 'electrical', 'electricity', 'lights']):
+                            response_text = "I understand you're having power issues. What's your address so I can create an urgent service ticket?"
+                            logger.info(f"🚨 COMPLAINT DETECTED: Power issue in narrative")
+                        elif any(word in user_lower for word in ['heat', 'heating', 'no heat', 'cold']):
+                            response_text = "I understand you're having heating issues. What's your address so I can create a service ticket?"
+                            logger.info(f"🚨 COMPLAINT DETECTED: Heating issue in narrative")
+                    
+                    # If not a complaint, check regular instant responses
+                    if not response_text:
+                        for pattern, response_func in INSTANT_RESPONSES.items():
+                            if pattern in user_lower:
+                                try:
+                                    if callable(response_func):
+                                        response_text = response_func()
+                                    else:
+                                        response_text = response_func
+                                    logger.info(f"⚡ INSTANT RESPONSE: {pattern}")
+                                    break
+                                except Exception as e:
+                                    logger.error(f"Instant response error for {pattern}: {e}")
                 
                 # PRIORITY 4: General admin actions fallback (training mode only)
                 if not response_text and call_sid in training_sessions and is_potential_admin:
