@@ -317,8 +317,17 @@ class AdminActionHandler:
                 content = content.replace(old_line, new_line)
                 logger.info(f"🔧 FOUND AND REPLACED: '{old_line}' -> '{new_line}'")
             else:
-                logger.error(f"Could not find greeting pattern in file")
-                return False
+                # Fallback: look for the specific pattern we know exists
+                specific_pattern = r'greeting = f"\{time_greeting\}[^"]*"'
+                match = re.search(specific_pattern, content)
+                if match:
+                    old_line = match.group(0)
+                    new_line = f'greeting = f"{{time_greeting}} and thank you for calling Grinberg Management, I\'m Chris. {new_greeting}"'
+                    content = content.replace(old_line, new_line)
+                    logger.info(f"🔧 SPECIFIC PATTERN REPLACED: '{old_line}' -> '{new_line}'")
+                else:
+                    logger.error(f"Could not find any greeting pattern in file")
+                    return False
             
             # Write back to file
             with open('fixed_conversation_app.py', 'w') as f:
