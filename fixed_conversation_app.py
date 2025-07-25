@@ -813,17 +813,8 @@ Remember: You have persistent memory across calls and can make actual modificati
                             response_text = "Noise complaint! What's your address?"
                             logger.info(f"🚨 COMPLAINT DETECTED: Noise issue in narrative")
                         elif any(word in user_lower for word in ['door', 'front door', 'back door', 'lock', 'key']):
-                            # Check if we already know the address from conversation
-                            recent_messages = conversation_history.get(call_sid, [])[-5:]
-                            has_address = any('port richmond' in msg.get('content', '').lower() or 'targee' in msg.get('content', '').lower() for msg in recent_messages)
-                            
-                            if has_address:
-                                # We already have the address, so this is additional details about the door problem
-                                response_text = f"I understand your door lock isn't working properly. Let me create a service ticket for this door issue right away. We are on it and will get back to you with a follow up call or text within 2-4 hours."
-                                logger.info(f"🚨 DOOR DETAILS PROVIDED: Creating ticket with existing address from conversation")
-                            else:
-                                response_text = "Door issue! What's your address?"
-                                logger.info(f"🚨 COMPLAINT DETECTED: Door issue in narrative")
+                            response_text = "Door issue! What's your address?"
+                            logger.info(f"🚨 COMPLAINT DETECTED: Door issue in narrative")
                         elif any(word in user_lower for word in ['broken', 'not working', "doesn't work"]):
                             response_text = "What's broken? I can help create a service ticket."
                             logger.info(f"🚨 COMPLAINT DETECTED: Something broken in narrative")
