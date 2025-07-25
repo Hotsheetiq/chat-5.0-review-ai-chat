@@ -290,15 +290,17 @@ class AdminActionHandler:
                         old_greeting = return_match.group(1)
                         content = content.replace(f'return f"{old_greeting}"', f'return f"{old_greeting} {new_greeting}"')
             
-            # Simple pattern replacement for the greeting line
-            old_greeting_line = 'greeting = f"{time_greeting} and thank you for calling Grinberg Management, I\'m Chris, how can I help you?"'
-            new_greeting_line = f'greeting = f"{{time_greeting}} and thank you for calling Grinberg Management, I\'m Chris, {new_greeting}"'
+            # Find the actual greeting line and replace it
+            greeting_pattern = r'greeting = f"[^"]*"'
+            match = re.search(greeting_pattern, content)
             
-            if old_greeting_line in content:
-                content = content.replace(old_greeting_line, new_greeting_line)
-                logger.info(f"🔧 FOUND AND REPLACED: Greeting line successfully")
+            if match:
+                old_line = match.group(0)
+                new_line = f'greeting = f"{{time_greeting}} and thank you for calling Grinberg Management, I\'m Chris, {new_greeting}"'
+                content = content.replace(old_line, new_line)
+                logger.info(f"🔧 FOUND AND REPLACED: '{old_line}' -> '{new_line}'")
             else:
-                logger.error(f"Could not find greeting line to replace")
+                logger.error(f"Could not find greeting pattern in file")
                 return False
             
             # Write back to file
@@ -307,8 +309,14 @@ class AdminActionHandler:
             
             logger.info(f"🔧 REAL CHANGE: Updated greeting to '{new_greeting}'")
             
+            # Force reload by touching the file
+            import os
+            os.utime('fixed_conversation_app.py', None)
+            return True
+            
         except Exception as e:
             logger.error(f"Failed to write greeting to file: {e}")
+            return False
 
 # Global admin action handler
 admin_action_handler = AdminActionHandler()
