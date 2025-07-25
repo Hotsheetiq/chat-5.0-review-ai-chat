@@ -684,10 +684,10 @@ Be natural, thoughtful, and genuinely interested in learning to serve customers 
             
             # Special greeting for admin with DTMF fallback
             if is_admin_phone:
-                greeting = f"{time_greeting}! You've reached Chris. I'm ready for customer service or training mode. Say 'training mode' or press star 1 to start training me directly through conversation. How can I help you today?"
+                greeting = f"{time_greeting} and thank you for calling Grinberg Management, I'm Chris. I'm ready for customer service or training mode. Say 'training mode' or press star 1 to start training me directly through conversation. How can I help you?"
                 logger.info(f"🔑 ADMIN CALL DETECTED: {caller_phone}")
             else:
-                greeting = f"{time_greeting}, you've reached Grinberg Management. I'm Chris, how can I help you today?"
+                greeting = f"{time_greeting} and thank you for calling Grinberg Management, I'm Chris, how can I help you?"
             
             conversation_history[call_sid].append({
                 'role': 'assistant',
