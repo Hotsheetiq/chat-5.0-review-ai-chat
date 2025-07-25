@@ -19,18 +19,26 @@ class AdminActionHandler:
         try:
             user_lower = user_input.lower().strip()
             
-            # Detect admin action patterns
-            if "add instant response" in user_lower:
+            logger.info(f"🔧 CHECKING ADMIN ACTION: '{user_input}' -> '{user_lower}'")
+            
+            # Detect admin action patterns - ENHANCED DETECTION
+            if any(phrase in user_lower for phrase in ["add instant response", "add response", "new response", "create response"]):
+                logger.info(f"🔧 DETECTED: Instant response addition")
                 return self.add_instant_response(user_input)
-            elif "change greeting" in user_lower or "modify greeting" in user_lower:
+            elif any(phrase in user_lower for phrase in ["change greeting", "modify greeting", "update greeting", "new greeting"]):
+                logger.info(f"🔧 DETECTED: Greeting modification")
                 return self.modify_greeting(user_input)
-            elif "update office hours" in user_lower:
+            elif any(phrase in user_lower for phrase in ["update office hours", "change hours", "modify hours"]):
+                logger.info(f"🔧 DETECTED: Office hours update")
                 return self.update_office_hours(user_input)
-            elif "add property address" in user_lower or "add address" in user_lower:
+            elif any(phrase in user_lower for phrase in ["add property address", "add address", "new address"]):
+                logger.info(f"🔧 DETECTED: Property address addition")
                 return self.add_property_address(user_input)
-            elif "create scenario" in user_lower or "add scenario" in user_lower:
+            elif any(phrase in user_lower for phrase in ["create scenario", "add scenario", "new scenario"]):
+                logger.info(f"🔧 DETECTED: Training scenario creation")
                 return self.create_training_scenario(user_input)
             else:
+                logger.info(f"🔧 NO ADMIN ACTION DETECTED")
                 return None
                 
         except Exception as e:
@@ -40,14 +48,28 @@ class AdminActionHandler:
     def add_instant_response(self, instruction):
         """Add new instant response pattern"""
         try:
-            # Extract pattern and response from instruction
+            # Enhanced pattern matching for natural language
             # Pattern: "Add instant response: when someone says 'X' respond with 'Y'"
-            match = re.search(r"says? ['\"]([^'\"]+)['\"].*respond.*['\"]([^'\"]+)['\"]", instruction, re.IGNORECASE)
+            # Also: "When someone says X, respond with Y" or "Add response for X: Y"
             
-            if match:
-                trigger = match.group(1).lower().strip()
-                response = match.group(2).strip()
-                
+            patterns = [
+                r"says? ['\"]([^'\"]+)['\"].*respond.*['\"]([^'\"]+)['\"]",
+                r"when.*says? ['\"]?([^'\"]+)['\"]?.*respond.*['\"]([^'\"]+)['\"]",
+                r"add.*response.*for ['\"]?([^'\"]+)['\"]?[:\-\s]+['\"]([^'\"]+)['\"]",
+                r"if.*says? ['\"]?([^'\"]+)['\"]?.*say ['\"]([^'\"]+)['\"]"
+            ]
+            
+            trigger = None
+            response = None
+            
+            for pattern in patterns:
+                match = re.search(pattern, instruction, re.IGNORECASE)
+                if match:
+                    trigger = match.group(1).lower().strip()
+                    response = match.group(2).strip()
+                    break
+            
+            if trigger and response:
                 # Log the change
                 change = {
                     'type': 'instant_response',
@@ -61,7 +83,7 @@ class AdminActionHandler:
                 logger.info(f"🔧 ADMIN ACTION: Added instant response '{trigger}' -> '{response}'")
                 return f"Perfect! I've added a new instant response. When customers say '{trigger}', I'll now respond with '{response}'. This change is active immediately for all future calls!"
             else:
-                return "I understand you want to add an instant response, but I need the format: 'Add instant response: when someone says 'hello chris' respond with 'Hi there!'' Could you try again with that format?"
+                return "I understand you want to add an instant response. Try saying something like: 'When someone says hello Chris, respond with Hi there!' or 'Add response for good morning: Good morning! How can I help you?'"
                 
         except Exception as e:
             logger.error(f"Add instant response error: {e}")

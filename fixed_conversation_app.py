@@ -648,10 +648,13 @@ Remember: You have persistent memory across calls and can make actual modificati
                 
                 # PRIORITY 3: Check for admin actions (training mode only)
                 if not response_text and call_sid in training_sessions and is_admin:
+                    logger.info(f"🔧 ADMIN CHECK: Training mode={call_sid in training_sessions}, Admin={is_admin}")
                     admin_action_result = admin_action_handler.execute_admin_action(user_input, caller_phone)
                     if admin_action_result:
                         response_text = admin_action_result
                         logger.info(f"🔧 ADMIN ACTION EXECUTED: {admin_action_result}")
+                    else:
+                        logger.info(f"🔧 NO ADMIN ACTION MATCHED for: '{user_input}'")
                 
                 # PRIORITY 4: AI response if no instant match or actions
                 if not response_text:
