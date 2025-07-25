@@ -906,64 +906,55 @@ Remember: You have persistent memory across calls and can make actual modificati
                             potential_address = f"{address_match.group(1)} {address_match.group(2)}"
                             logger.info(f"🎫 DETECTED ADDRESS RESPONSE FOR {detected_issue_type.upper()}: {potential_address}")
                             
-                            # API address verification
-                            try:
-                                if rent_manager:
-                                    import asyncio
-                                    logger.info(f"🔍 API VERIFYING ADDRESS: {potential_address}")
-                                    properties = asyncio.run(rent_manager.get_all_properties()) if rent_manager else []
-                                    verified_address = None
-                                    
-                                    for prop in properties:
-                                        prop_address = prop.get('Address', '').strip()
-                                        if potential_address.lower() in prop_address.lower() or prop_address.lower() in potential_address.lower():
-                                            verified_address = prop_address
-                                            logger.info(f"✅ RENT MANAGER API VERIFIED: {verified_address}")
-                                            break
-                                    
-                                    # CRITICAL: Only create ticket if address is verified in Rent Manager
-                                    if verified_address:
-                                        result = create_service_ticket(detected_issue_type, verified_address)
-                                        response_text = result if result else f"Perfect! I've created a {detected_issue_type} service ticket for {verified_address}. We are on it and will get back to you with a follow up call or text. Can you confirm the best phone number to text you?"
-                                        logger.info(f"🎫 SERVICE TICKET CREATED: {detected_issue_type} at {verified_address}")
-                                    else:
-                                        response_text = f"I couldn't find '{potential_address}' in our property system. Could you provide the correct address for your unit?"
-                                        logger.warning(f"❌ ADDRESS '{potential_address}' NOT VERIFIED - no ticket created")
-                                        
-                            except Exception as e:
-                                logger.error(f"Address verification error: {e}")
-                                # Only create ticket if API verification explicitly failed (not if address not found)
-                                response_text = f"I'm having trouble verifying addresses right now. Could you please provide your correct property address so I can create a service ticket?"
-                                logger.warning(f"⚠️ ADDRESS VERIFICATION FAILED - no ticket created due to API error")
+                            # SKIP API - use hardcoded fuzzy matching only
                             
-                            # ALWAYS use hardcoded address verification - bypass API completely for speed and reliability
+                            # FUZZY HARDCODED MATCHING - matches even misheard addresses
                             known_addresses = {
+                                # 29 Port Richmond variations
+                                "29": "29 Port Richmond Avenue",
+                                "29 port": "29 Port Richmond Avenue", 
                                 "29 port richmond": "29 Port Richmond Avenue",
                                 "29 port richmond avenue": "29 Port Richmond Avenue",
+                                "29 park richmond": "29 Port Richmond Avenue", # Speech error: Park vs Port
+                                "2940 richmond": "29 Port Richmond Avenue", # Speech error: 2940 vs 29 Port
+                                "twenty nine": "29 Port Richmond Avenue",
+                                # 31 Port Richmond variations  
+                                "31": "31 Port Richmond Avenue",
+                                "31 port": "31 Port Richmond Avenue",
                                 "31 port richmond": "31 Port Richmond Avenue", 
                                 "31 port richmond avenue": "31 Port Richmond Avenue",
-                                "3140 richmond": "31 Port Richmond Avenue", # Handle speech recognition errors
+                                "3140 richmond": "31 Port Richmond Avenue", # Speech error: 3140 vs 31 Port
+                                "thirty one": "31 Port Richmond Avenue",
+                                # 122 Targee variations
+                                "122": "122 Targee Street",
                                 "122 targee": "122 Targee Street",
-                                "122 targee street": "122 Targee Street"
+                                "122 targee street": "122 Targee Street",
+                                "one twenty two": "122 Targee Street"
                             }
                             
                             verified_property = None
-                            potential_lower = potential_address.lower().strip()
+                            potential_lower = potential_address.lower().strip().replace("avenue", "").replace("street", "").strip()
                             
-                            # Check if this matches a known property
+                            # Fuzzy matching - check if any part matches
                             for known_key, known_value in known_addresses.items():
-                                if known_key in potential_lower or potential_lower in known_key:
+                                known_clean = known_key.lower().replace("avenue", "").replace("street", "").strip()
+                                
+                                # Multiple matching strategies
+                                if (known_clean in potential_lower or 
+                                    potential_lower in known_clean or
+                                    any(word in potential_lower for word in known_clean.split() if len(word) > 2) or
+                                    any(word in known_clean for word in potential_lower.split() if len(word) > 2)):
                                     verified_property = known_value
-                                    logger.info(f"✅ HARDCODED MATCH: '{potential_address}' → '{verified_property}'")
+                                    logger.info(f"✅ FUZZY MATCH: '{potential_address}' → '{verified_property}'")
                                     break
                             
                             if verified_property:
                                 result = create_service_ticket(detected_issue_type, verified_property)
                                 response_text = result if result else f"Perfect! I've created a {detected_issue_type} service ticket for {verified_property}. We are on it and will get back to you with a follow up call or text. Can you confirm the best phone number to text you?"
-                                logger.info(f"🎫 VERIFIED PROPERTY TICKET CREATED: {detected_issue_type} at {verified_property}")
+                                logger.info(f"🎫 FUZZY MATCHED TICKET: {detected_issue_type} at {verified_property}")
                             else:
-                                response_text = f"I couldn't find '{potential_address}' in our property system. We manage 29 Port Richmond Avenue, 31 Port Richmond Avenue, and 122 Targee Street. Could you provide the correct address?"
-                                logger.warning(f"❌ UNKNOWN ADDRESS: '{potential_address}' not in known properties list")
+                                response_text = f"I couldn't find '{potential_address}' in our property system. We manage 29 Port Richmond Avenue, 31 Port Richmond Avenue, and 122 Targee Street. Could you say your address again?"
+                                logger.warning(f"❌ FUZZY MATCH FAILED: '{potential_address}' not recognized")
 
                 # PRIORITY 5: General admin actions fallback (training mode only)
                 if not response_text and call_sid in training_sessions and is_potential_admin:
