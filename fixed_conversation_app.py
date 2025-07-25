@@ -494,6 +494,41 @@ Be natural, thoughtful, and genuinely interested in learning to serve customers 
             logger.error(f"AI response error: {e}")
             return "I'm here to help! What can I do for you today?"
     
+    @app.route("/handle-input/<call_sid>", methods=["POST"])
+    def handle_input(call_sid):
+        """Handle both speech and DTMF input"""
+        try:
+            user_input = request.values.get("SpeechResult", "").strip()
+            dtmf_input = request.values.get("Digits", "").strip()
+            caller_phone = request.values.get("From", "")
+            speech_confidence = request.values.get("Confidence", "")
+            
+            # Check for DTMF training mode activation
+            if dtmf_input == "*1":
+                is_admin = caller_phone in ADMIN_PHONE_NUMBERS if caller_phone else False
+                if is_admin:
+                    training_sessions[call_sid] = True
+                    logger.info(f"🧠 TRAINING MODE ACTIVATED via DTMF for {caller_phone}")
+                    response_text = "Excellent! Training mode activated via keypad. I can explain my reasoning, ask questions, and learn from your instructions. What would you like to work on first?"
+                    main_voice = create_voice_response(response_text)
+                    return f"""<?xml version="1.0" encoding="UTF-8"?>
+                    <Response>
+                        {main_voice}
+                        <Gather input="speech dtmf" timeout="15" speechTimeout="1" language="en-US" action="/handle-input/{call_sid}" method="POST">
+                        </Gather>
+                        <Redirect>/handle-speech/{call_sid}</Redirect>
+                    </Response>"""
+            
+            # Use speech input if available, otherwise redirect to speech handler
+            if user_input:
+                return handle_speech_internal(call_sid, user_input, caller_phone, speech_confidence)
+            else:
+                return handle_speech(call_sid)
+                
+        except Exception as e:
+            logger.error(f"Input handling error: {e}")
+            return handle_speech(call_sid)
+
     @app.route("/handle-speech/<call_sid>", methods=["POST"])
     def handle_speech(call_sid):
         """Handle speech input with FIXED conversation flow"""
@@ -502,6 +537,23 @@ Be natural, thoughtful, and genuinely interested in learning to serve customers 
             caller_phone = request.values.get("From", "")
             speech_confidence = request.values.get("Confidence", "")
             
+            return handle_speech_internal(call_sid, user_input, caller_phone, speech_confidence)
+            
+        except Exception as e:
+            logger.error(f"Speech handling error: {e}")
+            error_text = "I'm sorry, I had a technical issue. How can I help you?"
+            error_voice = create_voice_response(error_text)
+            
+            return f"""<?xml version="1.0" encoding="UTF-8"?>
+            <Response>
+                {error_voice}
+                <Gather input="speech dtmf" timeout="15" speechTimeout="1" language="en-US" action="/handle-input/{call_sid}" method="POST">
+                </Gather>
+            </Response>"""
+    
+    def handle_speech_internal(call_sid, user_input, caller_phone, speech_confidence):
+        """Internal speech handling logic"""
+        try:
             logger.info(f"📞 CALL {call_sid}: '{user_input}' (confidence: {speech_confidence}) from {caller_phone}")
             
             # Enhanced debugging for empty speech results
@@ -630,9 +682,9 @@ Be natural, thoughtful, and genuinely interested in learning to serve customers 
             else:
                 time_greeting = "Hello"
             
-            # Special greeting for admin
+            # Special greeting for admin with DTMF fallback
             if is_admin_phone:
-                greeting = f"{time_greeting}! You've reached Chris. I'm ready for customer service or training mode - just say 'training mode' to start training me directly through conversation. How can I help you today?"
+                greeting = f"{time_greeting}! You've reached Chris. I'm ready for customer service or training mode. Say 'training mode' or press star 1 to start training me directly through conversation. How can I help you today?"
                 logger.info(f"🔑 ADMIN CALL DETECTED: {caller_phone}")
             else:
                 greeting = f"{time_greeting}, you've reached Grinberg Management. I'm Chris, how can I help you today?"
@@ -649,7 +701,7 @@ Be natural, thoughtful, and genuinely interested in learning to serve customers 
             return f"""<?xml version="1.0" encoding="UTF-8"?>
             <Response>
                 {greeting_voice}
-                <Gather input="speech" timeout="15" speechTimeout="1" language="en-US" profanityFilter="false" enhanced="true">
+                <Gather input="speech dtmf" timeout="15" speechTimeout="1" language="en-US" profanityFilter="false" enhanced="true" action="/handle-input/{call_sid}" method="POST">
                 </Gather>
                 <Redirect>/handle-speech/{call_sid}</Redirect>
             </Response>"""
@@ -882,25 +934,50 @@ Respond thoughtfully, showing your reasoning if this is a test scenario, or ackn
             logger.error(f"Admin training error: {e}")
             return jsonify({'response': f'Training error: {e}. I need help understanding what went wrong.'})
 
-    @app.route("/test-simple", methods=["POST"])
-    def test_simple_voice():
-        """Simple test endpoint for debugging"""
+    @app.route("/debug-speech-simple", methods=["POST"])  
+    def debug_speech_simple():
+        """Ultra-simple speech test without any complexity"""
+        logger.info("=== SIMPLE SPEECH TEST STARTED ===")
+        
+        # Log incoming parameters
+        all_params = dict(request.values)
+        for key, value in all_params.items():
+            logger.info(f"PARAM {key}: {value}")
+        
         return """<?xml version="1.0" encoding="UTF-8"?>
         <Response>
-            <Say voice="Polly.Matthew-Neural">This is a simple test. Say hello.</Say>
-            <Gather input="speech" timeout="5" action="/test-speech-result">
+            <Say>Please say training mode now.</Say>
+            <Gather input="speech" timeout="8" speechTimeout="2" action="/debug-speech-result" method="POST">
             </Gather>
+            <Say>No speech heard. Ending call.</Say>
         </Response>"""
     
-    @app.route("/test-speech-result", methods=["POST"])
-    def test_speech_result():
-        """Test speech result capture"""
+    @app.route("/debug-speech-result", methods=["POST"])
+    def debug_speech_result():
+        """Capture and log speech result"""
+        logger.info("=== SPEECH RESULT RECEIVED ===")
+        
         speech = request.values.get("SpeechResult", "")
-        logger.info(f"🧪 TEST SPEECH: '{speech}'")
+        confidence = request.values.get("Confidence", "")
+        
+        logger.info(f"🎤 SPEECH: '{speech}'")
+        logger.info(f"📊 CONFIDENCE: '{confidence}'")
+        
+        # Log all parameters
+        all_params = dict(request.values)
+        for key, value in all_params.items():
+            logger.info(f"RESULT {key}: {value}")
+        
+        if speech:
+            message = f"SUCCESS! You said: {speech}"
+            logger.info(f"✅ SPEECH DETECTED: {speech}")
+        else:
+            message = "FAILED: No speech detected"
+            logger.error("❌ NO SPEECH CAPTURED")
         
         return f"""<?xml version="1.0" encoding="UTF-8"?>
         <Response>
-            <Say voice="Polly.Matthew-Neural">You said: {speech or 'nothing detected'}</Say>
+            <Say>{message}</Say>
         </Response>"""
 
     return app
