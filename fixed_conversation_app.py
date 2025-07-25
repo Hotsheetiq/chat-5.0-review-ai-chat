@@ -641,6 +641,7 @@ def create_app():
                             <div class="card-body">
                                 <p>Active calls: {{ call_count }}</p>
                                 <p>Total conversations: {{ total_conversations }}</p>
+                                <a href="/admin-training" class="btn btn-primary">🧠 Train Chris</a>
                             </div>
                         </div>
                     </div>
@@ -653,6 +654,159 @@ def create_app():
         total_conversations=len(conversation_history)
         )
     
+    @app.route("/admin-training")
+    def admin_training():
+        """Admin training interface for Chris"""
+        return render_template_string("""
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Chris Admin Training Interface</title>
+    <link href="https://cdn.replit.com/agent/bootstrap-agent-dark-theme.min.css" rel="stylesheet">
+    <style>
+        .conversation-container { max-height: 60vh; overflow-y: auto; }
+        .message { margin-bottom: 15px; padding: 10px; border-radius: 8px; }
+        .admin-message { background-color: var(--bs-primary-bg-subtle); border-left: 4px solid var(--bs-primary); }
+        .chris-message { background-color: var(--bs-secondary-bg-subtle); border-left: 4px solid var(--bs-secondary); }
+    </style>
+</head>
+<body data-bs-theme="dark">
+    <div class="container mt-4">
+        <h2>🧠 Chris Admin Training Interface</h2>
+        <p class="text-secondary">Train Chris through conversation. He can reason, ask questions, and learn from your instructions.</p>
+        
+        <div class="card">
+            <div class="card-header">
+                <h5>Conversation with Chris</h5>
+                <small class="text-secondary">Chris is in training mode - he can think out loud and show reasoning</small>
+            </div>
+            <div class="card-body">
+                <div class="conversation-container" id="conversation">
+                    <div class="chris-message message">
+                        <strong>Chris:</strong> Hi! I'm ready for training. You can:
+                        <ul>
+                        <li>Give me instructions: "When customers ask about office hours, be more specific about Eastern Time"</li>
+                        <li>Test my responses: "How do you handle electrical emergencies?"</li>
+                        <li>Ask me to explain my reasoning: "Why did you respond that way?"</li>
+                        <li>Request improvements: "How can you better handle noise complaints?"</li>
+                        </ul>
+                        What would you like to work on?
+                    </div>
+                </div>
+                
+                <div class="mt-3">
+                    <div class="input-group">
+                        <input type="text" class="form-control" id="admin-input" placeholder="Type your instruction or question for Chris..." onkeypress="if(event.key==='Enter') sendMessage()">
+                        <button class="btn btn-primary" onclick="sendMessage()">Send</button>
+                    </div>
+                    <small class="text-secondary">Try: "Test: A customer says they have no electricity" or "When handling service requests, always confirm the address first"</small>
+                </div>
+            </div>
+        </div>
+        
+        <div class="mt-3">
+            <a href="/" class="btn btn-outline-secondary">← Back to Dashboard</a>
+        </div>
+    </div>
+
+    <script>
+        function sendMessage() {
+            const input = document.getElementById('admin-input');
+            const message = input.value.trim();
+            if (!message) return;
+            
+            addMessage('Admin', message, 'admin-message');
+            input.value = '';
+            
+            // Show typing indicator
+            const typingDiv = document.createElement('div');
+            typingDiv.className = 'message chris-message';
+            typingDiv.innerHTML = '<strong>Chris:</strong> <em>Thinking...</em>';
+            typingDiv.id = 'typing-indicator';
+            document.getElementById('conversation').appendChild(typingDiv);
+            
+            // Send to Chris
+            fetch('/admin-chat', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({message: message})
+            })
+            .then(response => response.json())
+            .then(data => {
+                const typing = document.getElementById('typing-indicator');
+                if (typing) typing.remove();
+                addMessage('Chris', data.response, 'chris-message');
+            })
+            .catch(err => {
+                const typing = document.getElementById('typing-indicator');
+                if (typing) typing.remove();
+                addMessage('System', 'Error: ' + err, 'chris-message');
+            });
+        }
+        
+        function addMessage(sender, content, className) {
+            const conversation = document.getElementById('conversation');
+            const messageDiv = document.createElement('div');
+            messageDiv.className = 'message ' + className;
+            messageDiv.innerHTML = `<strong>${sender}:</strong> ${content.replace(/\\n/g, '<br>')}`;
+            conversation.appendChild(messageDiv);
+            conversation.scrollTop = conversation.scrollHeight;
+        }
+    </script>
+</body>
+</html>
+        """)
+    
+    @app.route("/admin-chat", methods=["POST"])
+    def admin_chat():
+        """Handle admin training chat with Chris"""
+        try:
+            data = request.json
+            message = data.get('message', '')
+            
+            if not openai_client:
+                return jsonify({'response': 'I need the OpenAI API key to use my reasoning capabilities.'})
+            
+            # Enhanced training prompt
+            training_prompt = f"""You are Chris, the AI assistant for Grinberg Management, in ADMIN TRAINING MODE.
+
+In this mode, you should:
+1. Show your reasoning and thought process
+2. Ask clarifying questions when you need more information
+3. Acknowledge instructions and explain how you'll apply them
+4. Be self-reflective about your responses and suggest improvements
+5. Remember that you handle maintenance requests, office hours, and property info
+
+Current capabilities you have:
+- Create real service tickets through Rent Manager API
+- Verify addresses against property database
+- Remember full conversation history
+- Provide office hours (Mon-Fri 9AM-5PM Eastern Time)
+- Use natural voice (ElevenLabs) for phone calls
+- SMS confirmations for service tickets
+
+Admin message: "{message}"
+
+Respond thoughtfully, showing your reasoning if this is a test scenario, or acknowledging the instruction if it's training."""
+
+            response = openai_client.chat.completions.create(
+                model="gpt-4o",
+                messages=[
+                    {"role": "system", "content": training_prompt},
+                    {"role": "user", "content": message}
+                ],
+                max_tokens=600,  # More tokens for detailed reasoning
+                temperature=0.7,
+                timeout=8.0
+            )
+            
+            chris_response = response.choices[0].message.content.strip()
+            return jsonify({'response': chris_response})
+            
+        except Exception as e:
+            logger.error(f"Admin training error: {e}")
+            return jsonify({'response': f'Training error: {e}. I need help understanding what went wrong.'})
+
     return app
 
 if __name__ == "__main__":
