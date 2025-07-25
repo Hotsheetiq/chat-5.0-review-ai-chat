@@ -500,8 +500,14 @@ Be natural, thoughtful, and genuinely interested in learning to serve customers 
         try:
             user_input = request.values.get("SpeechResult", "").strip()
             caller_phone = request.values.get("From", "")
+            speech_confidence = request.values.get("Confidence", "")
             
-            logger.info(f"📞 CALL {call_sid}: '{user_input}' from {caller_phone}")
+            logger.info(f"📞 CALL {call_sid}: '{user_input}' (confidence: {speech_confidence}) from {caller_phone}")
+            
+            # Enhanced debugging for empty speech results
+            if not user_input:
+                all_params = dict(request.values)
+                logger.warning(f"🔍 EMPTY SPEECH DEBUG - All params: {all_params}")
             
             if not user_input:
                 # Fast response without extra "I'm listening" message
@@ -510,7 +516,7 @@ Be natural, thoughtful, and genuinely interested in learning to serve customers 
                 return f"""<?xml version="1.0" encoding="UTF-8"?>
                 <Response>
                     {no_input_voice}
-                    <Gather input="speech" timeout="8" speechTimeout="4">
+                    <Gather input="speech" timeout="10" speechTimeout="auto" language="en-US" profanityFilter="false">
                     </Gather>
                     <Redirect>/handle-speech/{call_sid}</Redirect>
                 </Response>"""
@@ -537,8 +543,8 @@ Be natural, thoughtful, and genuinely interested in learning to serve customers 
                 
                 if is_admin and any(phrase in user_lower for phrase in ["training mode", "training", "train me", "let's train"]):
                     training_sessions[call_sid] = True
-                    logger.info(f"🧠 TRAINING MODE ACTIVATED for {caller_phone}")
-                    response_text = "Perfect! I'm now in training mode. I can think out loud, explain my reasoning, and ask questions to learn better. What would you like to work on? You can test my responses to customer scenarios, give me instructions on how to handle situations better, or ask me to explain my thought process for any topic."
+                    logger.info(f"🧠 TRAINING MODE ACTIVATED for {caller_phone} - detected phrase in: '{user_input}'")
+                    response_text = "Excellent! Training mode is now active. I can explain my reasoning, ask questions, and learn from your instructions. What would you like to work on first? You can test scenarios, give me guidance, or ask me to walk through my thought process on any topic."
                 else:
                     response_text = None
                 
@@ -578,7 +584,7 @@ Be natural, thoughtful, and genuinely interested in learning to serve customers 
             return f"""<?xml version="1.0" encoding="UTF-8"?>
             <Response>
                 {main_voice}
-                <Gather input="speech" timeout="8" speechTimeout="4">
+                <Gather input="speech" timeout="10" speechTimeout="auto" language="en-US" profanityFilter="false">
                 </Gather>
                 <Redirect>/handle-speech/{call_sid}</Redirect>
             </Response>"""
@@ -643,7 +649,7 @@ Be natural, thoughtful, and genuinely interested in learning to serve customers 
             return f"""<?xml version="1.0" encoding="UTF-8"?>
             <Response>
                 {greeting_voice}
-                <Gather input="speech" timeout="8" speechTimeout="4">
+                <Gather input="speech" timeout="10" speechTimeout="auto" language="en-US" profanityFilter="false">
                 </Gather>
                 <Redirect>/handle-speech/{call_sid}</Redirect>
             </Response>"""
