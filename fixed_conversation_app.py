@@ -935,17 +935,36 @@ Remember: You have persistent memory across calls and can make actual modificati
                             verified_property = None
                             potential_lower = potential_address.lower().strip().replace("avenue", "").replace("street", "").strip()
                             
-                            # Fuzzy matching - check if any part matches
+                            # Aggressive fuzzy matching - find any reasonable match
                             for known_key, known_value in known_addresses.items():
                                 known_clean = known_key.lower().replace("avenue", "").replace("street", "").strip()
                                 
-                                # Multiple matching strategies
-                                if (known_clean in potential_lower or 
-                                    potential_lower in known_clean or
-                                    any(word in potential_lower for word in known_clean.split() if len(word) > 2) or
-                                    any(word in known_clean for word in potential_lower.split() if len(word) > 2)):
+                                # Aggressive matching - multiple strategies
+                                match_found = False
+                                
+                                # Strategy 1: Direct substring matching
+                                if known_clean in potential_lower or potential_lower in known_clean:
+                                    match_found = True
+                                
+                                # Strategy 2: Word-by-word matching  
+                                if not match_found:
+                                    potential_words = [w for w in potential_lower.split() if len(w) > 1]
+                                    known_words = [w for w in known_clean.split() if len(w) > 1]
+                                    common_words = set(potential_words) & set(known_words)
+                                    if len(common_words) >= 1:  # At least 1 word match
+                                        match_found = True
+                                
+                                # Strategy 3: Special case for "2940" -> "29"
+                                if not match_found and ("2940" in potential_lower and "29" in known_clean):
+                                    match_found = True
+                                
+                                # Strategy 4: Richmond variations
+                                if not match_found and ("richmond" in potential_lower and "richmond" in known_clean):
+                                    match_found = True
+                                
+                                if match_found:
                                     verified_property = known_value
-                                    logger.info(f"✅ FUZZY MATCH: '{potential_address}' → '{verified_property}'")
+                                    logger.info(f"✅ AGGRESSIVE FUZZY MATCH: '{potential_address}' → '{verified_property}'")
                                     break
                             
                             if verified_property:
