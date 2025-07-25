@@ -281,16 +281,28 @@ def create_app():
         "maintenance": lambda: "I understand you need maintenance help. What's the issue and what's your address?",
         
         # Power/electrical issues - immediate recognition
-        "electrical": lambda: "I understand you have an electrical issue. What's your address so I can create a service ticket?",
-        "power": lambda: "Got it! What's your address for the power issue?",
-        "no power": lambda: "That's an electrical emergency! What's your address so I can create an urgent service ticket?",
-        "don't have power": lambda: "That's urgent! What's your address so I can get this handled right away?",
-        "power off": lambda: "Power outage! What's your address for this electrical emergency?",
-        "power is off": lambda: "Emergency electrical issue! What's your address?",
-        "powers off": lambda: "Power outage emergency! What's your address?",
-        "electricity": lambda: "Electrical issue! What's your address so I can create a service ticket?",
-        "lights": lambda: "Lighting issue! What's your address for the electrical problem?",
+        "electrical": lambda: "Electrical issue! What's your address?",
+        "power": lambda: "Power issue! What's your address?",
+        "no power": lambda: "Power emergency! What's your address?",
+        "don't have power": lambda: "Power emergency! What's your address?",
+        "power off": lambda: "Power outage! What's your address?",
+        "power is off": lambda: "Power emergency! What's your address?",
+        "powers off": lambda: "Power outage! What's your address?",
+        "electricity": lambda: "Electrical issue! What's your address?",
+        "lights": lambda: "Lighting issue! What's your address?",
         "no electricity": lambda: "Electrical emergency! What's your address?",
+        
+        # Plumbing issues - INSTANT TOILET RECOGNITION
+        "toilet": lambda: "Plumbing issue! What's your address?",
+        "bathroom": lambda: "Plumbing issue! What's your address?", 
+        "plumbing": lambda: "Plumbing issue! What's your address?",
+        "water": lambda: "Plumbing issue! What's your address?",
+        "leak": lambda: "Plumbing emergency! What's your address?",
+        "drain": lambda: "Plumbing issue! What's your address?",
+        "sink": lambda: "Plumbing issue! What's your address?",
+        "faucet": lambda: "Plumbing issue! What's your address?",
+        "toilet broken": lambda: "Plumbing emergency! What's your address?",
+        "toilet not working": lambda: "Plumbing emergency! What's your address?",
         
         # Thanks and confirmations
         "thank you": lambda: "You're welcome! Anything else I can help with?",
@@ -532,7 +544,7 @@ Remember: You have persistent memory across calls and can make actual modificati
                     messages=messages,
                     max_tokens=150,  # SPEED OPTIMIZED: Shorter for faster responses
                     temperature=0.7,
-                    timeout=0.8  # Ultra-fast response - prevent timeouts
+                    timeout=0.5  # FASTEST response - prevent any delays
                 )
                 
                 result = response.choices[0].message.content.strip() if response.choices[0].message.content else "I'm here to help! What can I do for you today?"
@@ -723,13 +735,19 @@ Remember: You have persistent memory across calls and can make actual modificati
                     is_complaint = any(pattern in user_lower for pattern in complaint_patterns)
                     
                     if is_complaint:
-                        # Look for power/electrical keywords in the complaint
+                        # Look for issue keywords in the complaint
                         if any(word in user_lower for word in ['power', 'electrical', 'electricity', 'lights']):
-                            response_text = "I understand you're having power issues. What's your address so I can create an urgent service ticket?"
+                            response_text = "Power issue! What's your address?"
                             logger.info(f"🚨 COMPLAINT DETECTED: Power issue in narrative")
                         elif any(word in user_lower for word in ['heat', 'heating', 'no heat', 'cold']):
-                            response_text = "I understand you're having heating issues. What's your address so I can create a service ticket?"
+                            response_text = "Heating issue! What's your address?"
                             logger.info(f"🚨 COMPLAINT DETECTED: Heating issue in narrative")
+                        elif any(word in user_lower for word in ['toilet', 'bathroom', 'plumbing', 'water', 'leak', 'drain', 'sink', 'faucet']):
+                            response_text = "Plumbing issue! What's your address?"
+                            logger.info(f"🚨 COMPLAINT DETECTED: Plumbing issue in narrative")
+                        elif any(word in user_lower for word in ['noise', 'loud', 'neighbors', 'music', 'party']):
+                            response_text = "Noise complaint! What's your address?"
+                            logger.info(f"🚨 COMPLAINT DETECTED: Noise issue in narrative")
                     
                     # If not a complaint, check regular instant responses
                     if not response_text:
