@@ -80,6 +80,9 @@ class AdminActionHandler:
                 }
                 self.changes_log.append(change)
                 
+                # ACTUALLY IMPLEMENT THE CHANGE - Write to file
+                self._write_instant_response_to_file(trigger, response)
+                
                 logger.info(f"🔧 ADMIN ACTION: Added instant response '{trigger}' -> '{response}'")
                 return f"Perfect! I've added a new instant response. When customers say '{trigger}', I'll now respond with '{response}'. This change is active immediately for all future calls!"
             else:
@@ -105,6 +108,9 @@ class AdminActionHandler:
                     'instruction': instruction
                 }
                 self.changes_log.append(change)
+                
+                # ACTUALLY IMPLEMENT THE CHANGE - Write to file
+                self._write_greeting_to_file(new_greeting)
                 
                 logger.info(f"🔧 ADMIN ACTION: Modified greeting to '{new_greeting}'")
                 return f"Excellent! I've updated my greeting. I'll now use '{new_greeting}' when answering calls. The change is active for all future calls starting now!"
@@ -185,6 +191,53 @@ class AdminActionHandler:
             summary += f"{i}. {change['type']}: {change.get('instruction', 'Modified')}\n"
         
         return summary
+
+    def _write_instant_response_to_file(self, trigger, response):
+        """Actually write the instant response to the code file"""
+        try:
+            # Read the current file
+            with open('fixed_conversation_app.py', 'r') as f:
+                content = f.read()
+            
+            # Find the INSTANT_RESPONSES dictionary and add new entry
+            # Simple approach: add at the end before closing brace
+            pattern = r'(INSTANT_RESPONSES\s*=\s*{[^}]*)})'
+            
+            if 'INSTANT_RESPONSES' in content:
+                # Add new entry before closing brace
+                old_dict = f'"{trigger}": "{response}",'
+                content = content.replace('INSTANT_RESPONSES = {', f'INSTANT_RESPONSES = {{\n    "{trigger}": "{response}",')
+                
+                # Write back to file
+                with open('fixed_conversation_app.py', 'w') as f:
+                    f.write(content)
+                
+                logger.info(f"🔧 REAL CHANGE: Added '{trigger}' -> '{response}' to INSTANT_RESPONSES")
+            
+        except Exception as e:
+            logger.error(f"Failed to write instant response to file: {e}")
+    
+    def _write_greeting_to_file(self, new_greeting):
+        """Actually write the new greeting to the code file"""
+        try:
+            # Read the current file
+            with open('fixed_conversation_app.py', 'r') as f:
+                content = f.read()
+            
+            # Find and replace the greeting in get_time_based_greeting function
+            old_pattern = r'(return f"Good {time_period} and thank you for calling Grinberg Management\.)[^"]*(")'
+            new_pattern = f'\\1 {new_greeting}\\2'
+            
+            content = re.sub(old_pattern, new_pattern, content)
+            
+            # Write back to file
+            with open('fixed_conversation_app.py', 'w') as f:
+                f.write(content)
+            
+            logger.info(f"🔧 REAL CHANGE: Updated greeting to '{new_greeting}'")
+            
+        except Exception as e:
+            logger.error(f"Failed to write greeting to file: {e}")
 
 # Global admin action handler
 admin_action_handler = AdminActionHandler()

@@ -656,8 +656,9 @@ Remember: You have persistent memory across calls and can make actual modificati
                     else:
                         logger.info(f"🔧 NO ADMIN ACTION MATCHED for: '{user_input}'")
                 
-                # PRIORITY 4: AI response if no instant match or actions
+                # PRIORITY 4: AI response if no instant match or actions (FASTER TRAINING)
                 if not response_text:
+                    # Generate AI response with improved training mode
                     response_text = get_ai_response(user_input, call_sid, caller_phone)
                     
                     if call_sid in training_sessions:
