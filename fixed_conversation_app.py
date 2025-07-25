@@ -307,24 +307,35 @@ def create_app():
                             if rent_manager:
                                 # Direct verification through rent manager
                                 try:
+                                    # Direct Rent Manager API verification
                                     import asyncio
+                                    logger.info(f"🔍 Verifying address '{potential_address}' with Rent Manager API...")
                                     properties = asyncio.run(rent_manager.get_all_properties()) if rent_manager else []
                                     verified_address = None
+                                    
                                     for prop in properties:
-                                        if potential_address.lower() in prop.get('Address', '').lower():
-                                            verified_address = prop.get('Address')
+                                        prop_address = prop.get('Address', '').strip()
+                                        if potential_address.lower() in prop_address.lower():
+                                            verified_address = prop_address
+                                            logger.info(f"✅ RENT MANAGER VERIFIED: {verified_address}")
                                             break
+                                    
+                                    if not verified_address:
+                                        logger.warning(f"❌ Address '{potential_address}' NOT FOUND in Rent Manager database")
+                                        
                                 except Exception as api_error:
                                     logger.error(f"Rent Manager API error: {api_error}")
-                                    # Use known verified addresses as fallback
+                                    # Enhanced known addresses as fallback with cross-reference
                                     known_addresses = [
                                         "29 Port Richmond Avenue", "122 Targee Street", 
-                                        "31 Port Richmond Avenue", "2940 Richmond Avenue"
+                                        "31 Port Richmond Avenue", "2940 Richmond Avenue",
+                                        "2944 Richmond Avenue", "2938 Richmond Avenue"
                                     ]
                                     verified_address = None
                                     for known in known_addresses:
-                                        if potential_address.lower() in known.lower():
+                                        if potential_address.lower() in known.lower() or known.lower() in potential_address.lower():
                                             verified_address = known
+                                            logger.info(f"✅ FALLBACK VERIFIED: {verified_address}")
                                             break
                                 
                                 if verified_address:
@@ -357,7 +368,7 @@ def create_app():
             messages: List[Dict[str, Any]] = [
                 {
                     "role": "system", 
-                    "content": "You are Chris, a professional AI assistant for Grinberg Management property company. You help with maintenance requests, office hours, and property questions. Be friendly, helpful, and concise. Keep responses under 25 words. If someone reports a maintenance issue, ask for their address to create a service ticket."
+                    "content": "You are Chris, the intelligent AI assistant for Grinberg Management. You're warm, professional, and conversational. Handle maintenance requests by getting the issue type and address to create service tickets. For general questions about office hours, properties, or leasing, provide helpful information. Be natural and engaging, keep responses under 30 words. Never ask redundant questions - if someone gives you both an issue and address, immediately create the service ticket. Show genuine empathy for maintenance issues."
                 }
             ]
             
@@ -377,9 +388,9 @@ def create_app():
                 response = openai_client.chat.completions.create(
                     model="gpt-4o",
                     messages=messages,
-                    max_tokens=75,
-                    temperature=0.7,
-                    timeout=3.0
+                    max_tokens=100,
+                    temperature=0.8,
+                    timeout=2.5
                 )
                 
                 result = response.choices[0].message.content
@@ -401,19 +412,15 @@ def create_app():
             logger.info(f"📞 CALL {call_sid}: '{user_input}' from {caller_phone}")
             
             if not user_input:
-                # Use ElevenLabs for natural voice responses
-                no_input_text = "I didn't catch that. Could you repeat what you need help with?"
-                listening_text = "I'm listening..."
-                
-                no_input_voice = create_voice_response(no_input_text)
-                listening_voice = create_voice_response(listening_text)
+                # Fast response without extra "I'm listening" message
+                no_input_voice = create_voice_response("I didn't catch that. What can I help you with?")
                 
                 return f"""<?xml version="1.0" encoding="UTF-8"?>
                 <Response>
                     {no_input_voice}
-                    <Gather input="speech" timeout="5" speechTimeout="2">
-                        {listening_voice}
+                    <Gather input="speech" timeout="8" speechTimeout="4">
                     </Gather>
+                    <Redirect>/handle-speech/{call_sid}</Redirect>
                 </Response>"""
             
             # Store user input in conversation history
@@ -460,15 +467,13 @@ def create_app():
                 'timestamp': datetime.now()
             })
             
-            # Return TwiML response with ElevenLabs natural voice - NEVER HANG UP
+            # Fast response without redundant listening prompts
             main_voice = create_voice_response(response_text)
-            followup_voice = create_voice_response("What else can I help you with?")
             
             return f"""<?xml version="1.0" encoding="UTF-8"?>
             <Response>
                 {main_voice}
-                <Gather input="speech" timeout="10" speechTimeout="3">
-                    {followup_voice}
+                <Gather input="speech" timeout="8" speechTimeout="4">
                 </Gather>
                 <Redirect>/handle-speech/{call_sid}</Redirect>
             </Response>"""
@@ -497,9 +502,8 @@ def create_app():
             if call_sid not in conversation_history:
                 conversation_history[call_sid] = []
             
-            # Greeting with ElevenLabs natural voice
+            # Greeting with ElevenLabs natural voice - NO redundant listening prompt
             greeting = "Hi there, you've reached Grinberg Management. I'm Chris, how can I help you today?"
-            listening = "I'm listening..."
             
             conversation_history[call_sid].append({
                 'role': 'assistant',
@@ -507,15 +511,13 @@ def create_app():
                 'timestamp': datetime.now()
             })
             
-            # Create natural voice responses
+            # Create natural voice response - only greeting, no "listening" prompt
             greeting_voice = create_voice_response(greeting)
-            listening_voice = create_voice_response(listening)
             
             return f"""<?xml version="1.0" encoding="UTF-8"?>
             <Response>
                 {greeting_voice}
-                <Gather input="speech" timeout="10" speechTimeout="3">
-                    {listening_voice}
+                <Gather input="speech" timeout="8" speechTimeout="4">
                 </Gather>
                 <Redirect>/handle-speech/{call_sid}</Redirect>
             </Response>"""
