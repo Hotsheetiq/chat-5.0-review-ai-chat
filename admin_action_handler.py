@@ -138,10 +138,15 @@ class AdminActionHandler:
                         if captured_text.lower().startswith('say '):
                             captured_text = captured_text[4:].strip()
                         
+                        # Remove any remaining "say" words that got mixed in
+                        captured_text = re.sub(r'\bsay\b', '', captured_text, flags=re.IGNORECASE).strip()
+                        
                         # Clean up punctuation and quotes
                         new_greeting = captured_text.strip("'\".,").strip()
                         # Remove trailing comma artifacts
                         new_greeting = re.sub(r',\s*$', '', new_greeting)
+                        # Remove extra spaces
+                        new_greeting = re.sub(r'\s+', ' ', new_greeting)
                         
                         logger.info(f"🔧 INTELLIGENT MATCH: '{new_greeting}' using '{pattern}' from '{captured_text}'")
                         break
@@ -160,9 +165,18 @@ class AdminActionHandler:
                             logger.info(f"🔧 MANUAL EXTRACTION: '{new_greeting}'")
                     
                     # Special handling for your specific pattern: "let's change the greeting to. Hey, it's Chris..."
-                    elif "let's change the greeting to." in instruction_lower:
-                        split_point = instruction_lower.find("let's change the greeting to.") + len("let's change the greeting to.")
+                    elif "let's change the greeting to" in instruction_lower:
+                        split_point = instruction_lower.find("let's change the greeting to") + len("let's change the greeting to")
                         potential_greeting = instruction[split_point:].strip()
+                        
+                        # Apply the same cleaning logic as above
+                        if potential_greeting.lower().startswith('say '):
+                            potential_greeting = potential_greeting[4:].strip()
+                        
+                        # Remove any remaining "say" words that got mixed in
+                        potential_greeting = re.sub(r'\bsay\b', '', potential_greeting, flags=re.IGNORECASE).strip()
+                        potential_greeting = re.sub(r'\s+', ' ', potential_greeting)
+                        
                         if potential_greeting and len(potential_greeting) > 5:  # Must be substantial
                             new_greeting = potential_greeting.rstrip('?').strip()
                             logger.info(f"🔧 SPECIFIC PATTERN EXTRACTION: '{new_greeting}'")
@@ -400,8 +414,13 @@ class AdminActionHandler:
             
             if match:
                 old_line = match.group(0)
-                # COMPLETE REPLACEMENT: Create entirely new greeting without keeping old parts
-                new_line = f'greeting = f"{{time_greeting}}, {new_greeting}"'
+                # SMART REPLACEMENT: If new greeting contains time-based greeting, use as-is, otherwise add time greeting
+                if any(time_word in new_greeting.lower() for time_word in ['good morning', 'good afternoon', 'good evening']):
+                    # New greeting already has time component
+                    new_line = f'greeting = f"{new_greeting}"'
+                else:
+                    # Add time greeting prefix
+                    new_line = f'greeting = f"{{time_greeting}}, {new_greeting}"'
                 content = content.replace(old_line, new_line)
                 logger.info(f"🔧 COMPLETE REPLACEMENT: '{old_line}' -> '{new_line}'")
             else:
