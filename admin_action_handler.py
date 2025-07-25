@@ -85,7 +85,9 @@ class AdminActionHandler:
                 self.changes_log.append(change)
                 
                 # ACTUALLY IMPLEMENT THE CHANGE - Write to file
-                self._write_instant_response_to_file(trigger, response)
+                success = self._write_instant_response_to_file(trigger, response)
+                if not success:
+                    logger.error(f"Failed to write instant response to file")
                 
                 logger.info(f"🔧 ADMIN ACTION: Added instant response '{trigger}' -> '{response}'")
                 return f"Perfect! I've added a new instant response. When customers say '{trigger}', I'll now respond with '{response}'. This change is active immediately for all future calls!"
@@ -127,7 +129,9 @@ class AdminActionHandler:
                 self.changes_log.append(change)
                 
                 # ACTUALLY IMPLEMENT THE CHANGE - Write to file
-                self._write_greeting_to_file(new_greeting)
+                success = self._write_greeting_to_file(new_greeting)
+                if not success:
+                    logger.error(f"Failed to write greeting to file")
                 
                 logger.info(f"🔧 ADMIN ACTION: Modified greeting to '{new_greeting}'")
                 return f"Excellent! I've updated my greeting. I'll now use '{new_greeting}' when answering calls. The change is active for all future calls starting now!"
@@ -261,10 +265,41 @@ class AdminActionHandler:
                 content = f.read()
             
             # Find and replace the greeting in get_time_based_greeting function
-            old_pattern = r'(return f"Good {time_period} and thank you for calling Grinberg Management\.)[^"]*(")'
-            new_pattern = f'\\1 {new_greeting}\\2'
+            # Look for the actual greeting pattern
+            patterns = [
+                (r'(return f"Good {time_period} and thank you for calling Grinberg Management\.)[^"]*(")', f'\\1 {new_greeting}\\2'),
+                (r'(Good evening and thank you for calling Grinberg Management\.)[^"]*', f'Good evening and thank you for calling Grinberg Management. {new_greeting}'),
+                (r'(Good morning and thank you for calling Grinberg Management\.)[^"]*', f'Good morning and thank you for calling Grinberg Management. {new_greeting}'),
+                (r'(Good afternoon and thank you for calling Grinberg Management\.)[^"]*', f'Good afternoon and thank you for calling Grinberg Management. {new_greeting}')
+            ]
             
-            content = re.sub(old_pattern, new_pattern, content)
+            modified = False
+            for old_pattern, new_pattern in patterns:
+                if re.search(old_pattern, content):
+                    content = re.sub(old_pattern, new_pattern, content)
+                    modified = True
+                    break
+            
+            if not modified:
+                # Fallback: add to the end of greeting function
+                greeting_func = content.find('def get_time_based_greeting()')
+                if greeting_func != -1:
+                    # Simple approach: replace the return statement
+                    return_match = re.search(r'return f"([^"]+)"', content[greeting_func:])
+                    if return_match:
+                        old_greeting = return_match.group(1)
+                        content = content.replace(f'return f"{old_greeting}"', f'return f"{old_greeting} {new_greeting}"')
+            
+            # Simple pattern replacement for the greeting line
+            old_greeting_line = 'greeting = f"{time_greeting} and thank you for calling Grinberg Management, I\'m Chris, how can I help you?"'
+            new_greeting_line = f'greeting = f"{{time_greeting}} and thank you for calling Grinberg Management, I\'m Chris, {new_greeting}"'
+            
+            if old_greeting_line in content:
+                content = content.replace(old_greeting_line, new_greeting_line)
+                logger.info(f"🔧 FOUND AND REPLACED: Greeting line successfully")
+            else:
+                logger.error(f"Could not find greeting line to replace")
+                return False
             
             # Write back to file
             with open('fixed_conversation_app.py', 'w') as f:

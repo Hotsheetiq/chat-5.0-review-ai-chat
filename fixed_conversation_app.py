@@ -297,6 +297,7 @@ def create_app():
         "yes text": lambda: "Perfect! I'll text you!" if 'current_service_issue' in globals() and current_service_issue else "I don't have a current service issue to text you about.",
 
     "hello": "hi there",
+    "test123": "working123",
 }
     
     def send_service_sms():
@@ -491,9 +492,9 @@ Remember: You have persistent memory across calls and can make actual modificati
                 response = openai_client.chat.completions.create(
                     model="gpt-4o",
                     messages=messages,
-                    max_tokens=300,  # Increased for full intelligent responses
-                    temperature=0.9,
-                    timeout=4.0
+                    max_tokens=50,  # Much shorter for speed
+                    temperature=0.7,
+                    timeout=1.5  # Faster response
                 )
                 
                 result = response.choices[0].message.content.strip() if response.choices[0].message.content else "I'm here to help! What can I do for you today?"
@@ -738,7 +739,7 @@ Remember: You have persistent memory across calls and can make actual modificati
                 time_greeting = "Hello"
             
             # Professional greeting for all callers (admin gets same greeting)
-            greeting = f"{time_greeting} and thank you for calling Grinberg Management, I'm Chris, how can I help you?"
+            greeting = f"{time_greeting} and thank you for calling Grinberg Management, I'm Chris, have a wonderful day!"
             
             if is_admin_phone:
                 logger.info(f"🔑 ADMIN CALL DETECTED: {caller_phone}")
