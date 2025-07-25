@@ -417,13 +417,8 @@ def create_app():
             if not OPENAI_API_KEY:
                 return "I'm here to help! What can I do for you today?"
             
-            # Check if this is a training session
-            is_training_mode = call_sid in training_sessions or (caller_phone and caller_phone in ADMIN_PHONE_NUMBERS and "training" in user_input.lower())
-            
-            # Enable training mode if admin triggers it
-            if caller_phone and caller_phone in ADMIN_PHONE_NUMBERS and "training" in user_input.lower():
-                training_sessions[call_sid] = True
-                is_training_mode = True
+            # Check if this is a training session - ONLY via *1 keypad
+            is_training_mode = call_sid in training_sessions
             
             # Build conversation context with proper typing
             from typing import List, Dict, Any
@@ -529,18 +524,18 @@ Remember: You have persistent memory across calls and can make actual modificati
             caller_phone = request.values.get("From", "")
             speech_confidence = request.values.get("Confidence", "")
             
-            # Check for DTMF training mode activation
+            # Check for DTMF training mode activation - FAST DETECTION
             if dtmf_input == "*1":
                 is_admin = caller_phone in ADMIN_PHONE_NUMBERS if caller_phone else False
                 if is_admin:
                     training_sessions[call_sid] = True
                     logger.info(f"🧠 TRAINING MODE ACTIVATED via DTMF for {caller_phone}")
-                    response_text = "Excellent! Training mode activated via keypad. I can explain my reasoning, ask questions, and learn from your instructions. What would you like to work on first?"
+                    response_text = "Training mode activated! I can now make real changes to the system based on your instructions. What would you like me to modify?"
                     main_voice = create_voice_response(response_text)
                     return f"""<?xml version="1.0" encoding="UTF-8"?>
                     <Response>
                         {main_voice}
-                        <Gather input="speech dtmf" timeout="15" speechTimeout="1" language="en-US" action="/handle-input/{call_sid}" method="POST">
+                        <Gather input="speech dtmf" timeout="10" speechTimeout="1" language="en-US" action="/handle-input/{call_sid}" method="POST">
                         </Gather>
                         <Redirect>/handle-speech/{call_sid}</Redirect>
                     </Response>"""
@@ -573,7 +568,7 @@ Remember: You have persistent memory across calls and can make actual modificati
             return f"""<?xml version="1.0" encoding="UTF-8"?>
             <Response>
                 {error_voice}
-                <Gather input="speech dtmf" timeout="15" speechTimeout="1" language="en-US" action="/handle-input/{call_sid}" method="POST">
+                <Gather input="speech dtmf" timeout="8" speechTimeout="2" dtmfTimeout="1" language="en-US" action="/handle-input/{call_sid}" method="POST">
                 </Gather>
             </Response>"""
     
@@ -594,7 +589,7 @@ Remember: You have persistent memory across calls and can make actual modificati
                 return f"""<?xml version="1.0" encoding="UTF-8"?>
                 <Response>
                     {no_input_voice}
-                    <Gather input="speech" timeout="15" speechTimeout="1" language="en-US" profanityFilter="false" enhanced="true">
+                    <Gather input="speech dtmf" timeout="8" speechTimeout="2" dtmfTimeout="1" language="en-US" profanityFilter="false" enhanced="true" action="/handle-input/{call_sid}" method="POST">
                     </Gather>
                     <Redirect>/handle-speech/{call_sid}</Redirect>
                 </Response>"""
@@ -615,16 +610,10 @@ Remember: You have persistent memory across calls and can make actual modificati
                 logger.info(f"🎫 AUTO-TICKET CREATED: {auto_ticket_response}")
                 response_text = auto_ticket_response
             else:
-                # PRIORITY 1.5: Check for training mode activation (admin only)
+                # SKIP speech-based training activation - only use *1 keypad
+                response_text = None
                 user_lower = user_input.lower().strip()
                 is_admin = caller_phone in ADMIN_PHONE_NUMBERS if caller_phone else False
-                
-                if is_admin and any(phrase in user_lower for phrase in ["training mode", "training", "train me", "let's train"]):
-                    training_sessions[call_sid] = True
-                    logger.info(f"🧠 TRAINING MODE ACTIVATED for {caller_phone} - detected phrase in: '{user_input}'")
-                    response_text = "Excellent! Training mode is now active. I can explain my reasoning, ask questions, and learn from your instructions. What would you like to work on first? You can test scenarios, give me guidance, or ask me to walk through my thought process on any topic."
-                else:
-                    response_text = None
                 
                 # PRIORITY 2: Check instant responses (skip if training mode)
                 if not response_text and call_sid not in training_sessions:
@@ -674,7 +663,7 @@ Remember: You have persistent memory across calls and can make actual modificati
             return f"""<?xml version="1.0" encoding="UTF-8"?>
             <Response>
                 {main_voice}
-                <Gather input="speech" timeout="15" speechTimeout="1" language="en-US" profanityFilter="false" enhanced="true">
+                <Gather input="speech dtmf" timeout="8" speechTimeout="2" dtmfTimeout="1" language="en-US" profanityFilter="false" enhanced="true" action="/handle-input/{call_sid}" method="POST">
                 </Gather>
                 <Redirect>/handle-speech/{call_sid}</Redirect>
             </Response>"""
@@ -725,12 +714,11 @@ Remember: You have persistent memory across calls and can make actual modificati
             else:
                 time_greeting = "Hello"
             
-            # Special greeting for admin with DTMF fallback
+            # Professional greeting for all callers (admin gets same greeting)
+            greeting = f"{time_greeting} and thank you for calling Grinberg Management, I'm Chris, how can I help you?"
+            
             if is_admin_phone:
-                greeting = f"{time_greeting} and thank you for calling Grinberg Management, I'm Chris. I'm ready for customer service or training mode. Say 'training mode' or press star 1 to start training me directly through conversation. How can I help you?"
                 logger.info(f"🔑 ADMIN CALL DETECTED: {caller_phone}")
-            else:
-                greeting = f"{time_greeting} and thank you for calling Grinberg Management, I'm Chris, how can I help you?"
             
             conversation_history[call_sid].append({
                 'role': 'assistant',
@@ -744,7 +732,7 @@ Remember: You have persistent memory across calls and can make actual modificati
             return f"""<?xml version="1.0" encoding="UTF-8"?>
             <Response>
                 {greeting_voice}
-                <Gather input="speech dtmf" timeout="15" speechTimeout="1" language="en-US" profanityFilter="false" enhanced="true" action="/handle-input/{call_sid}" method="POST">
+                <Gather input="speech dtmf" timeout="8" speechTimeout="2" dtmfTimeout="1" language="en-US" profanityFilter="false" enhanced="true" action="/handle-input/{call_sid}" method="POST">
                 </Gather>
                 <Redirect>/handle-speech/{call_sid}</Redirect>
             </Response>"""
