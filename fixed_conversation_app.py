@@ -304,6 +304,12 @@ def create_app():
         "toilet broken": lambda: "Plumbing emergency! What's your address?",
         "toilet not working": lambda: "Plumbing emergency! What's your address?",
         
+        # Generic broken/not working - CRITICAL ADDITION
+        "broken": lambda: "What's broken? I can help create a service ticket.",
+        "not working": lambda: "What's not working? I can help create a service ticket.",
+        "doesn't work": lambda: "What's not working? I can help create a service ticket.", 
+        "not work": lambda: "What's not working? I can help create a service ticket.",
+        
         # Thanks and confirmations
         "thank you": lambda: "You're welcome! Anything else I can help with?",
         "thanks": lambda: "Happy to help! What else can I do for you?",
@@ -733,7 +739,9 @@ Remember: You have persistent memory across calls and can make actual modificati
                         "i came home", "when i got home", "i got back", "i returned home",
                         "after work", "after a long day", "my power", "the power", 
                         "i don't have", "i have no", "there's no", "we don't have",
-                        "when i arrived", "got home and", "came back and"
+                        "when i arrived", "got home and", "came back and",
+                        "this is broken", "it's broken", "is broken", "doesn't work",
+                        "not working", "won't work", "my", "the"
                     ]
                     
                     # Check if this sounds like a complaint/issue report
@@ -753,6 +761,9 @@ Remember: You have persistent memory across calls and can make actual modificati
                         elif any(word in user_lower for word in ['noise', 'loud', 'neighbors', 'music', 'party']):
                             response_text = "Noise complaint! What's your address?"
                             logger.info(f"🚨 COMPLAINT DETECTED: Noise issue in narrative")
+                        elif any(word in user_lower for word in ['broken', 'not working', "doesn't work"]):
+                            response_text = "What's broken? I can help create a service ticket."
+                            logger.info(f"🚨 COMPLAINT DETECTED: Something broken in narrative")
                     
                     # If not a complaint, check regular instant responses
                     if not response_text:
