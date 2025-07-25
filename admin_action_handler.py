@@ -107,33 +107,36 @@ class AdminActionHandler:
                 new_greeting = "It's a great day here at Greenberg Management."
                 logger.info(f"🔧 SPECIFIC MATCH: '{new_greeting}'")
             else:
-                # Try to find quoted text 
-                quote_matches = re.findall(r"'([^']+)'", instruction)
-                if quote_matches:
-                    # Take the longest quote which should be the greeting
-                    new_greeting = max(quote_matches, key=len).strip()
-                    logger.info(f"🔧 QUOTE MATCH: '{new_greeting}'")
-                else:
-                    logger.info(f"🔧 NO QUOTE MATCH, trying fallback patterns")
-                # Fallback patterns for non-quoted text
+                # Enhanced patterns for natural conversation - FIXED to capture complete messages
                 patterns = [
-                    r"change.*greeting.*to\s+say\s+(.+)",  # Most specific: "change greeting to say X"
-                    r"greeting.*to\s+say\s+(.+)",  # "greeting to say X"
-                    r"greeting.*to:\s*(.+)",  # "greeting to: X"
-                    r"change.*(?:greeting.*)?to\s+(.+)",  # "change to X"
-                    r"let's change.*to\s+(.+)",  # "let's change to X"
-                    r"wanted to say\s+(.+)",  # "wanted to say X"
-                    r"i'll change.*to:\s*(.+)",  # "I'll change to: X"
-                    r"say\s+(.+)"  # Last resort: "say X"
+                    r"change.*greeting.*to\s+say\s+(.+?)(?:\.|$)",  # "change greeting to say X"
+                    r"greeting.*to\s+say\s+(.+?)(?:\.|$)",  # "greeting to say X"  
+                    r"let's change.*greeting.*to\s+say\s+(.+?)(?:\.|$)",  # "let's change greeting to say X"
+                    r"greeting.*to\s+(.+?)(?:\.|$)",  # "greeting to X"
+                    r"change.*(?:greeting.*)?to\s+(.+?)(?:\.|$)",  # "change to X"
+                    r"wanted to say\s+(.+?)(?:\.|$)",  # "wanted to say X"
+                    r"say\s+(.+?)(?:\.|$)"  # "say X"
                 ]
                 
                 new_greeting = None
                 for pattern in patterns:
-                    match = re.search(pattern, instruction, re.IGNORECASE)
+                    match = re.search(pattern, instruction, re.IGNORECASE | re.DOTALL)
                     if match:
                         new_greeting = match.group(1).strip()
-                        new_greeting = new_greeting.strip("'\"").strip()
+                        # Clean up common artifacts
+                        new_greeting = new_greeting.strip("'\".,").strip()
+                        # Remove trailing comma artifacts
+                        new_greeting = re.sub(r',\s*$', '', new_greeting)
+                        logger.info(f"🔧 PATTERN MATCH: '{new_greeting}' using '{pattern}'")
                         break
+                
+                if not new_greeting:
+                    logger.info(f"🔧 NO PATTERN MATCH, trying quoted text")
+                    # Try to find quoted text as fallback
+                    quote_matches = re.findall(r"[\"']([^\"']+)[\"']", instruction)
+                    if quote_matches:
+                        new_greeting = max(quote_matches, key=len).strip()
+                        logger.info(f"🔧 QUOTE FALLBACK: '{new_greeting}'")
             
             if new_greeting:
                 change = {
