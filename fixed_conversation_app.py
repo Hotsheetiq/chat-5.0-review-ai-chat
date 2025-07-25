@@ -29,7 +29,7 @@ if OPENAI_API_KEY:
 
 # ElevenLabs Configuration - NO QUOTA LIMITS
 ELEVENLABS_BASE_URL = "https://api.elevenlabs.io/v1"
-CHRIS_VOICE_ID = "pNInz6obpgDQGcFmaJgB"  # Professional Adam voice for Chris
+CHRIS_VOICE_ID = "f218e5pATi8cBqEEIGBU"  # Custom voice for Chris
 
 # Initialize Rent Manager and Service Handler
 rent_manager = None
@@ -74,7 +74,7 @@ def generate_elevenlabs_audio(text):
         
         data = {
             "text": text,
-            "model_id": "eleven_multilingual_v2",  # More cost-effective model
+            "model_id": "eleven_turbo_v2_5",  # Premium quality for best voice
             "voice_settings": {
                 "stability": 0.75,        # High stability for consistent voice
                 "similarity_boost": 0.85, # Natural voice consistency
