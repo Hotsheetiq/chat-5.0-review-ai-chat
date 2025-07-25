@@ -568,7 +568,7 @@ Remember: You have persistent memory across calls and can make actual modificati
             else:
                 messages.append({
                     "role": "system", 
-                    "content": "You are Chris, an intelligent conversational AI assistant for Grinberg Management property company. You're warm, helpful, and genuinely smart - like talking to a real person. Engage naturally in conversation, remember everything users tell you, and provide thoughtful, detailed responses. For maintenance issues, get the problem type and address to create service tickets. Answer questions about office hours, properties, and leasing with comprehensive, helpful information. Be conversational and vary your responses - never repeat the same phrases. You can give longer, more detailed responses when needed. Show empathy, intelligence, and genuine care in every interaction."
+                    "content": "You are Chris, an intelligent conversational AI assistant for Grinberg Management property company. You're warm, helpful, and genuinely smart - like talking to a real person. IMPORTANT: If someone starts saying something but gets cut off (like 'I'm calling because...'), respond with curiosity and encouragement like 'I'm listening! Please continue, what were you going to say?' or 'Go ahead, I'm here to help with whatever you need.' Always be patient with incomplete thoughts and encourage people to finish their sentences. For maintenance issues, get the problem type and address to create service tickets. Show empathy, intelligence, and genuine care in every interaction."
                 })
             
             
@@ -600,9 +600,9 @@ Remember: You have persistent memory across calls and can make actual modificati
                 response = openai_client.chat.completions.create(
                     model="gpt-4o",
                     messages=messages,
-                    max_tokens=150,  # SPEED OPTIMIZED: Shorter for faster responses
-                    temperature=0.7,
-                    timeout=0.5  # FASTEST response - prevent any delays
+                    max_tokens=1000,  # INTELLIGENCE OPTIMIZED: Longer for smarter responses
+                    temperature=0.9,  # Higher creativity for better understanding
+                    timeout=2.5  # LONGER timeout for better intelligence processing
                 )
                 
                 result = response.choices[0].message.content.strip() if response.choices[0].message.content else "I'm here to help! What can I do for you today?"
@@ -696,7 +696,7 @@ Remember: You have persistent memory across calls and can make actual modificati
             return f"""<?xml version="1.0" encoding="UTF-8"?>
             <Response>
                 {error_voice}
-                <Gather input="speech dtmf" timeout="5" speechTimeout="1" dtmfTimeout="1" language="en-US" action="/handle-input/{call_sid}" method="POST">
+                <Gather input="speech dtmf" timeout="8" speechTimeout="4" dtmfTimeout="2" language="en-US" action="/handle-input/{call_sid}" method="POST">
                 </Gather>
             </Response>"""
     
@@ -717,7 +717,7 @@ Remember: You have persistent memory across calls and can make actual modificati
                 return f"""<?xml version="1.0" encoding="UTF-8"?>
                 <Response>
                     {no_input_voice}
-                    <Gather input="speech dtmf" timeout="5" speechTimeout="1" dtmfTimeout="1" language="en-US" profanityFilter="false" enhanced="true" action="/handle-input/{call_sid}" method="POST">
+                    <Gather input="speech dtmf" timeout="8" speechTimeout="4" dtmfTimeout="2" language="en-US" profanityFilter="false" enhanced="true" action="/handle-input/{call_sid}" method="POST">
                     </Gather>
                     <Redirect>/handle-speech/{call_sid}</Redirect>
                 </Response>"""
@@ -989,7 +989,7 @@ Remember: You have persistent memory across calls and can make actual modificati
             return f"""<?xml version="1.0" encoding="UTF-8"?>
             <Response>
                 {main_voice}
-                <Gather input="speech dtmf" timeout="5" speechTimeout="1" dtmfTimeout="1" language="en-US" profanityFilter="false" enhanced="true" action="/handle-input/{call_sid}" method="POST">
+                <Gather input="speech dtmf" timeout="8" speechTimeout="3" dtmfTimeout="2" language="en-US" profanityFilter="false" enhanced="true" action="/handle-input/{call_sid}" method="POST">
                 </Gather>
                 <Redirect>/handle-speech/{call_sid}</Redirect>
             </Response>"""
@@ -1002,7 +1002,7 @@ Remember: You have persistent memory across calls and can make actual modificati
             return f"""<?xml version="1.0" encoding="UTF-8"?>
             <Response>
                 {error_voice}
-                <Gather input="speech" timeout="5" speechTimeout="1"/>
+                <Gather input="speech" timeout="8" speechTimeout="3"/>
             </Response>"""
     
     @app.route("/voice", methods=["POST"])
@@ -1066,7 +1066,7 @@ Remember: You have persistent memory across calls and can make actual modificati
             return """<?xml version="1.0" encoding="UTF-8"?>
             <Response>
                 <Say voice="Polly.Matthew-Neural">Hi, you've reached Grinberg Management. How can I help you?</Say>
-                <Gather input="speech" timeout="5" speechTimeout="1"/>
+                <Gather input="speech" timeout="8" speechTimeout="4"/>
             </Response>"""
     
     @app.route("/")
