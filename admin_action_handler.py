@@ -113,8 +113,11 @@ class AdminActionHandler:
                 new_greeting = "It's a great day here at Greenberg Management."
                 logger.info(f"🔧 SPECIFIC MATCH: '{new_greeting}'")
             else:
-                # INTELLIGENT patterns that understand command vs content - FIXED to exclude command words
+                # ENHANCED patterns to handle natural speech patterns better
                 patterns = [
+                    # Handle "change greeting to." followed by new greeting
+                    r"change.*greeting.*to\.?\s*(.+?)(?:\?|$)",  # "change greeting to. Hey, it's Chris..." -> capture everything after
+                    r"let's change.*greeting.*to\.?\s*(.+?)(?:\?|$)",  # "let's change greeting to. Hey..."
                     # Patterns that specifically capture after "say" but exclude the word "say" itself
                     r"change.*greeting.*to\s+say\s+(.+?)(?:\.|$)",  # "change greeting to say X" -> capture X
                     r"greeting.*to\s+say\s+(.+?)(?:\.|$)",  # "greeting to say X" -> capture X
@@ -144,12 +147,25 @@ class AdminActionHandler:
                         break
                 
                 if not new_greeting:
-                    logger.info(f"🔧 NO PATTERN MATCH, trying quoted text")
-                    # Try to find quoted text as fallback
-                    quote_matches = re.findall(r"[\"']([^\"']+)[\"']", instruction)
-                    if quote_matches:
-                        new_greeting = max(quote_matches, key=len).strip()
-                        logger.info(f"🔧 QUOTE FALLBACK: '{new_greeting}'")
+                    logger.info(f"🔧 NO PATTERN MATCH, trying manual extraction for specific phrases")
+                    # Try to manually extract after specific trigger phrases
+                    instruction_lower = instruction.lower()
+                    
+                    # Look for "greeting to." followed by content
+                    if "greeting to." in instruction_lower:
+                        split_point = instruction_lower.find("greeting to.") + len("greeting to.")
+                        potential_greeting = instruction[split_point:].strip()
+                        if potential_greeting and len(potential_greeting) > 5:  # Must be substantial
+                            new_greeting = potential_greeting.rstrip('?').strip()
+                            logger.info(f"🔧 MANUAL EXTRACTION: '{new_greeting}'")
+                    
+                    # Special handling for your specific pattern: "let's change the greeting to. Hey, it's Chris..."
+                    elif "let's change the greeting to." in instruction_lower:
+                        split_point = instruction_lower.find("let's change the greeting to.") + len("let's change the greeting to.")
+                        potential_greeting = instruction[split_point:].strip()
+                        if potential_greeting and len(potential_greeting) > 5:  # Must be substantial
+                            new_greeting = potential_greeting.rstrip('?').strip()
+                            logger.info(f"🔧 SPECIFIC PATTERN EXTRACTION: '{new_greeting}'")
             
             if new_greeting:
                 change = {

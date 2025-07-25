@@ -774,7 +774,7 @@ Remember: You have persistent memory across calls and can make actual modificati
                 time_greeting = "Hello"
             
             # Professional greeting for all callers (admin gets same greeting) 
-            greeting = f"{time_greeting}, hey its chris with grinberg management how may i help you today"
+            greeting = f"{time_greeting}, hey it's Chris with Grinberg Management. How can I help you today?"
             
             if is_admin_phone:
                 logger.info(f"🔑 ADMIN CALL DETECTED: {caller_phone}")
