@@ -235,9 +235,13 @@ def create_app():
     
     # INSTANT RESPONSES - No AI delay, immediate answers
     INSTANT_RESPONSES = {
-        # Office hours - FIXED LOGIC
+        # Office hours - FIXED LOGIC with speech recognition variations
         "are you open": get_office_hours_response,
         "open right now": get_office_hours_response,
+        "this is your office open": get_office_hours_response,  # Speech recognition version
+        "this is your office open today": get_office_hours_response,  # Speech recognition version
+        "is your office open": get_office_hours_response,
+        "is your office open today": get_office_hours_response,
         "what are your hours": lambda: "We're open Monday through Friday, 9 AM to 5 PM Eastern Time!",
         "hours": lambda: "Our office hours are Monday through Friday, 9 AM to 5 PM Eastern.",
         
@@ -294,6 +298,17 @@ def create_app():
         """Check conversation history for automatic service ticket creation"""
         if not call_sid or call_sid not in conversation_history:
             return None
+        
+        # SKIP if user input is obviously NOT a maintenance request
+        user_lower = user_input.lower().strip()
+        non_maintenance_patterns = [
+            'open', 'hours', 'office', 'training', 'hello', 'hi', 'hey', 
+            'thank', 'thanks', 'goodbye', 'bye', 'what', 'who', 'when', 
+            'where', 'how', 'can you', 'do you', 'are you'
+        ]
+        
+        if any(pattern in user_lower for pattern in non_maintenance_patterns):
+            return None
             
         # Look for issue type and address in conversation history
         detected_issue = None
@@ -313,8 +328,8 @@ def create_app():
                 elif any(word in content for word in ['noise', 'loud', 'neighbors']):
                     detected_issue = "noise complaint"
             
-            # Address detection with verification
-            if not detected_address:
+            # Address detection with verification - ONLY for maintenance contexts
+            if not detected_address and any(word in content for word in ['electrical', 'power', 'heat', 'water', 'leak', 'plumbing', 'noise', 'maintenance', 'issue', 'problem']):
                 import re
                 # Priority addresses
                 if '29 port richmond' in content:
@@ -324,8 +339,8 @@ def create_app():
                 elif '31 port richmond' in content:
                     detected_address = "31 Port Richmond Avenue"
                 else:
-                    # General address pattern with API verification
-                    address_match = re.search(r'(\d+)\s+([\w\s]+(street|avenue|ave|road|rd|court|ct|lane|ln|drive|dr))', content, re.IGNORECASE)
+                    # General address pattern with API verification - MORE RESTRICTIVE
+                    address_match = re.search(r'(\d{2,4})\s+([\w\s]+(street|avenue|ave|road|rd|court|ct|lane|ln|drive|dr))', content, re.IGNORECASE)
                     if address_match:
                         potential_address = f"{address_match.group(1)} {address_match.group(2)}"
                         
