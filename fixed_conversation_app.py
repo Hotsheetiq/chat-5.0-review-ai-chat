@@ -808,6 +808,9 @@ Remember: You have persistent memory across calls and can make actual modificati
                         elif any(word in user_lower for word in ['noise', 'loud', 'neighbors', 'music', 'party']):
                             response_text = "Noise complaint! What's your address?"
                             logger.info(f"🚨 COMPLAINT DETECTED: Noise issue in narrative")
+                        elif any(word in user_lower for word in ['door', 'front door', 'back door', 'lock', 'key']):
+                            response_text = "Door issue! What's your address?"
+                            logger.info(f"🚨 COMPLAINT DETECTED: Door issue in narrative")
                         elif any(word in user_lower for word in ['broken', 'not working', "doesn't work"]):
                             response_text = "What's broken? I can help create a service ticket."
                             logger.info(f"🚨 COMPLAINT DETECTED: Something broken in narrative")
@@ -815,17 +818,22 @@ Remember: You have persistent memory across calls and can make actual modificati
                             response_text = "Plumbing issue! What's your address?"
                             logger.info(f"🚨 COMPLAINT DETECTED: Toilet flush issue in narrative")
                     
-                    # If not a complaint, check regular instant responses
-                    if not response_text:
-                        for pattern, response_func in INSTANT_RESPONSES.items():
-                            if pattern in user_lower:
+                    # SMART instant responses - only for simple greetings, not complex sentences
+                    if not response_text and len(user_input.split()) <= 3:
+                        # Only use instant responses for simple phrases like "hello", "hi", "hey"
+                        simple_greeting_patterns = ["hello", "hi", "hey", "good morning", "good afternoon", "good evening"]
+                        
+                        for pattern in simple_greeting_patterns:
+                            if pattern in user_lower and not any(word in user_lower for word in ['problem', 'issue', 'door', 'broken', 'report']):
                                 try:
-                                    if callable(response_func):
-                                        response_text = response_func()
-                                    else:
-                                        response_text = response_func
-                                    logger.info(f"⚡ INSTANT RESPONSE: {pattern}")
-                                    break
+                                    response_func = INSTANT_RESPONSES.get(pattern)
+                                    if response_func:
+                                        if callable(response_func):
+                                            response_text = response_func()
+                                        else:
+                                            response_text = response_func
+                                        logger.info(f"⚡ SIMPLE GREETING RESPONSE: {pattern}")
+                                        break
                                 except Exception as e:
                                     logger.error(f"Instant response error for {pattern}: {e}")
                 
@@ -866,7 +874,7 @@ Remember: You have persistent memory across calls and can make actual modificati
                         detected_issue_type = None
                         
                         for msg in recent_messages:
-                            if 'assistant' in msg.get('role', '') and ('what\'s your address' in msg.get('content', '').lower() or 'noise complaint' in msg.get('content', '').lower() or 'plumbing issue' in msg.get('content', '').lower() or 'electrical issue' in msg.get('content', '').lower()):
+                            if 'assistant' in msg.get('role', '') and ('what\'s your address' in msg.get('content', '').lower() or 'noise complaint' in msg.get('content', '').lower() or 'plumbing issue' in msg.get('content', '').lower() or 'electrical issue' in msg.get('content', '').lower() or 'door issue' in msg.get('content', '').lower()):
                                 content = msg.get('content', '').lower()
                                 if 'noise' in content:
                                     detected_issue_type = "noise complaint"
@@ -876,6 +884,8 @@ Remember: You have persistent memory across calls and can make actual modificati
                                     detected_issue_type = "electrical"
                                 elif 'heating' in content:
                                     detected_issue_type = "heating"
+                                elif 'door' in content:
+                                    detected_issue_type = "door"
                                 break
                         
                         if detected_issue_type:
