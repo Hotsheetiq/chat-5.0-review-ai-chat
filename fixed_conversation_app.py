@@ -650,15 +650,36 @@ Remember: You have persistent memory across calls and can make actual modificati
                             except Exception as e:
                                 logger.error(f"Instant response error for {pattern}: {e}")
                 
-                # PRIORITY 3: Check for admin actions (training mode only)
+                # PRIORITY 3: Check for admin actions (training mode only) - ENHANCED DETECTION
                 if not response_text and call_sid in training_sessions and is_admin:
-                    logger.info(f"🔧 ADMIN CHECK: Training mode={call_sid in training_sessions}, Admin={is_admin}")
-                    admin_action_result = admin_action_handler.execute_admin_action(user_input, caller_phone)
-                    if admin_action_result and admin_action_result != "No admin action detected":
-                        response_text = admin_action_result
-                        logger.info(f"🔧 ADMIN ACTION EXECUTED: {admin_action_result}")
+                    # Enhanced admin detection - check for greeting modification patterns
+                    admin_patterns = [
+                        r"change.*greeting",
+                        r"modify.*greeting", 
+                        r"update.*greeting",
+                        r"i.*change.*greeting",
+                        r"let.*change.*greeting",
+                        r"greeting.*to.*say",
+                        r"chris.*change.*greeting"
+                    ]
+                    
+                    is_admin_command = any(re.search(pattern, user_input, re.IGNORECASE) for pattern in admin_patterns)
+                    
+                    logger.info(f"🔧 ADMIN CHECK: Training mode={call_sid in training_sessions}, Admin={is_admin}, Pattern match={is_admin_command}")
+                    
+                    if is_admin_command:
+                        logger.info(f"🔧 FORCED ADMIN PROCESSING: {user_input}")
+                        admin_action_result = admin_action_handler.execute_admin_action(user_input, caller_phone)
+                        response_text = admin_action_result if admin_action_result else "I understand you want to change something. Can you be more specific about the new greeting?"
+                        logger.info(f"🔧 ADMIN ACTION EXECUTED: {response_text}")
                     else:
-                        logger.info(f"🔧 NO ADMIN ACTION MATCHED for: '{user_input}'")
+                        # Try general admin action handler anyway
+                        admin_action_result = admin_action_handler.execute_admin_action(user_input, caller_phone)
+                        if admin_action_result and admin_action_result != "No admin action detected":
+                            response_text = admin_action_result
+                            logger.info(f"🔧 ADMIN ACTION EXECUTED: {admin_action_result}")
+                        else:
+                            logger.info(f"🔧 NO ADMIN ACTION MATCHED for: '{user_input}'")
                 
                 # PRIORITY 4: AI response if no instant match or actions (FASTER TRAINING)
                 if not response_text:
