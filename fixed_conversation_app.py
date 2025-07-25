@@ -531,30 +531,33 @@ Be natural, thoughtful, and genuinely interested in learning to serve customers 
                 logger.info(f"🎫 AUTO-TICKET CREATED: {auto_ticket_response}")
                 response_text = auto_ticket_response
             else:
-                # PRIORITY 2: Check instant responses
+                # PRIORITY 1.5: Check for training mode activation (admin only)
                 user_lower = user_input.lower().strip()
-                response_text = None
+                is_admin = caller_phone in ADMIN_PHONE_NUMBERS if caller_phone else False
                 
-                for pattern, response_func in INSTANT_RESPONSES.items():
-                    if pattern in user_lower:
-                        try:
-                            if callable(response_func):
-                                response_text = response_func()
-                            else:
-                                response_text = response_func
-                            logger.info(f"⚡ INSTANT RESPONSE: {pattern}")
-                            break
-                        except Exception as e:
-                            logger.error(f"Instant response error for {pattern}: {e}")
+                if is_admin and any(phrase in user_lower for phrase in ["training mode", "training", "train me", "let's train"]):
+                    training_sessions[call_sid] = True
+                    logger.info(f"🧠 TRAINING MODE ACTIVATED for {caller_phone}")
+                    response_text = "Perfect! I'm now in training mode. I can think out loud, explain my reasoning, and ask questions to learn better. What would you like to work on? You can test my responses to customer scenarios, give me instructions on how to handle situations better, or ask me to explain my thought process for any topic."
+                else:
+                    response_text = None
                 
-                # PRIORITY 3: AI response if no instant match (or training mode)
+                # PRIORITY 2: Check instant responses (skip if training mode)
+                if not response_text and call_sid not in training_sessions:
+                    for pattern, response_func in INSTANT_RESPONSES.items():
+                        if pattern in user_lower:
+                            try:
+                                if callable(response_func):
+                                    response_text = response_func()
+                                else:
+                                    response_text = response_func
+                                logger.info(f"⚡ INSTANT RESPONSE: {pattern}")
+                                break
+                            except Exception as e:
+                                logger.error(f"Instant response error for {pattern}: {e}")
+                
+                # PRIORITY 3: AI response if no instant match or if in training mode
                 if not response_text:
-                    # Check if this is training mode
-                    is_admin = caller_phone in ADMIN_PHONE_NUMBERS if caller_phone else False
-                    if is_admin and "training" in user_input.lower():
-                        training_sessions[call_sid] = True
-                        logger.info(f"🧠 TRAINING MODE ACTIVATED for {caller_phone}")
-                    
                     response_text = get_ai_response(user_input, call_sid, caller_phone)
                     
                     if call_sid in training_sessions:
