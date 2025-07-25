@@ -908,57 +908,45 @@ Remember: You have persistent memory across calls and can make actual modificati
                                             logger.info(f"✅ RENT MANAGER API VERIFIED: {verified_address}")
                                             break
                                     
-                                    # Always create service ticket for reasonable address patterns
-                                    result = create_service_ticket(detected_issue_type, potential_address)
-                                    response_text = result if result else f"Perfect! I've created a {detected_issue_type} service ticket for {potential_address}. We are on it and will get back to you with a follow up call or text. Can you confirm the best phone number to text you?"
-                                    logger.info(f"🎫 SERVICE TICKET CREATED: {detected_issue_type} at {potential_address}")
-                                    
-                                    # Note if address verification would have failed (for debugging)
-                                    if not verified_address:
-                                        logger.info(f"📍 ADDRESS VERIFICATION: '{potential_address}' not found in API but ticket created anyway")
+                                    # CRITICAL: Only create ticket if address is verified in Rent Manager
+                                    if verified_address:
+                                        result = create_service_ticket(detected_issue_type, verified_address)
+                                        response_text = result if result else f"Perfect! I've created a {detected_issue_type} service ticket for {verified_address}. We are on it and will get back to you with a follow up call or text. Can you confirm the best phone number to text you?"
+                                        logger.info(f"🎫 SERVICE TICKET CREATED: {detected_issue_type} at {verified_address}")
+                                    else:
+                                        response_text = f"I couldn't find '{potential_address}' in our property system. Could you provide the correct address for your unit?"
+                                        logger.warning(f"❌ ADDRESS '{potential_address}' NOT VERIFIED - no ticket created")
                                         
                             except Exception as e:
                                 logger.error(f"Address verification error: {e}")
-                                # Create ticket anyway when verification fails
-                                result = create_service_ticket(detected_issue_type, potential_address)
-                                response_text = result if result else f"Perfect! I've created a {detected_issue_type} service ticket for {potential_address}. We are on it and will get back to you with a follow up call or text. Can you confirm the best phone number to text you?"
-                                logger.info(f"🎫 SERVICE TICKET CREATED (API error fallback): {detected_issue_type} at {potential_address}")
+                                # Only create ticket if API verification explicitly failed (not if address not found)
+                                response_text = f"I'm having trouble verifying addresses right now. Could you please provide your correct property address so I can create a service ticket?"
+                                logger.warning(f"⚠️ ADDRESS VERIFICATION FAILED - no ticket created due to API error")
                             
-                            # Create ticket anyway if address verification fails but looks valid
+                            # Hardcoded address verification for known Grinberg properties
                             if not response_text:
-                                # For common addresses, create ticket even if API doesn't find exact match
-                                result = create_service_ticket(detected_issue_type, potential_address)
-                                response_text = result if result else f"Perfect! I've created a {detected_issue_type} service ticket for {potential_address}. We are on it and will get back to you with a follow up call or text. Can you confirm the best phone number to text you?"
-                                logger.info(f"🎫 SERVICE TICKET CREATED: {detected_issue_type} at {potential_address}")
-                                known_addresses = [
-                                    "29 Port Richmond Avenue", "122 Targee Street", 
-                                    "31 Port Richmond Avenue", "2940 Richmond Avenue",
-                                    "2944 Richmond Avenue", "2938 Richmond Avenue"
-                                ]
-                                for known in known_addresses:
-                                    if potential_address.lower() in known.lower() or known.lower() in potential_address.lower():
-                                        verified_address = known
+                                known_addresses = {
+                                    "29 port richmond avenue": "29 Port Richmond Avenue",
+                                    "31 port richmond avenue": "31 Port Richmond Avenue", 
+                                    "122 targee street": "122 Targee Street"
+                                }
+                                
+                                verified_property = None
+                                potential_lower = potential_address.lower().strip()
+                                
+                                # Check if this matches a known property
+                                for known_key, known_value in known_addresses.items():
+                                    if known_key in potential_lower or potential_lower in known_key:
+                                        verified_property = known_value
                                         break
                                 
-                                if verified_address:
-                                    # Determine issue type from conversation
-                                    issue_type = "maintenance"
-                                    for msg in recent_messages:
-                                        content = msg.get('content', '').lower()
-                                        if any(word in content for word in ['plumbing', 'toilet', 'water', 'leak']):
-                                            issue_type = "plumbing"
-                                            break
-                                        elif any(word in content for word in ['electrical', 'power', 'electricity']):
-                                            issue_type = "electrical"
-                                            break
-                                        elif any(word in content for word in ['heating', 'heat', 'cold']):
-                                            issue_type = "heating"
-                                            break
-                                    
-                                    logger.info(f"🎫 CREATING TICKET: {issue_type} at {verified_address}")
-                                    response_text = create_service_ticket(issue_type, verified_address)
+                                if verified_property:
+                                    result = create_service_ticket(detected_issue_type, verified_property)
+                                    response_text = result if result else f"Perfect! I've created a {detected_issue_type} service ticket for {verified_property}. We are on it and will get back to you with a follow up call or text. Can you confirm the best phone number to text you?"
+                                    logger.info(f"🎫 VERIFIED PROPERTY TICKET CREATED: {detected_issue_type} at {verified_property}")
                                 else:
-                                    response_text = f"I couldn't find '{potential_address}' in our property system. Could you provide the correct address?"
+                                    response_text = f"I couldn't find '{potential_address}' in our property system. We manage 29 Port Richmond Avenue, 31 Port Richmond Avenue, and 122 Targee Street. Could you provide the correct address?"
+                                    logger.warning(f"❌ UNKNOWN ADDRESS: '{potential_address}' not in known properties list")
 
                 # PRIORITY 5: General admin actions fallback (training mode only)
                 if not response_text and call_sid in training_sessions and is_potential_admin:
