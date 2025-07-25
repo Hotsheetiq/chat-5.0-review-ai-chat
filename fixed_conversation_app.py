@@ -25,7 +25,13 @@ ELEVENLABS_API_KEY = os.environ.get("ELEVENLABS_API_KEY")
 # Initialize APIs
 from openai import OpenAI
 if OPENAI_API_KEY:
-    openai_client = OpenAI(api_key=OPENAI_API_KEY)
+    # Initialize OpenAI client with error handling
+    try:
+        openai_client = OpenAI(api_key=OPENAI_API_KEY)
+        logger.info("✅ OpenAI client initialized successfully")
+    except Exception as e:
+        logger.error(f"❌ OpenAI client initialization failed: {e}")
+        openai_client = None
 
 # ElevenLabs Configuration - NO QUOTA LIMITS
 ELEVENLABS_BASE_URL = "https://api.elevenlabs.io/v1"
@@ -406,8 +412,11 @@ def create_app():
                 anti_repeat_instruction = f"IMPORTANT: You've recently said: {', '.join(recent_responses)}. Do NOT repeat these exact phrases. Vary your response with different wording."
                 messages.append({"role": "system", "content": anti_repeat_instruction})
             
-            # Get AI response with proper client check  
-            if OPENAI_API_KEY and 'openai_client' in globals() and openai_client:
+            # Get AI response with proper client check
+            try:
+                if not openai_client:
+                    logger.error("OpenAI client not initialized")
+                    return "I'm here to help! What can I do for you today?"
                 response = openai_client.chat.completions.create(
                     model="gpt-4o",
                     messages=messages,
@@ -428,7 +437,9 @@ def create_app():
                     response_tracker[call_sid] = response_tracker[call_sid][-5:]
                 
                 return result
-            else:
+                
+            except Exception as api_error:
+                logger.error(f"OpenAI API error: {api_error}")
                 return "I'm here to help! What can I do for you today?"
             
         except Exception as e:
@@ -544,7 +555,7 @@ def create_app():
                 time_greeting = "Good morning"
             elif 12 <= current_hour < 17:
                 time_greeting = "Good afternoon"  
-            elif 17 <= current_hour < 22:
+            elif 17 <= current_hour <= 23:
                 time_greeting = "Good evening"
             else:
                 time_greeting = "Hello"
