@@ -105,6 +105,7 @@ def generate_elevenlabs_audio(text):
             # Return full external URL for Twilio playback
             replit_domain = os.environ.get('REPLIT_DOMAINS', '3442ef02-e255-4239-86b6-df0f7a6e4975-00-1w63nn4pu7btq.picard.replit.dev')
             full_audio_url = f"https://{replit_domain}/static/{audio_filename}"
+            logger.info(f"🎵 Audio URL: {full_audio_url}")
             return full_audio_url
         else:
             logger.error(f"ElevenLabs API error: {response.status_code} - {response.text[:200]}")
