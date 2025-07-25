@@ -801,19 +801,19 @@ Remember: You have persistent memory across calls and can make actual modificati
                     if is_complaint:
                         # Look for issue keywords in the complaint
                         if any(word in user_lower for word in ['power', 'electrical', 'electricity', 'lights']):
-                            response_text = "Power issue! What's your address?"
+                            response_text = "Oh no, that sounds like an electrical issue. Let me get this reported immediately. What's your property address?"
                             logger.info(f"🚨 COMPLAINT DETECTED: Power issue in narrative")
                         elif any(word in user_lower for word in ['heat', 'heating', 'no heat', 'cold']):
-                            response_text = "Heating issue! What's your address?"
+                            response_text = "I'm sorry you're having heating problems. Let me create a service request to get this fixed quickly. What's your property address?"
                             logger.info(f"🚨 COMPLAINT DETECTED: Heating issue in narrative")
                         elif any(word in user_lower for word in ['toilet', 'bathroom', 'plumbing', 'water', 'leak', 'drain', 'sink', 'faucet']):
-                            response_text = "Plumbing issue! What's your address?"
+                            response_text = "That sounds like a plumbing issue. Let me help you get this resolved right away. What's your property address?"
                             logger.info(f"🚨 COMPLAINT DETECTED: Plumbing issue in narrative")
                         elif any(word in user_lower for word in ['noise', 'loud', 'neighbors', 'music', 'party']):
-                            response_text = "Noise complaint! What's your address?"
+                            response_text = "I understand you're dealing with a noise issue. Let me help document this complaint. What's your property address?"
                             logger.info(f"🚨 COMPLAINT DETECTED: Noise issue in narrative")
                         elif any(word in user_lower for word in ['door', 'front door', 'back door', 'lock', 'key']):
-                            response_text = "Door issue! What's your address?"
+                            response_text = "I'm sorry to hear you're having trouble with your door. Let me help you get that fixed right away. What's your property address?"
                             logger.info(f"🚨 COMPLAINT DETECTED: Door issue in narrative")
                         elif any(word in user_lower for word in ['broken', 'not working', "doesn't work"]):
                             response_text = "What's broken? I can help create a service ticket."
