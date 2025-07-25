@@ -762,9 +762,9 @@ Remember: You have persistent memory across calls and can make actual modificati
             return f"""<?xml version="1.0" encoding="UTF-8"?>
             <Response>
                 {greeting_voice}
-                <Gather input="speech dtmf" timeout="4" speechTimeout="1" dtmfTimeout="1" language="en-US" profanityFilter="false" enhanced="true" action="/handle-input/{call_sid}" method="POST">
+                <Gather input="speech dtmf" timeout="10" speechTimeout="4" dtmfTimeout="1" language="en-US" profanityFilter="false" enhanced="true" action="/handle-input/{call_sid}" method="POST">
                 </Gather>
-                <Redirect>/handle-speech/{call_sid}</Redirect>
+                <Redirect>/handle-input/{call_sid}</Redirect>
             </Response>"""
             
         except Exception as e:
