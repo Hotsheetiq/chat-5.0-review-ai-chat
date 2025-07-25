@@ -663,8 +663,8 @@ Remember: You have persistent memory across calls and can make actual modificati
                 'timestamp': datetime.now()
             })
             
-            # Save admin conversation memory persistently
-            if caller_phone in ADMIN_PHONE_NUMBERS:
+            # Save admin conversation memory persistently (only for identified numbers)
+            if caller_phone and caller_phone in ADMIN_PHONE_NUMBERS and caller_phone != "unknown":
                 admin_conversation_memory[caller_phone] = conversation_history[call_sid].copy()
                 logger.info(f"💾 SAVED ADMIN MEMORY: {len(admin_conversation_memory[caller_phone])} messages")
             
@@ -703,11 +703,11 @@ Remember: You have persistent memory across calls and can make actual modificati
             if call_sid not in conversation_history:
                 conversation_history[call_sid] = []
             
-            # Check if this is an admin phone number
-            is_admin_phone = caller_phone in ADMIN_PHONE_NUMBERS
+            # Check if this is an admin phone number (skip blocked/unknown numbers)
+            is_admin_phone = caller_phone and caller_phone in ADMIN_PHONE_NUMBERS and caller_phone != "unknown"
             
-            # Restore admin conversation memory if available
-            if is_admin_phone and caller_phone in admin_conversation_memory:
+            # Restore admin conversation memory if available (skip blocked/unknown numbers)
+            if is_admin_phone and caller_phone and caller_phone != "unknown" and caller_phone in admin_conversation_memory:
                 conversation_history[call_sid] = admin_conversation_memory[caller_phone].copy()
                 logger.info(f"🧠 RESTORED ADMIN MEMORY: {len(conversation_history[call_sid])} previous messages")
             
