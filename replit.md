@@ -7,6 +7,7 @@ This is an AI-powered voice assistant system designed for property management co
 ## User Preferences
 
 Preferred communication style: Simple, everyday language.
+Voice system preference: ElevenLabs human-like voice only - no Polly fallback desired.
 
 ## System Architecture
 
