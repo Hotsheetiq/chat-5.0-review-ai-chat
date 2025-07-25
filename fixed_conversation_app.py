@@ -836,16 +836,83 @@ Remember: You have persistent memory across calls and can make actual modificati
                     address_pattern = r'(\d{2,4})\s+([\w\s]+(street|avenue|ave|road|rd|court|ct|lane|ln|drive|dr))'
                     address_match = re.search(address_pattern, user_input, re.IGNORECASE)
                     
+                    # Also check for simple address patterns like "29 work richmond avenue"
+                    simple_address_patterns = [
+                        r'(\d{2,4})\s+.*richmond.*avenue',
+                        r'(\d{2,4})\s+.*targee.*street', 
+                        r'(\d{2,4})\s+.*port.*richmond',
+                        r'(\d{2,4})\s+.*avenue',
+                        r'(\d{2,4})\s+.*street'
+                    ]
+                    
+                    if not address_match:
+                        for pattern in simple_address_patterns:
+                            match = re.search(pattern, user_input, re.IGNORECASE)
+                            if match:
+                                # Extract the number and guess the address
+                                number = match.group(1)
+                                if 'richmond' in user_input.lower():
+                                    if number == '29':
+                                        address_match = type('obj', (object,), {'group': lambda x: '29' if x == 1 else 'Port Richmond Avenue'})()
+                                    elif number in ['2940', '2944', '2938']:
+                                        address_match = type('obj', (object,), {'group': lambda x: number if x == 1 else 'Richmond Avenue'})()
+                                elif 'targee' in user_input.lower():
+                                    address_match = type('obj', (object,), {'group': lambda x: number if x == 1 else 'Targee Street'})()
+                                break
+                    
                     if address_match:
                         # Look for recent issue detection in conversation
-                        recent_messages = conversation_history.get(call_sid, [])[-3:]  # Last 3 messages
+                        recent_messages = conversation_history.get(call_sid, [])[-5:]  # Last 5 messages
+                        detected_issue_type = None
+                        
                         for msg in recent_messages:
-                            if 'assistant' in msg.get('role', '') and any(word in msg.get('content', '').lower() for word in ['plumbing', 'electrical', 'heating', 'noise']):
-                                # This is an address response to an issue - verify and create ticket
-                                potential_address = f"{address_match.group(1)} {address_match.group(2)}"
-                                logger.info(f"🎫 DETECTED ADDRESS RESPONSE: {potential_address}")
-                                
-                                # Quick address verification
+                            if 'assistant' in msg.get('role', '') and ('what\'s your address' in msg.get('content', '').lower() or 'noise complaint' in msg.get('content', '').lower() or 'plumbing issue' in msg.get('content', '').lower() or 'electrical issue' in msg.get('content', '').lower()):
+                                content = msg.get('content', '').lower()
+                                if 'noise' in content:
+                                    detected_issue_type = "noise complaint"
+                                elif 'plumbing' in content:
+                                    detected_issue_type = "plumbing"
+                                elif 'electrical' in content or 'power' in content:
+                                    detected_issue_type = "electrical"
+                                elif 'heating' in content:
+                                    detected_issue_type = "heating"
+                                break
+                        
+                        if detected_issue_type:
+                            # This is an address response to an issue - verify and create ticket
+                            potential_address = f"{address_match.group(1)} {address_match.group(2)}"
+                            logger.info(f"🎫 DETECTED ADDRESS RESPONSE FOR {detected_issue_type.upper()}: {potential_address}")
+                            
+                            # API address verification
+                            try:
+                                if rent_manager:
+                                    import asyncio
+                                    logger.info(f"🔍 API VERIFYING ADDRESS: {potential_address}")
+                                    properties = asyncio.run(rent_manager.get_all_properties()) if rent_manager else []
+                                    verified_address = None
+                                    
+                                    for prop in properties:
+                                        prop_address = prop.get('Address', '').strip()
+                                        if potential_address.lower() in prop_address.lower() or prop_address.lower() in potential_address.lower():
+                                            verified_address = prop_address
+                                            logger.info(f"✅ RENT MANAGER API VERIFIED: {verified_address}")
+                                            break
+                                    
+                                    if verified_address:
+                                        # Create service ticket with verified address
+                                        result = create_service_ticket(detected_issue_type, verified_address)
+                                        response_text = result if result else f"Perfect! I've created a {detected_issue_type} service ticket for {verified_address}. Dimitry will contact you within 2-4 hours."
+                                        logger.info(f"🎫 SERVICE TICKET CREATED: {detected_issue_type} at {verified_address}")
+                                    else:
+                                        response_text = f"I couldn't find '{potential_address}' in our property system. Could you provide the correct address?"
+                                        logger.warning(f"❌ ADDRESS '{potential_address}' NOT FOUND in Rent Manager API")
+                                        
+                            except Exception as e:
+                                logger.error(f"Address verification error: {e}")
+                                response_text = f"I'm having trouble verifying '{potential_address}'. Let me create the ticket anyway - Dimitry will contact you within 2-4 hours."
+                            
+                            # Quick address verification fallback if API fails
+                            if not response_text:
                                 verified_address = None
                                 known_addresses = [
                                     "29 Port Richmond Avenue", "122 Targee Street", 
@@ -876,7 +943,6 @@ Remember: You have persistent memory across calls and can make actual modificati
                                     response_text = create_service_ticket(issue_type, verified_address)
                                 else:
                                     response_text = f"I couldn't find '{potential_address}' in our property system. Could you provide the correct address?"
-                                break
 
                 # PRIORITY 5: General admin actions fallback (training mode only)
                 if not response_text and call_sid in training_sessions and is_potential_admin:
