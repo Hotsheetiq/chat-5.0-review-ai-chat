@@ -516,7 +516,7 @@ Be natural, thoughtful, and genuinely interested in learning to serve customers 
                 return f"""<?xml version="1.0" encoding="UTF-8"?>
                 <Response>
                     {no_input_voice}
-                    <Gather input="speech" timeout="10" speechTimeout="auto" language="en-US" profanityFilter="false">
+                    <Gather input="speech" timeout="15" speechTimeout="1" language="en-US" profanityFilter="false" enhanced="true">
                     </Gather>
                     <Redirect>/handle-speech/{call_sid}</Redirect>
                 </Response>"""
@@ -584,7 +584,7 @@ Be natural, thoughtful, and genuinely interested in learning to serve customers 
             return f"""<?xml version="1.0" encoding="UTF-8"?>
             <Response>
                 {main_voice}
-                <Gather input="speech" timeout="10" speechTimeout="auto" language="en-US" profanityFilter="false">
+                <Gather input="speech" timeout="15" speechTimeout="1" language="en-US" profanityFilter="false" enhanced="true">
                 </Gather>
                 <Redirect>/handle-speech/{call_sid}</Redirect>
             </Response>"""
@@ -649,7 +649,7 @@ Be natural, thoughtful, and genuinely interested in learning to serve customers 
             return f"""<?xml version="1.0" encoding="UTF-8"?>
             <Response>
                 {greeting_voice}
-                <Gather input="speech" timeout="10" speechTimeout="auto" language="en-US" profanityFilter="false">
+                <Gather input="speech" timeout="15" speechTimeout="1" language="en-US" profanityFilter="false" enhanced="true">
                 </Gather>
                 <Redirect>/handle-speech/{call_sid}</Redirect>
             </Response>"""
@@ -881,6 +881,27 @@ Respond thoughtfully, showing your reasoning if this is a test scenario, or ackn
         except Exception as e:
             logger.error(f"Admin training error: {e}")
             return jsonify({'response': f'Training error: {e}. I need help understanding what went wrong.'})
+
+    @app.route("/test-simple", methods=["POST"])
+    def test_simple_voice():
+        """Simple test endpoint for debugging"""
+        return """<?xml version="1.0" encoding="UTF-8"?>
+        <Response>
+            <Say voice="Polly.Matthew-Neural">This is a simple test. Say hello.</Say>
+            <Gather input="speech" timeout="5" action="/test-speech-result">
+            </Gather>
+        </Response>"""
+    
+    @app.route("/test-speech-result", methods=["POST"])
+    def test_speech_result():
+        """Test speech result capture"""
+        speech = request.values.get("SpeechResult", "")
+        logger.info(f"🧪 TEST SPEECH: '{speech}'")
+        
+        return f"""<?xml version="1.0" encoding="UTF-8"?>
+        <Response>
+            <Say voice="Polly.Matthew-Neural">You said: {speech or 'nothing detected'}</Say>
+        </Response>"""
 
     return app
 
