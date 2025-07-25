@@ -22,17 +22,12 @@ class AdminActionHandler:
             logger.info(f"🔧 CHECKING ADMIN ACTION: '{user_input}' -> '{user_lower}'")
             
             # Detect admin action patterns - ENHANCED DETECTION
-            if any(phrase in user_lower for phrase in ["add instant response", "add response", "new response", "create response"]):
+            if any(phrase in user_lower for phrase in ["add instant response", "add response", "new response", "create response", "when someone says", "when", "says", "respond with"]):
                 logger.info(f"🔧 DETECTED: Instant response addition")
                 return self.add_instant_response(user_input)
-            elif any(phrase in user_lower for phrase in ["change greeting", "modify greeting", "update greeting", "new greeting", "when someone says", "when", "says", "respond with"]):
-                # Check if it's an instant response or greeting
-                if "greeting" in user_lower:
-                    logger.info(f"🔧 DETECTED: Greeting modification")
-                    return self.modify_greeting(user_input)
-                else:
-                    logger.info(f"🔧 DETECTED: Instant response addition")
-                    return self.add_instant_response(user_input)
+            elif any(phrase in user_lower for phrase in ["change greeting", "modify greeting", "update greeting", "new greeting", "greeting to", "change it to", "let's change", "wanted to say"]):
+                logger.info(f"🔧 DETECTED: Greeting modification")
+                return self.modify_greeting(user_input)
             elif any(phrase in user_lower for phrase in ["update office hours", "change hours", "modify hours"]):
                 logger.info(f"🔧 DETECTED: Office hours update")
                 return self.update_office_hours(user_input)
@@ -108,8 +103,11 @@ class AdminActionHandler:
             patterns = [
                 r"(?:change|modify|update).*greeting.*['\"]([^'\"]+)['\"]",
                 r"greeting.*['\"]([^'\"]+)['\"]",
-                r"greeting.*(?:to|say)\s+([^'\"]+)",
-                r"change.*greeting.*to\s+([^'\"]+)"
+                r"greeting.*(?:to|say)\s+(.+)",
+                r"change.*(?:greeting.*)?to\s+(.+)",
+                r"let's change.*to\s+(.+)",
+                r"wanted to say\s+(.+)",
+                r"say\s+['\"]([^'\"]+)['\"]"
             ]
             
             new_greeting = None
