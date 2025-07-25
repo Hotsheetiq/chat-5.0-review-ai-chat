@@ -6,7 +6,7 @@ FIXED Chris Conversation App - All Critical Issues Resolved
 - Simplified, reliable conversation flow
 """
 
-from flask import Flask, request, Response, render_template_string
+from flask import Flask, request, Response, render_template_string, jsonify
 import os
 import logging
 import requests
@@ -301,12 +301,32 @@ def create_app():
     "test123": "working123", 
     "testing": "this is a test",
     
-    # SPEED OPTIMIZATION: Simple address responses
-    "189 court richmond": "Got the address! What's the issue?",
-    "court richmond": "What's the issue at Court Richmond Avenue?",
-    "richmond avenue": "What's the maintenance issue?",
+    # SMART ADDRESS RESPONSES: Check conversation for existing issue
+    "189 court richmond": lambda: check_and_create_or_ask("189 Court Richmond Avenue"),
+    "court richmond": lambda: check_and_create_or_ask("Court Richmond Avenue"), 
+    "richmond avenue": lambda: check_and_create_or_ask("Richmond Avenue"),
+    "29 port richmond": lambda: check_and_create_or_ask("29 Port Richmond Avenue"),
+    "port richmond": lambda: check_and_create_or_ask("Port Richmond Avenue"),
 }
     
+    def check_and_create_or_ask(address):
+        """Smart function to check conversation history and create ticket or ask for issue"""
+        call_sid = request.values.get('CallSid', '')
+        if call_sid not in conversation_history:
+            return f"What's the issue at {address}?"
+        
+        # Look for power/electrical issues in recent conversation
+        recent_messages = conversation_history[call_sid][-3:]  # Last 3 messages
+        for entry in recent_messages:
+            content = entry.get('content', '').lower()
+            if any(word in content for word in ['power', 'electrical', 'electricity', 'lights']):
+                # Found power issue - create ticket immediately
+                result = create_service_ticket("electrical", address)
+                return result if result else f"I'll create an electrical service ticket for {address} right away!"
+        
+        # No obvious issue found - ask
+        return f"What's the issue at {address}?"
+
     def send_service_sms():
         """Send SMS confirmation for current service issue - SAFER VERSION"""
         try:
@@ -325,6 +345,17 @@ def create_app():
         user_lower = user_input.lower().strip()
         if any(word in user_lower for word in ['open', 'hours', 'office', 'hello', 'hi', 'hey', 'thank', 'bye']):
             return None
+        
+        # IMMEDIATE ADDRESS RECOGNITION: Check if address mentioned after power issue
+        address_keywords = ['port richmond', 'court richmond', 'targee', 'avenue']
+        if any(addr in user_lower for addr in address_keywords):
+            # Check if there was a power issue mentioned recently
+            for entry in reversed(conversation_history[call_sid][-3:]):
+                prev_content = entry.get('content', '').lower()
+                if any(word in prev_content for word in ['power', 'electrical', 'electricity']):
+                    # Found power issue + address - create ticket immediately
+                    address = user_input.strip()  # Use original casing
+                    return create_service_ticket("electrical", address)
             
         # Look for issue type and address in conversation history
         detected_issue = None
