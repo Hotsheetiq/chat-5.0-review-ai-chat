@@ -309,6 +309,10 @@ def create_app():
         "not working": lambda: "What's not working? I can help create a service ticket.",
         "doesn't work": lambda: "What's not working? I can help create a service ticket.", 
         "not work": lambda: "What's not working? I can help create a service ticket.",
+        "doesn't flush": lambda: "Plumbing issue! What's your address?",
+        "won't flush": lambda: "Plumbing issue! What's your address?",
+        "not flush": lambda: "Plumbing issue! What's your address?",
+        "flush": lambda: "Plumbing issue! What's your address?",
         
         # Thanks and confirmations
         "thank you": lambda: "You're welcome! Anything else I can help with?",
@@ -334,19 +338,62 @@ def create_app():
 }
     
     def check_and_create_or_ask(address):
-        """Smart function to check conversation history and create ticket or ask for issue"""
+        """Smart function to check conversation history and create ticket or ask for issue with API VERIFICATION"""
         call_sid = request.values.get('CallSid', '')
         if call_sid not in conversation_history:
             return f"What's the issue at {address}?"
         
-        # Look for power/electrical issues in recent conversation
-        recent_messages = conversation_history[call_sid][-3:]  # Last 3 messages
+        # CRITICAL: VERIFY ADDRESS WITH RENT MANAGER API FIRST
+        try:
+            if rent_manager:
+                import asyncio
+                logger.info(f"🔍 API VERIFYING ADDRESS: {address}")
+                properties = asyncio.run(rent_manager.get_all_properties()) if rent_manager else []
+                verified_address = None
+                
+                for prop in properties:
+                    prop_address = prop.get('Address', '').strip()
+                    if address.lower() in prop_address.lower() or prop_address.lower() in address.lower():
+                        verified_address = prop_address
+                        logger.info(f"✅ RENT MANAGER API VERIFIED: {verified_address}")
+                        break
+                
+                if not verified_address:
+                    logger.warning(f"❌ ADDRESS '{address}' NOT FOUND in Rent Manager API")
+                    return f"I couldn't find '{address}' in our property system. Could you provide the correct address?"
+                
+                # Address verified, now check for issues in conversation
+                address = verified_address  # Use the verified address
+        except Exception as e:
+            logger.error(f"Address verification error: {e}")
+            return f"I'm having trouble verifying '{address}'. Could you confirm the address?"
+        
+        # Look for ANY maintenance issues in recent conversation
+        recent_messages = conversation_history[call_sid][-5:]  # Last 5 messages
+        detected_issue = None
+        
         for entry in recent_messages:
             content = entry.get('content', '').lower()
             if any(word in content for word in ['power', 'electrical', 'electricity', 'lights']):
-                # Found power issue - create ticket immediately
-                result = create_service_ticket("electrical", address)
-                return result if result else f"I'll create an electrical service ticket for {address} right away!"
+                detected_issue = "electrical"
+                break
+            elif any(word in content for word in ['toilet', 'flush', 'plumbing', 'water', 'leak', 'bathroom']):
+                detected_issue = "plumbing"
+                break
+            elif any(word in content for word in ['heat', 'heating', 'cold']):
+                detected_issue = "heating"
+                break
+            elif any(word in content for word in ['noise', 'loud', 'neighbors']):
+                detected_issue = "noise complaint"
+                break
+            elif any(word in content for word in ['broken', 'not working', "doesn't work"]):
+                detected_issue = "maintenance"
+                break
+        
+        if detected_issue:
+            logger.info(f"🎫 FOUND ISSUE IN CONVERSATION: {detected_issue} at {address}")
+            result = create_service_ticket(detected_issue, address)
+            return result if result else f"I'll create a {detected_issue} service ticket for {address} right away!"
         
         # No obvious issue found - ask
         return f"What's the issue at {address}?"
@@ -394,7 +441,7 @@ def create_app():
                     detected_issue = "electrical"
                 elif any(word in content for word in ['heat', 'heating', 'no heat', 'cold']):
                     detected_issue = "heating" 
-                elif any(word in content for word in ['water', 'leak', 'plumbing']):
+                elif any(word in content for word in ['water', 'leak', 'plumbing', 'toilet', 'flush', 'bathroom']):
                     detected_issue = "plumbing"
                 elif any(word in content for word in ['noise', 'loud', 'neighbors']):
                     detected_issue = "noise complaint"
@@ -764,6 +811,9 @@ Remember: You have persistent memory across calls and can make actual modificati
                         elif any(word in user_lower for word in ['broken', 'not working', "doesn't work"]):
                             response_text = "What's broken? I can help create a service ticket."
                             logger.info(f"🚨 COMPLAINT DETECTED: Something broken in narrative")
+                        elif any(word in user_lower for word in ['flush', "doesn't flush", "won't flush"]):
+                            response_text = "Plumbing issue! What's your address?"
+                            logger.info(f"🚨 COMPLAINT DETECTED: Toilet flush issue in narrative")
                     
                     # If not a complaint, check regular instant responses
                     if not response_text:
