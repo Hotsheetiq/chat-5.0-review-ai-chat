@@ -117,13 +117,14 @@ class AdminActionHandler:
                     logger.info(f"🔧 NO QUOTE MATCH, trying fallback patterns")
                 # Fallback patterns for non-quoted text
                 patterns = [
-                    r"greeting.*to:\s*(.+)",
-                    r"greeting.*(?:to|say)\s+(.+)",
-                    r"change.*(?:greeting.*)?to\s+(.+)",
-                    r"let's change.*to\s+(.+)",
-                    r"wanted to say\s+(.+)",
-                    r"i'll change.*to:\s*(.+)",
-                    r"say\s+(.+)"
+                    r"change.*greeting.*to\s+say\s+(.+)",  # Most specific: "change greeting to say X"
+                    r"greeting.*to\s+say\s+(.+)",  # "greeting to say X"
+                    r"greeting.*to:\s*(.+)",  # "greeting to: X"
+                    r"change.*(?:greeting.*)?to\s+(.+)",  # "change to X"
+                    r"let's change.*to\s+(.+)",  # "let's change to X"
+                    r"wanted to say\s+(.+)",  # "wanted to say X"
+                    r"i'll change.*to:\s*(.+)",  # "I'll change to: X"
+                    r"say\s+(.+)"  # Last resort: "say X"
                 ]
                 
                 new_greeting = None
@@ -311,7 +312,8 @@ class AdminActionHandler:
             
             if match:
                 old_line = match.group(0)
-                new_line = f'greeting = f"{{time_greeting}} and thank you for calling Grinberg Management, I\'m Chris, {new_greeting}"'
+                # Create a complete, natural greeting
+                new_line = f'greeting = f"{{time_greeting}} and thank you for calling Grinberg Management, I\'m Chris. {new_greeting}"'
                 content = content.replace(old_line, new_line)
                 logger.info(f"🔧 FOUND AND REPLACED: '{old_line}' -> '{new_line}'")
             else:
