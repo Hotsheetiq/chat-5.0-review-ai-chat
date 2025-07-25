@@ -47,15 +47,15 @@ try:
     from service_issue_handler import ServiceIssueHandler
     from admin_action_handler import admin_action_handler
     
-    # Initialize with proper credentials - fix credential format issue
-    rent_manager_credentials = {
-        'username': os.environ.get('RENT_MANAGER_USERNAME', ''),
-        'password': os.environ.get('RENT_MANAGER_PASSWORD', ''),
-        'api_key': os.environ.get('RENT_MANAGER_API_KEY', ''),
-        'location_id': os.environ.get('RENT_MANAGER_LOCATION_ID', '')
-    }
+    # Initialize with proper credentials string format
+    rent_manager_username = os.environ.get('RENT_MANAGER_USERNAME', '')
+    rent_manager_password = os.environ.get('RENT_MANAGER_PASSWORD', '')
+    rent_manager_location = os.environ.get('RENT_MANAGER_LOCATION_ID', '1')
     
-    rent_manager = RentManagerAPI(rent_manager_credentials)
+    # Format credentials as expected by RentManagerAPI
+    credentials_string = f"{rent_manager_username}:{rent_manager_password}:{rent_manager_location}"
+    
+    rent_manager = RentManagerAPI(credentials_string)
     service_handler = ServiceIssueHandler(rent_manager)
     logger.info("Rent Manager API and Service Handler initialized successfully")
 except Exception as e:
@@ -239,12 +239,12 @@ def create_app():
                     logger.error(f"Background thread error: {e}")
             
             # Return IMMEDIATE confirmation with ticket number
-            return f"Perfect! I've created service ticket #{ticket_number} for your {issue_type} issue at {address}. Dimitry will contact you within 2-4 hours."
+            return f"Perfect! I've created service ticket #{ticket_number} for your {issue_type} issue at {address}. We are on it and will get back to you with a follow up call or text. Can you confirm the best phone number to text you?"
             
         except Exception as e:
             logger.error(f"Service ticket creation error: {e}")
             ticket_number = f"SV-{random.randint(10000, 99999)}"
-            return f"Perfect! I've created service ticket #{ticket_number} for your {issue_type} issue at {address}. Dimitry will contact you within 2-4 hours."
+            return f"Perfect! I've created service ticket #{ticket_number} for your {issue_type} issue at {address}. We are on it and will get back to you with a follow up call or text. Can you confirm the best phone number to text you?"
     
     # INSTANT RESPONSES - No AI delay, immediate answers
     INSTANT_RESPONSES = {
@@ -600,9 +600,9 @@ Remember: You have persistent memory across calls and can make actual modificati
                 response = openai_client.chat.completions.create(
                     model="gpt-4o",
                     messages=messages,
-                    max_tokens=1000,  # INTELLIGENCE OPTIMIZED: Longer for smarter responses
-                    temperature=0.9,  # Higher creativity for better understanding
-                    timeout=2.5  # LONGER timeout for better intelligence processing
+                    max_tokens=150,  # SPEED OPTIMIZED: Faster responses
+                    temperature=0.8,  # Balanced creativity and speed
+                    timeout=1.0  # FASTER timeout for immediate responses
                 )
                 
                 result = response.choices[0].message.content.strip() if response.choices[0].message.content else "I'm here to help! What can I do for you today?"
@@ -717,7 +717,7 @@ Remember: You have persistent memory across calls and can make actual modificati
                 return f"""<?xml version="1.0" encoding="UTF-8"?>
                 <Response>
                     {no_input_voice}
-                    <Gather input="speech dtmf" timeout="8" speechTimeout="4" dtmfTimeout="2" language="en-US" profanityFilter="false" enhanced="true" action="/handle-input/{call_sid}" method="POST">
+                    <Gather input="speech dtmf" timeout="6" speechTimeout="2" dtmfTimeout="1" language="en-US" profanityFilter="false" enhanced="true" action="/handle-input/{call_sid}" method="POST">
                     </Gather>
                     <Redirect>/handle-speech/{call_sid}</Redirect>
                 </Response>"""
@@ -901,7 +901,7 @@ Remember: You have persistent memory across calls and can make actual modificati
                                     if verified_address:
                                         # Create service ticket with verified address
                                         result = create_service_ticket(detected_issue_type, verified_address)
-                                        response_text = result if result else f"Perfect! I've created a {detected_issue_type} service ticket for {verified_address}. Dimitry will contact you within 2-4 hours."
+                                        response_text = result if result else f"Perfect! I've created a {detected_issue_type} service ticket for {verified_address}. We are on it and will get back to you with a follow up call or text. Can you confirm the best phone number to text you?"
                                         logger.info(f"🎫 SERVICE TICKET CREATED: {detected_issue_type} at {verified_address}")
                                     else:
                                         response_text = f"I couldn't find '{potential_address}' in our property system. Could you provide the correct address?"
@@ -909,11 +909,13 @@ Remember: You have persistent memory across calls and can make actual modificati
                                         
                             except Exception as e:
                                 logger.error(f"Address verification error: {e}")
-                                response_text = f"I'm having trouble verifying '{potential_address}'. Let me create the ticket anyway - Dimitry will contact you within 2-4 hours."
+                                response_text = f"I'm having trouble verifying '{potential_address}'. Let me create the ticket anyway - we are on it and will get back to you with a follow up call or text. Can you confirm the best phone number to text you?"
                             
-                            # Quick address verification fallback if API fails
+                            # Skip API verification for now - create ticket immediately  
                             if not response_text:
-                                verified_address = None
+                                result = create_service_ticket(detected_issue_type, potential_address)
+                                response_text = result if result else f"Perfect! I've created a {detected_issue_type} service ticket for {potential_address}. We are on it and will get back to you with a follow up call or text. Can you confirm the best phone number to text you?"
+                                logger.info(f"🎫 SERVICE TICKET CREATED: {detected_issue_type} at {potential_address}")
                                 known_addresses = [
                                     "29 Port Richmond Avenue", "122 Targee Street", 
                                     "31 Port Richmond Avenue", "2940 Richmond Avenue",
@@ -989,7 +991,7 @@ Remember: You have persistent memory across calls and can make actual modificati
             return f"""<?xml version="1.0" encoding="UTF-8"?>
             <Response>
                 {main_voice}
-                <Gather input="speech dtmf" timeout="8" speechTimeout="3" dtmfTimeout="2" language="en-US" profanityFilter="false" enhanced="true" action="/handle-input/{call_sid}" method="POST">
+                <Gather input="speech dtmf" timeout="6" speechTimeout="2" dtmfTimeout="1" language="en-US" profanityFilter="false" enhanced="true" action="/handle-input/{call_sid}" method="POST">
                 </Gather>
                 <Redirect>/handle-speech/{call_sid}</Redirect>
             </Response>"""
