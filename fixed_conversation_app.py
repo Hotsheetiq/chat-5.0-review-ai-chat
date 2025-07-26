@@ -1065,20 +1065,24 @@ Remember: You have persistent memory across calls and can make actual modificati
                 if not response_text:
                     # AGGRESSIVE address detection for ANY address-like input
                     user_clean = user_input.lower().strip()
-                    address_keywords = ['richmond', 'targee', 'avenue', 'street', 'ave', 'app', 'port', 'park']
+                    address_keywords = ['richmond', 'targee', 'avenue', 'street', 'ave', 'app', 'port', 'park', 'adam', 'court', 'road', 'rd', 'lane', 'ln', 'drive', 'dr']
                     has_number = any(char.isdigit() for char in user_input)
                     has_address_word = any(word in user_clean for word in address_keywords)
                     
-                    if has_number and has_address_word:
-                        logger.info(f"🏠 IMMEDIATE ADDRESS DETECTED: '{user_input}' - verifying instantly")
+                    # ENHANCED: Also check if input looks like an address even without keywords
+                    import re
+                    address_pattern = r'^\d+\s+[a-zA-Z]+.*$'  # Starts with number followed by words
+                    looks_like_address = bool(re.match(address_pattern, user_input.strip()))
+                    
+                    if (has_number and has_address_word) or looks_like_address:
+                        logger.info(f"🏠 ADDRESS DETECTED: '{user_input}' - verifying against property database")
                         
                         # Extract number from input
-                        import re
                         number_match = re.search(r'(\d+)', user_input)
                         if number_match:
                             number = number_match.group(1)
                             
-                            # INSTANT FAKE ADDRESS REJECTION
+                            # ENHANCED FAKE ADDRESS REJECTION - Check against valid properties
                             valid_numbers = ['29', '31', '122', '2940', '3140']
                             if number not in valid_numbers:
                                 # Suggest closest match instead of listing all addresses
