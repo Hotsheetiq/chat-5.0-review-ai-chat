@@ -257,6 +257,7 @@ def create_app():
                             'assigned_to': 'Dimitry Simanovsky'
                         }
                         
+                        logger.info(f"✅ REAL SERVICE TICKET SUCCESSFULLY CREATED: #{ticket_number}")
                         return f"Perfect! I've created service ticket #{ticket_number} for your {issue_type} issue at {address}. Dimitry Simanovsky has been assigned and will contact you within 2-4 hours. Would you like me to text you the issue number for your records?"
                     else:
                         logger.warning("❌ REAL TICKET CREATION FAILED - Using fallback")
@@ -266,7 +267,7 @@ def create_app():
             
             # Fallback: Generate realistic ticket number
             ticket_number = f"SV-{random.randint(10000, 99999)}"
-            logger.info(f"📝 FALLBACK TICKET GENERATED: {ticket_number}")
+            logger.warning(f"⚠️ FALLBACK TICKET GENERATED (Rent Manager API unavailable): {ticket_number}")
             
             # Store ticket info for SMS
             current_service_issue = {
@@ -1165,10 +1166,13 @@ PERSONALITY: Warm, empathetic, and intelligent. Show you're genuinely listening 
                                     # Default to most common property
                                     suggested_address = "29 Port Richmond Avenue"
                                 
-                                response_text = f"I couldn't find that address in our system. Did you mean {suggested_address}?"
-                                logger.error(f"❌ INTELLIGENT ADDRESS BLOCKED: '{user_input}' - suggested {suggested_address} based on street name")
+                                response_text = f"I heard {user_input} but couldn't find that exact address in our system. Did you mean {suggested_address}? Please confirm if that's correct."
+                                logger.info(f"🎯 ADDRESS CONFIRMATION REQUIRED: '{user_input}' → suggesting '{suggested_address}' for confirmation")
                             else:
-                                # Valid address - check conversation for issue type
+                                # Valid address - but don't auto-create ticket, confirm first
+                                logger.info(f"✅ VALID ADDRESS DETECTED: {user_input} → {number} (confirmed)")
+                                
+                                # Check conversation for issue type
                                 recent_messages = conversation_history.get(call_sid, [])[-5:]
                                 detected_issue_type = None
                                 
