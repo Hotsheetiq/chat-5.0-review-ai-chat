@@ -1119,7 +1119,7 @@ PERSONALITY: Warm, empathetic, and intelligent. Show you're genuinely listening 
                                         else:
                                             response_text = response_func
                                         logger.info(f"⚡ INSTANT GREETING (ZERO AI DELAY): {pattern}")
-                                        return response_text  # IMMEDIATE RETURN - skip all AI processing
+                                        break  # Found response, continue with normal flow
                                 except Exception as e:
                                     logger.error(f"Instant response error for {pattern}: {e}")
                 
@@ -1168,7 +1168,6 @@ PERSONALITY: Warm, empathetic, and intelligent. Show you're genuinely listening 
                                 
                                 response_text = f"I heard {user_input} but couldn't find that exact address in our system. Did you mean {suggested_address}? Please confirm if that's correct."
                                 logger.info(f"🎯 ADDRESS CONFIRMATION REQUIRED: '{user_input}' → suggesting '{suggested_address}' for confirmation")
-                                return response_text
                             else:
                                 # Valid address - but don't auto-create ticket, confirm first
                                 logger.info(f"✅ VALID ADDRESS DETECTED: {user_input} → {number} (confirmed)")
@@ -1403,7 +1402,7 @@ PERSONALITY: Warm, empathetic, and intelligent. Show you're genuinely listening 
                             response_text = f"Perfect! I've texted you the details for service issue #{current_service_issue['issue_number']}. Check your phone in a moment!"
                             logger.info(f"📱 SMS SENT: Issue #{current_service_issue['issue_number']} to {caller_phone}")
                         else:
-                            response_text = f"I've created service issue #{current_service_issue['issue_number']} for your {current_service_issue['issue_type']} issue. Dimitry will contact you within 2-4 hours."
+                            response_text = f"I've created service issue #{current_service_issue['issue_number']} for your {current_service_issue['issue_type']} issue. Dimitry will contact you soon."
                             logger.warning(f"📱 SMS FAILED: Fallback message provided")
                 
                 # PRIORITY 5: AI response if no instant match or actions (FASTER TRAINING)
