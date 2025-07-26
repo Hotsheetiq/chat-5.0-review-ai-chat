@@ -9,6 +9,7 @@ class GrokAI:
     """Grok 4.0 AI integration - xAI's flagship model with superior conversation memory and intelligence"""
     
     def __init__(self):
+        """Initialize Grok AI with pre-warming to reduce first-response latency"""
         self.api_key = os.environ.get("XAI_API_KEY")
         if not self.api_key:
             raise ValueError("XAI_API_KEY environment variable is required")
@@ -19,6 +20,18 @@ class GrokAI:
             api_key=self.api_key
         )
         logger.info("✅ Grok AI client initialized successfully")
+        
+        # PRE-WARM: Make a quick test call to reduce first-response latency
+        try:
+            self.client.chat.completions.create(
+                model="grok-2-1212",
+                messages=[{"role": "user", "content": "Hi"}],
+                max_tokens=5,
+                temperature=0.1
+            )
+            logger.info("🚀 Grok AI pre-warmed - first responses will be faster")
+        except Exception as e:
+            logger.warning(f"Pre-warm failed (non-critical): {e}")
     
     def generate_response(self, messages, max_tokens=100, temperature=0.5, timeout=0.6):
         """Generate fast response using optimized Grok settings"""

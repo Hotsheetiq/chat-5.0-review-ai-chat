@@ -328,6 +328,10 @@ def create_app():
     INSTANT_RESPONSES = {
         # Office hours - FIXED LOGIC with speech recognition variations
         "are you open": get_office_hours_response,
+        "you open": get_office_hours_response,
+        "you guys are open": get_office_hours_response,  # Fix for "if you guys are open"
+        "know if you guys are open": get_office_hours_response,  # Fix for exact phrase
+        "wanted to know if you guys are open": get_office_hours_response,  # Complete phrase
         "open right now": get_office_hours_response,
         "this is your office open": get_office_hours_response,  # Speech recognition version
         "this is your office open today": get_office_hours_response,  # Speech recognition version
