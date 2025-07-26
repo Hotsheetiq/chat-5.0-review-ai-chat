@@ -620,32 +620,57 @@ def create_app():
             logger.info(f"🎫 AUTO-CREATING TICKET: {detected_issue} at {detected_address}")
             return create_service_ticket(detected_issue, detected_address)
         
-        # Enhanced memory check - look for BOTH issues and addresses in conversation history
+        # ENHANCED MEMORY CHECK - look for BOTH issues and addresses in conversation history
         if call_sid in conversation_history:
             history_issues = []
             history_addresses = []
             
+            # Look through conversation history for issues and addresses
             for entry in conversation_history[call_sid]:
-                # Extract issues from previous messages
+                content = str(entry.get('content', '')).lower()
+                
+                # Extract issues from previous messages (both detected_issues and content scanning)
                 if 'detected_issues' in entry:
                     history_issues.extend(entry.get('detected_issues', []))
+                
+                # Also scan content for issue keywords
+                if any(word in content for word in ['washing machine', 'washer', 'dryer', 'dishwasher', 'appliance']):
+                    if 'appliance' not in history_issues:
+                        history_issues.append('appliance')
+                elif any(word in content for word in ['electrical', 'power', 'electricity', 'lights']):
+                    if 'electrical' not in history_issues:
+                        history_issues.append('electrical')
+                elif any(word in content for word in ['plumbing', 'toilet', 'water', 'leak', 'bathroom']):
+                    if 'plumbing' not in history_issues:
+                        history_issues.append('plumbing')
+                elif any(word in content for word in ['heating', 'heat', 'cold']):
+                    if 'heating' not in history_issues:
+                        history_issues.append('heating')
+                
                 # Extract addresses from previous messages
-                content = str(entry.get('content', '')).lower()
                 for address in ["29 port richmond avenue", "31 port richmond avenue", "26 port richmond avenue", 
                                "122 targee street", "189 court street richmond", "2940 richmond avenue"]:
-                    if address.lower() in content:
+                    if address.lower() in content or any(word in content for word in address.split()):
                         history_addresses.append(address)
+                        break
+            
+            # CRITICAL FIX: If we have BOTH issue and address from history, create ticket immediately
+            if history_issues and history_addresses:
+                issue_type = history_issues[-1]  # Use most recent issue
+                address = history_addresses[-1]  # Use most recent address
+                logger.info(f"🧠 COMPLETE MEMORY MATCH: Creating ticket for {issue_type} at {address} (both from history)")
+                return create_service_ticket(issue_type, address)
             
             # If we found a previous issue and current message has an address, create ticket
             if history_issues and detected_address:
                 issue_type = history_issues[-1]  # Use most recent issue
-                logger.info(f"🧠 MEMORY MATCH: Creating ticket for {issue_type} at {detected_address}")
+                logger.info(f"🧠 ISSUE FROM HISTORY + NEW ADDRESS: Creating ticket for {issue_type} at {detected_address}")
                 return create_service_ticket(issue_type, detected_address)
             
             # If we found a previous address and current message has an issue, create ticket
             if history_addresses and detected_issue:
                 address = history_addresses[-1]  # Use most recent address
-                logger.info(f"🧠 MEMORY MATCH: Creating ticket for {detected_issue} at {address}")
+                logger.info(f"🧠 ADDRESS FROM HISTORY + NEW ISSUE: Creating ticket for {detected_issue} at {address}")
                 return create_service_ticket(detected_issue, address)
         
         # If we have issue but no address, ask for address with context
@@ -701,7 +726,21 @@ Remember: You have persistent memory across calls and can make actual modificati
             else:
                 messages.append({
                     "role": "system", 
-                    "content": "You are Chris, an intelligent conversational AI assistant for Grinberg Management property company. You're warm, helpful, and genuinely smart - like talking to a real person. IMPORTANT: Always maintain conversation context and memory. If someone apologizes or refers to previous conversation, acknowledge it naturally. For maintenance issues, get the problem type and address to create service tickets. Show empathy, intelligence, and genuine care in every interaction."
+                    "content": """You are Chris, an intelligent conversational AI assistant for Grinberg Management property company. You're warm, helpful, and genuinely smart - like talking to a real person.
+
+🧠 CRITICAL CONVERSATION MEMORY RULES:
+1. NEVER ask for information the caller already provided in this conversation
+2. If they mentioned a washing machine problem and gave an address, CREATE THE TICKET immediately - don't ask "what's the problem" again
+3. Track ALL conversation context: issues mentioned + addresses provided + any other details
+4. Show you remember: "Got it, for the washing machine issue at 29 Port Richmond Avenue, I'll create that service ticket now"
+5. Be conversationally intelligent - acknowledge what they've already told you
+
+MAINTENANCE WORKFLOW:
+- Issue mentioned + Address provided = CREATE TICKET immediately
+- Only ask for missing information, never repeat questions
+- Show natural conversation flow like a human would
+
+PERSONALITY: Warm, empathetic, and intelligent. Show you're genuinely listening and remembering our conversation."""
                 })
             
             
