@@ -736,12 +736,18 @@ Remember: You have persistent memory across calls and can make actual modificati
 4. Show you remember: "Got it, for the washing machine issue at 29 Port Richmond Avenue, I'll create that service ticket now"
 5. Be conversationally intelligent - acknowledge what they've already told you
 
+🚫 CRITICAL: NEVER USE CALLER NAMES
+- NEVER say "Hi [name]" or extract names from speech
+- Speech recognition often mishears words as names
+- Instead say "I understand" or "Got it" or "I can help with that"
+- If unsure about an address, ask "Did you mean [correct address]?" without using names
+
 MAINTENANCE WORKFLOW:
 - Issue mentioned + Address provided = CREATE TICKET immediately
 - Only ask for missing information, never repeat questions
 - Show natural conversation flow like a human would
 
-PERSONALITY: Warm, empathetic, and intelligent. Show you're genuinely listening and remembering our conversation."""
+PERSONALITY: Warm, empathetic, and intelligent. Show you're genuinely listening and remembering our conversation. But NEVER assume or use caller names."""
                 })
             
             
@@ -1151,8 +1157,10 @@ PERSONALITY: Warm, empathetic, and intelligent. Show you're genuinely listening 
                                 user_clean_address = user_clean.lower()
                                 
                                 if 'richmond' in user_clean_address or 'port' in user_clean_address:
-                                    # Richmond Avenue addresses
-                                    if number.startswith('2') or int(number) < 100:
+                                    # Richmond Avenue addresses - be more specific about what user said vs what we suggest
+                                    if number in ['26', '64', '24', '28']:  # Common misheard numbers for 29
+                                        suggested_address = "29 Port Richmond Avenue"
+                                    elif number.startswith('2') or int(number) < 100:
                                         suggested_address = "29 Port Richmond Avenue"
                                     else:
                                         suggested_address = "2940 Richmond Avenue"
@@ -1166,7 +1174,7 @@ PERSONALITY: Warm, empathetic, and intelligent. Show you're genuinely listening 
                                     # Default to most common property
                                     suggested_address = "29 Port Richmond Avenue"
                                 
-                                response_text = f"I heard {user_input} but couldn't find that exact address in our system. Did you mean {suggested_address}? Please confirm if that's correct."
+                                response_text = f"I heard {number} Port Richmond Avenue but couldn't find that exact address in our system. Did you mean {suggested_address}? Please confirm if that's correct."
                                 logger.info(f"🎯 ADDRESS CONFIRMATION REQUIRED: '{user_input}' → suggesting '{suggested_address}' for confirmation")
                             else:
                                 # Valid address - but don't auto-create ticket, confirm first
@@ -1202,9 +1210,24 @@ PERSONALITY: Warm, empathetic, and intelligent. Show you're genuinely listening 
                                 verified_address = "29 Port Richmond Avenue" if number in ['29', '2940'] else "31 Port Richmond Avenue" if number in ['31', '3140'] else "122 Targee Street"
                                 
                                 if detected_issue_type:
-                                    # Create service ticket with detected issue
-                                    response_text = f"Perfect! I've created your {detected_issue_type} service request for {verified_address}."
-                                    logger.info(f"✅ INSTANT TICKET CREATED: {detected_issue_type} at {verified_address}")
+                                    # Create service ticket with detected issue - IMMEDIATE RETURN
+                                    current_service_issue = {
+                                        'issue_type': detected_issue_type,
+                                        'address': verified_address,
+                                        'issue_number': f"SV-{random.randint(10000, 99999)}"
+                                    }
+                                    
+                                    # Store for SMS follow-up
+                                    conversation_history.setdefault(call_sid, []).append({
+                                        'role': 'system',
+                                        'content': f'service_issue_created_{current_service_issue["issue_number"]}',
+                                        'service_issue': current_service_issue,
+                                        'timestamp': datetime.now()
+                                    })
+                                    
+                                    response_text = f"Perfect! I've created service ticket #{current_service_issue['issue_number']} for your {detected_issue_type} issue at {verified_address}. Dimitry will contact you soon. Would you like me to text you the issue number for your records?"
+                                    logger.info(f"✅ INSTANT TICKET CREATED: #{current_service_issue['issue_number']} for {detected_issue_type} at {verified_address}")
+                                    return response_text  # CRITICAL: Return immediately to prevent repetitive questions
                                 else:
                                     # Look for any issues mentioned in full conversation history
                                     all_issues = []
@@ -1214,8 +1237,23 @@ PERSONALITY: Warm, empathetic, and intelligent. Show you're genuinely listening 
                                     
                                     if all_issues:
                                         issue_type = all_issues[0]  # Use first detected issue
-                                        response_text = f"Perfect! I've created your {issue_type} service request for {verified_address}."
-                                        logger.info(f"✅ MEMORY-BASED TICKET CREATED: {issue_type} at {verified_address}")
+                                        current_service_issue = {
+                                            'issue_type': issue_type,
+                                            'address': verified_address,
+                                            'issue_number': f"SV-{random.randint(10000, 99999)}"
+                                        }
+                                        
+                                        # Store for SMS follow-up
+                                        conversation_history.setdefault(call_sid, []).append({
+                                            'role': 'system',
+                                            'content': f'service_issue_created_{current_service_issue["issue_number"]}',
+                                            'service_issue': current_service_issue,
+                                            'timestamp': datetime.now()
+                                        })
+                                        
+                                        response_text = f"Perfect! I've created service ticket #{current_service_issue['issue_number']} for your {issue_type} issue at {verified_address}. Dimitry will contact you soon. Would you like me to text you the issue number for your records?"
+                                        logger.info(f"✅ MEMORY-BASED TICKET CREATED: #{current_service_issue['issue_number']} for {issue_type} at {verified_address}")
+                                        return response_text  # CRITICAL: Return immediately to prevent repetitive questions
                                     else:
                                         response_text = f"Got it, {verified_address}. What's the issue there?"
                 
