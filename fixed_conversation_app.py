@@ -583,9 +583,29 @@ def create_app():
                                     detected_address = verified_address
                                     logger.info(f"✅ VERIFIED ADDRESS: {verified_address}")
                                 else:
-                                    logger.warning(f"❌ SECURITY BLOCK: {potential_address} not found in Rent Manager - REJECTED")
-                                    # Return security error message immediately
-                                    return f"I'm sorry, but I couldn't find '{potential_address}' in our property system. Could you please double-check the address?"
+                                    # Smart address clarification - detect partial matches
+                                    street_detected = None
+                                    user_lower = potential_address.lower()
+                                    
+                                    if "richmond" in user_lower and "avenue" in user_lower:
+                                        street_detected = "Richmond Avenue"
+                                        available_numbers = ["2940", "2944", "2938"]
+                                    elif "richmond" in user_lower and "port" in user_lower:
+                                        street_detected = "Port Richmond Avenue" 
+                                        available_numbers = ["29", "31"]
+                                    elif "targee" in user_lower:
+                                        street_detected = "Targee Street"
+                                        available_numbers = ["122"]
+                                    elif "court" in user_lower and "richmond" in user_lower:
+                                        street_detected = "Court Street Richmond"
+                                        available_numbers = ["189"]
+                                    
+                                    if street_detected:
+                                        logger.info(f"🎯 SMART CLARIFICATION: Detected {street_detected}, asking for house number")
+                                        return f"I heard {street_detected} but couldn't catch the house number clearly. What's the house number on {street_detected}?"
+                                    else:
+                                        logger.warning(f"❌ SECURITY BLOCK: {potential_address} not found in Rent Manager - REJECTED")
+                                        return f"I'm sorry, but I couldn't find '{potential_address}' in our property system. Could you please double-check the address?"
                         except Exception as e:
                             logger.error(f"Address verification error: {e}")
                             # If verification fails, block the address for security
@@ -858,6 +878,8 @@ Remember: You have persistent memory across calls and can make actual modificati
                 ("4640 richmond", "2940 richmond"), 
                 ("46 richmond", "2940 richmond"),
                 ("640 richmond", "2940 richmond"),
+                ("19640 richmond", "2940 richmond"),  # New pattern from logs
+                ("192940 richmond", "2940 richmond"), # Another new pattern
                 ("port rich", "port richmond"),
                 ("poor richmond", "port richmond"),
                 ("target", "targee"),
