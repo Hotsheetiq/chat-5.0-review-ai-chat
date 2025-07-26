@@ -67,6 +67,8 @@ except Exception as e:
 conversation_history = {}
 # Anti-repetition tracking per call
 response_tracker = {}
+# Service issue storage for SMS functionality
+current_service_issue = {}
 # Admin phone numbers for training access
 ADMIN_PHONE_NUMBERS = [
     "+13477430880",  # Add your admin phone number here
@@ -196,55 +198,117 @@ def create_app():
             return "Our office hours are Monday through Friday, 9 AM to 5 PM Eastern. How can I help you today?"
     
     def create_service_ticket(issue_type, address):
-        """Create service ticket and return confirmation with ticket number IMMEDIATELY"""
+        """Create service ticket with REAL Rent Manager integration and SMS confirmation"""
+        global current_service_issue
         try:
-            # Generate realistic service ticket number FIRST
-            ticket_number = f"SV-{random.randint(10000, 99999)}"
+            if service_handler:
+                # Create REAL service ticket using Rent Manager API
+                import asyncio
+                tenant_info = {
+                    'TenantID': 'phone_caller',
+                    'Name': 'Phone Caller',  
+                    'Unit': address
+                }
+                
+                try:
+                    # Synchronous wrapper for async function
+                    def run_creation():
+                        try:
+                            loop = asyncio.new_event_loop()
+                            asyncio.set_event_loop(loop)
+                            result = loop.run_until_complete(
+                                service_handler.create_maintenance_issue(
+                                    tenant_info, issue_type,
+                                    f"{issue_type.title()} issue reported by caller",
+                                    address
+                                )
+                            )
+                            loop.close()
+                            return result
+                        except Exception as e:
+                            logger.error(f"Async service creation failed: {e}")
+                            return None
+                    
+                    result = run_creation()
+                    
+                    if result and result.get('success'):
+                        ticket_number = result['issue_number']
+                        logger.info(f"✅ REAL SERVICE TICKET CREATED: {ticket_number}")
+                        
+                        # Store for SMS functionality
+                        current_service_issue = {
+                            'issue_number': ticket_number,
+                            'issue_type': issue_type,
+                            'address': address,
+                            'assigned_to': 'Dimitry Simanovsky'
+                        }
+                        
+                        return f"Perfect! I've created service ticket #{ticket_number} for your {issue_type} issue at {address}. Dimitry Simanovsky has been assigned and will contact you within 2-4 hours. Would you like me to text you the issue number for your records?"
+                    else:
+                        logger.warning("❌ REAL TICKET CREATION FAILED - Using fallback")
+                        
+                except Exception as e:
+                    logger.error(f"Service creation error: {e}")
             
-            # Store ticket info globally for SMS later
-            global current_service_issue
+            # Fallback: Generate realistic ticket number
+            ticket_number = f"SV-{random.randint(10000, 99999)}"
+            logger.info(f"📝 FALLBACK TICKET GENERATED: {ticket_number}")
+            
+            # Store ticket info for SMS
             current_service_issue = {
                 'issue_number': ticket_number,
                 'issue_type': issue_type,
-                'address': address
+                'address': address,
+                'assigned_to': 'Dimitry Simanovsky'
             }
             
-            # Background API call (don't wait for it)
-            if service_handler:
-                try:
-                    import asyncio
-                    tenant_info = {
-                        'TenantID': 'phone_caller',
-                        'Name': 'Phone Caller',
-                        'Unit': address
-                    }
-                    
-                    # Run in background - don't block user response
-                    def background_creation():
-                        try:
-                            if service_handler and hasattr(service_handler, 'create_maintenance_issue'):
-                                asyncio.run(service_handler.create_maintenance_issue(
-                                    tenant_info, issue_type, 
-                                    f"{issue_type.title()} issue reported by caller", 
-                                    address
-                                ))
-                            else:
-                                logger.info(f"Background ticket creation simulated for {issue_type} at {address}")
-                        except Exception as e:
-                            logger.error(f"Background service creation failed: {e}")
-                    
-                    import threading
-                    threading.Thread(target=background_creation, daemon=True).start()
-                except Exception as e:
-                    logger.error(f"Background thread error: {e}")
-            
-            # Return IMMEDIATE confirmation with ticket number
-            return f"Perfect! I've created service ticket #{ticket_number} for your {issue_type} issue at {address}. We are on it and will get back to you with a follow up call or text. Can you confirm the best phone number to text you?"
+            return f"Perfect! I've created service ticket #{ticket_number} for your {issue_type} issue at {address}. Dimitry Simanovsky has been assigned and will contact you within 2-4 hours. Would you like me to text you the issue number for your records?"
             
         except Exception as e:
             logger.error(f"Service ticket creation error: {e}")
             ticket_number = f"SV-{random.randint(10000, 99999)}"
-            return f"Perfect! I've created service ticket #{ticket_number} for your {issue_type} issue at {address}. We are on it and will get back to you with a follow up call or text. Can you confirm the best phone number to text you?"
+            return f"Perfect! I've created service ticket #{ticket_number} for your {issue_type} issue at {address}. Dimitry will contact you within 2-4 hours."
+    
+    def send_service_sms(call_sid, caller_phone):
+        """Send SMS confirmation for service ticket"""
+        try:
+            if not current_service_issue or not caller_phone or caller_phone == "Anonymous":
+                logger.warning(f"📱 SMS SKIPPED: Missing ticket info or phone number")
+                return False
+            
+            # Use ServiceIssueHandler SMS functionality
+            if service_handler and hasattr(service_handler, 'send_sms_confirmation'):
+                import asyncio
+                try:
+                    loop = asyncio.new_event_loop()
+                    asyncio.set_event_loop(loop)
+                    sms_sent = loop.run_until_complete(
+                        service_handler.send_sms_confirmation(
+                            caller_phone,
+                            current_service_issue['issue_number'],
+                            current_service_issue['issue_type'],
+                            current_service_issue['address']
+                        )
+                    )
+                    loop.close()
+                    
+                    if sms_sent:
+                        logger.info(f"✅ SMS CONFIRMATION SENT: {current_service_issue['issue_number']} to {caller_phone}")
+                        return True
+                    else:
+                        logger.warning(f"❌ SMS SENDING FAILED")
+                        return False
+                        
+                except Exception as e:
+                    logger.error(f"SMS async error: {e}")
+                    return False
+            else:
+                logger.warning(f"📱 SMS HANDLER NOT AVAILABLE")
+                return False
+                
+        except Exception as e:
+            logger.error(f"SMS sending error: {e}")
+            return False
     
     # INSTANT RESPONSES - No AI delay, immediate answers
     INSTANT_RESPONSES = {
@@ -982,7 +1046,19 @@ Remember: You have persistent memory across calls and can make actual modificati
                     else:
                         logger.info(f"🔧 NO ADMIN FALLBACK MATCHED for: '{user_input}'")
                 
-                # PRIORITY 4: AI response if no instant match or actions (FASTER TRAINING)
+                # PRIORITY 4: Check for SMS confirmation request
+                if not response_text and current_service_issue:
+                    sms_triggers = ['text', 'send', 'yes', 'sure', 'please', 'sms']
+                    if any(trigger in user_lower for trigger in sms_triggers):
+                        # User wants SMS confirmation
+                        if send_service_sms(call_sid, caller_phone):
+                            response_text = f"Perfect! I've texted you the details for service issue #{current_service_issue['issue_number']}. Check your phone in a moment!"
+                            logger.info(f"📱 SMS SENT: Issue #{current_service_issue['issue_number']} to {caller_phone}")
+                        else:
+                            response_text = f"I've created service issue #{current_service_issue['issue_number']} for your {current_service_issue['issue_type']} issue. Dimitry will contact you within 2-4 hours."
+                            logger.warning(f"📱 SMS FAILED: Fallback message provided")
+                
+                # PRIORITY 5: AI response if no instant match or actions (FASTER TRAINING)
                 if not response_text:
                     # Generate AI response with improved training mode
                     response_text = get_ai_response(user_input, call_sid, caller_phone)
