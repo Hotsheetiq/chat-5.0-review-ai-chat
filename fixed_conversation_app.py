@@ -970,64 +970,41 @@ Remember: You have persistent memory across calls and can make actual modificati
                             
                             # SKIP API - use hardcoded fuzzy matching only
                             
-                            # FUZZY HARDCODED MATCHING - matches even misheard addresses
-                            known_addresses = {
-                                # 29 Port Richmond variations
-                                "29": "29 Port Richmond Avenue",
-                                "29 port": "29 Port Richmond Avenue", 
-                                "29 port richmond": "29 Port Richmond Avenue",
+                            # STRICT ADDRESS VERIFICATION - Only exact matches, no aggressive fuzzy matching
+                            verified_property = None
+                            potential_clean = potential_address.lower().strip()
+                            
+                            # Only match EXACT addresses or very close speech recognition errors
+                            valid_addresses = {
                                 "29 port richmond avenue": "29 Port Richmond Avenue",
-                                "29 park richmond": "29 Port Richmond Avenue", # Speech error: Park vs Port
-                                "2940 richmond": "29 Port Richmond Avenue", # Speech error: 2940 vs 29 Port
-                                "twenty nine": "29 Port Richmond Avenue",
-                                # 31 Port Richmond variations  
-                                "31": "31 Port Richmond Avenue",
-                                "31 port": "31 Port Richmond Avenue",
-                                "31 port richmond": "31 Port Richmond Avenue", 
+                                "29 port richmond": "29 Port Richmond Avenue", 
+                                "2940 richmond avenue": "29 Port Richmond Avenue", # Speech: 2940 vs 29 Port
+                                "29 park richmond avenue": "29 Port Richmond Avenue", # Speech: Park vs Port
                                 "31 port richmond avenue": "31 Port Richmond Avenue",
-                                "3140 richmond": "31 Port Richmond Avenue", # Speech error: 3140 vs 31 Port
-                                "thirty one": "31 Port Richmond Avenue",
-                                # 122 Targee variations
-                                "122": "122 Targee Street",
-                                "122 targee": "122 Targee Street",
+                                "31 port richmond": "31 Port Richmond Avenue",
+                                "3140 richmond avenue": "31 Port Richmond Avenue", # Speech: 3140 vs 31 Port  
                                 "122 targee street": "122 Targee Street",
-                                "one twenty two": "122 Targee Street"
+                                "122 target street": "122 Targee Street" # Speech: Target vs Targee
                             }
                             
-                            verified_property = None
-                            potential_lower = potential_address.lower().strip().replace("avenue", "").replace("street", "").strip()
+                            # Check for exact match in cleaned address
+                            for known_pattern, verified_address in valid_addresses.items():
+                                if known_pattern in potential_clean or potential_clean in known_pattern:
+                                    # Additional validation: check if the number matches exactly
+                                    potential_number = potential_address.split()[0]
+                                    known_number = known_pattern.split()[0]
+                                    
+                                    # For 2940 -> 29 and 3140 -> 31 conversion, allow it
+                                    if (potential_number == known_number or 
+                                        (potential_number == "2940" and known_number == "29") or
+                                        (potential_number == "3140" and known_number == "31")):
+                                        verified_property = verified_address
+                                        logger.info(f"✅ STRICT ADDRESS MATCH: '{potential_address}' → '{verified_property}'")
+                                        break
                             
-                            # Aggressive fuzzy matching - find any reasonable match
-                            for known_key, known_value in known_addresses.items():
-                                known_clean = known_key.lower().replace("avenue", "").replace("street", "").strip()
-                                
-                                # Aggressive matching - multiple strategies
-                                match_found = False
-                                
-                                # Strategy 1: Direct substring matching
-                                if known_clean in potential_lower or potential_lower in known_clean:
-                                    match_found = True
-                                
-                                # Strategy 2: Word-by-word matching  
-                                if not match_found:
-                                    potential_words = [w for w in potential_lower.split() if len(w) > 1]
-                                    known_words = [w for w in known_clean.split() if len(w) > 1]
-                                    common_words = set(potential_words) & set(known_words)
-                                    if len(common_words) >= 1:  # At least 1 word match
-                                        match_found = True
-                                
-                                # Strategy 3: Special case for "2940" -> "29"
-                                if not match_found and ("2940" in potential_lower and "29" in known_clean):
-                                    match_found = True
-                                
-                                # Strategy 4: Richmond variations
-                                if not match_found and ("richmond" in potential_lower and "richmond" in known_clean):
-                                    match_found = True
-                                
-                                if match_found:
-                                    verified_property = known_value
-                                    logger.info(f"✅ AGGRESSIVE FUZZY MATCH: '{potential_address}' → '{verified_property}'")
-                                    break
+                            # If no match found, it's a fake address
+                            if not verified_property:
+                                logger.error(f"❌ FAKE ADDRESS REJECTED: '{potential_address}' - Not in property system")
                             
                             if verified_property:
                                 # ADDRESS VERIFIED - Check if this is a multi-unit property that needs apartment number
@@ -1055,8 +1032,8 @@ Remember: You have persistent memory across calls and can make actual modificati
                                     response_text = result if result else f"Perfect! I've created a {detected_issue_type} service ticket for {verified_property}. Dimitry will contact you within 2-4 hours."
                                     logger.info(f"🎫 SINGLE FAMILY TICKET CREATED: {detected_issue_type} at {verified_property}")
                             else:
-                                response_text = f"I couldn't find '{potential_address}' in our property system. We manage 29 Port Richmond Avenue, 31 Port Richmond Avenue, and 122 Targee Street. Could you say your address again?"
-                                logger.warning(f"❌ ADDRESS NOT FOUND: '{potential_address}' not in property system")
+                                response_text = f"I couldn't find '{potential_address}' in our property system. We manage 29 Port Richmond Avenue, 31 Port Richmond Avenue, and 122 Targee Street. Could you say your correct address again?"
+                                logger.error(f"❌ FAKE ADDRESS BLOCKED: '{potential_address}' rejected - not in property system")
 
                 # PRIORITY 5: General admin actions fallback (training mode only)
                 if not response_text and call_sid in training_sessions and is_potential_admin:
