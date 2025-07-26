@@ -848,7 +848,33 @@ Remember: You have persistent memory across calls and can make actual modificati
     def handle_speech_internal(call_sid, user_input, caller_phone, speech_confidence):
         """Internal speech handling logic"""
         try:
+            # Fix speech recognition errors BEFORE processing
+            original_input = user_input
+            user_lower = user_input.lower()
+            
+            # Common speech recognition corrections for addresses
+            speech_fixes = [
+                ("164 richmond", "2940 richmond"),
+                ("4640 richmond", "2940 richmond"), 
+                ("46 richmond", "2940 richmond"),
+                ("640 richmond", "2940 richmond"),
+                ("port rich", "port richmond"),
+                ("poor richmond", "port richmond"),
+                ("target", "targee"),
+                ("targe", "targee"),
+                ("twenty nine", "29"),
+                ("one twenty two", "122")
+            ]
+            
+            for mistake, correction in speech_fixes:
+                if mistake in user_lower:
+                    user_input = user_lower.replace(mistake, correction)
+                    logger.info(f"🔧 SPEECH CORRECTION: '{mistake}' → '{correction}'")
+                    break
+            
             logger.info(f"📞 CALL {call_sid}: '{user_input}' (confidence: {speech_confidence}) from {caller_phone}")
+            if original_input != user_input:
+                logger.info(f"🎯 CORRECTED FROM: '{original_input}'")
             
             # Enhanced debugging for empty speech results
             if not user_input:
