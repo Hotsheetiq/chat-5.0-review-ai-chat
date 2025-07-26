@@ -837,9 +837,9 @@ PERSONALITY: Warm, empathetic, and intelligent. Show you're genuinely listening 
                     logger.info("🚀 Using Grok 2 - optimized for speed and intelligence")
                     result = grok_ai.generate_response(
                         messages=messages,
-                        max_tokens=100,  # Further reduced for faster response
+                        max_tokens=300,  # INCREASED: Allow complete responses without cutoff
                         temperature=0.5,  # Lower for faster processing
-                        timeout=0.6  # More aggressive timeout for speed
+                        timeout=1.0  # Slightly longer to avoid cutoff
                     )
                     logger.info(f"🤖 GROK RESPONSE: {result}")
                 except Exception as grok_error:
@@ -857,9 +857,9 @@ PERSONALITY: Warm, empathetic, and intelligent. Show you're genuinely listening 
                     response = openai_client.chat.completions.create(
                         model="gpt-4o",
                         messages=messages,
-                        max_tokens=150,
+                        max_tokens=300,  # INCREASED: Allow complete responses without cutoff
                         temperature=0.6,
-                        timeout=0.8
+                        timeout=1.2  # Slightly longer to avoid cutoff
                     )
                     
                     result = response.choices[0].message.content.strip() if response.choices[0].message.content else "I'm here to help! What can I do for you today?"
