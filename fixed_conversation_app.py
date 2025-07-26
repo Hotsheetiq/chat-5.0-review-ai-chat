@@ -744,7 +744,7 @@ Remember: You have persistent memory across calls and can make actual modificati
             
             if grok_ai:
                 try:
-                    logger.info("🚀 Using Grok AI for enhanced conversation memory")
+                    logger.info("🚀 Using Grok 4.0 - xAI's flagship model for superior intelligence")
                     result = grok_ai.generate_response(
                         messages=messages,
                         max_tokens=200,  # More tokens for comprehensive responses

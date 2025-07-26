@@ -6,7 +6,7 @@ from openai import OpenAI
 logger = logging.getLogger(__name__)
 
 class GrokAI:
-    """Grok AI integration for enhanced conversation memory and faster responses"""
+    """Grok 4.0 AI integration - xAI's flagship model with superior conversation memory and intelligence"""
     
     def __init__(self):
         self.api_key = os.environ.get("XAI_API_KEY")
@@ -23,13 +23,25 @@ class GrokAI:
     def generate_response(self, messages, max_tokens=200, temperature=0.7, timeout=2.0):
         """Generate response using Grok with enhanced conversation memory"""
         try:
-            response = self.client.chat.completions.create(
-                model="grok-2-1212",  # Latest Grok model for text processing
-                messages=messages,
-                max_tokens=max_tokens,
-                temperature=temperature,
-                timeout=timeout
-            )
+            # Try Grok 4.0 first, fallback to Grok 2 if not available
+            try:
+                response = self.client.chat.completions.create(
+                    model="grok-4-0709",  # Grok 4.0 - xAI's flagship model
+                    messages=messages,
+                    max_tokens=max_tokens,
+                    temperature=temperature,
+                    timeout=timeout*2  # Longer timeout for Grok 4.0
+                )
+                logger.info("✅ Using Grok 4.0 successfully")
+            except Exception as e:
+                logger.warning(f"Grok 4.0 not available ({e}), falling back to Grok 2")
+                response = self.client.chat.completions.create(
+                    model="grok-2-1212",  # Fallback to reliable Grok 2
+                    messages=messages,
+                    max_tokens=max_tokens,
+                    temperature=temperature,
+                    timeout=timeout
+                )
             
             return response.choices[0].message.content.strip()
             
@@ -55,13 +67,23 @@ class GrokAI:
                     "content": entry.get('content', '')
                 })
             
-            response = self.client.chat.completions.create(
-                model="grok-2-1212",
-                messages=context_messages,
-                max_tokens=150,
-                temperature=0.3,
-                response_format={"type": "json_object"}
-            )
+            # Try Grok 4.0 first, fallback to Grok 2 for context analysis
+            try:
+                response = self.client.chat.completions.create(
+                    model="grok-4-0709",  # Grok 4.0 for enhanced context analysis
+                    messages=context_messages,
+                    max_tokens=150,
+                    temperature=0.3,
+                    response_format={"type": "json_object"}
+                )
+            except Exception:
+                response = self.client.chat.completions.create(
+                    model="grok-2-1212",  # Fallback to Grok 2
+                    messages=context_messages,
+                    max_tokens=150,
+                    temperature=0.3,
+                    response_format={"type": "json_object"}
+                )
             
             return json.loads(response.choices[0].message.content)
             
