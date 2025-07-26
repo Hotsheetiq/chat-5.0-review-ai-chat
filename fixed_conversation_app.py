@@ -1098,20 +1098,27 @@ Remember: You have persistent memory across calls and can make actual modificati
                                 recent_messages = conversation_history.get(call_sid, [])[-5:]
                                 detected_issue_type = None
                                 
-                                # Look for issue type in conversation history
+                                # ENHANCED: Look for issue type in conversation history AND detected_issues
                                 for msg in recent_messages:
                                     content = msg.get('content', '').lower()
-                                    if 'appliance' in content or 'washing machine' in content:
+                                    detected_issues = msg.get('detected_issues', [])
+                                    
+                                    # Check both tracked issues and content keywords
+                                    if 'appliance' in detected_issues or any(word in content for word in ['washing machine', 'washer', 'dryer', 'dishwasher', 'appliance', 'broke']):
                                         detected_issue_type = "appliance"
+                                        logger.info(f"🎫 FOUND APPLIANCE ISSUE: content='{content}', issues={detected_issues}")
                                         break
-                                    elif 'electrical' in content or 'power' in content:
+                                    elif 'electrical' in detected_issues or any(word in content for word in ['power', 'electrical', 'electricity', 'lights']):
                                         detected_issue_type = "electrical"
+                                        logger.info(f"🎫 FOUND ELECTRICAL ISSUE: content='{content}', issues={detected_issues}")
                                         break
-                                    elif 'plumbing' in content:
+                                    elif 'plumbing' in detected_issues or any(word in content for word in ['plumbing', 'toilet', 'water', 'leak', 'bathroom']):
                                         detected_issue_type = "plumbing"
+                                        logger.info(f"🎫 FOUND PLUMBING ISSUE: content='{content}', issues={detected_issues}")
                                         break
-                                    elif 'heating' in content:
+                                    elif 'heating' in detected_issues or any(word in content for word in ['heating', 'heat', 'cold']):
                                         detected_issue_type = "heating"
+                                        logger.info(f"🎫 FOUND HEATING ISSUE: content='{content}', issues={detected_issues}")
                                         break
                                 
                                 verified_address = "29 Port Richmond Avenue" if number in ['29', '2940'] else "31 Port Richmond Avenue" if number in ['31', '3140'] else "122 Targee Street"
