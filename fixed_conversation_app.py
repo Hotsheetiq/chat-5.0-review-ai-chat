@@ -63,6 +63,16 @@ except Exception as e:
     rent_manager = None
     service_handler = None
 
+# Initialize Grok AI for enhanced conversation memory
+grok_ai = None
+try:
+    from grok_integration import GrokAI
+    grok_ai = GrokAI()
+    logger.info("✅ Grok AI initialized successfully")
+except Exception as e:
+    logger.warning(f"Grok AI initialization failed: {e}")
+    grok_ai = None
+
 # Global state storage - PERSISTENT across calls
 conversation_history = {}
 # Anti-repetition tracking per call
@@ -586,6 +596,34 @@ def create_app():
             logger.info(f"🎫 AUTO-CREATING TICKET: {detected_issue} at {detected_address}")
             return create_service_ticket(detected_issue, detected_address)
         
+        # Enhanced memory check - look for BOTH issues and addresses in conversation history
+        if call_sid in conversation_history:
+            history_issues = []
+            history_addresses = []
+            
+            for entry in conversation_history[call_sid]:
+                # Extract issues from previous messages
+                if 'detected_issues' in entry:
+                    history_issues.extend(entry.get('detected_issues', []))
+                # Extract addresses from previous messages
+                content = str(entry.get('content', '')).lower()
+                for address in ["29 port richmond avenue", "31 port richmond avenue", "26 port richmond avenue", 
+                               "122 targee street", "189 court street richmond", "2940 richmond avenue"]:
+                    if address.lower() in content:
+                        history_addresses.append(address)
+            
+            # If we found a previous issue and current message has an address, create ticket
+            if history_issues and detected_address:
+                issue_type = history_issues[-1]  # Use most recent issue
+                logger.info(f"🧠 MEMORY MATCH: Creating ticket for {issue_type} at {detected_address}")
+                return create_service_ticket(issue_type, detected_address)
+            
+            # If we found a previous address and current message has an issue, create ticket
+            if history_addresses and detected_issue:
+                address = history_addresses[-1]  # Use most recent address
+                logger.info(f"🧠 MEMORY MATCH: Creating ticket for {detected_issue} at {address}")
+                return create_service_ticket(detected_issue, address)
+        
         # If we have issue but no address, ask for address with context
         if detected_issue and not detected_address:
             logger.info(f"🎫 ISSUE DETECTED, ASKING FOR ADDRESS: {detected_issue}")
@@ -681,36 +719,53 @@ Remember: You have persistent memory across calls and can make actual modificati
                 anti_repeat_instruction = f"IMPORTANT: You've recently said: {', '.join(recent_responses)}. Do NOT repeat these exact phrases. Vary your response with different wording."
                 messages.append({"role": "system", "content": anti_repeat_instruction})
             
-            # Get AI response with proper client check
-            try:
-                if not openai_client:
-                    logger.error("OpenAI client not initialized")
+            # Try Grok first for enhanced conversation memory, fallback to OpenAI
+            result = None
+            
+            if grok_ai:
+                try:
+                    logger.info("🚀 Using Grok AI for enhanced conversation memory")
+                    result = grok_ai.generate_response(
+                        messages=messages,
+                        max_tokens=200,  # More tokens for comprehensive responses
+                        temperature=0.7,  # Natural conversation
+                        timeout=2.0  # Reasonable timeout
+                    )
+                    logger.info(f"🤖 GROK RESPONSE: {result}")
+                except Exception as grok_error:
+                    logger.warning(f"Grok AI failed, falling back to OpenAI: {grok_error}")
+            
+            # Fallback to OpenAI if Grok failed or not available
+            if not result:
+                try:
+                    if not openai_client:
+                        logger.error("OpenAI client not initialized")
+                        return "I'm here to help! What can I do for you today?"
+                    response = openai_client.chat.completions.create(
+                        model="gpt-4o-mini",  # FASTER model with lower latency
+                        messages=messages,
+                        max_tokens=150,  # Shorter for speed but still natural
+                        temperature=0.5,  # Lower temperature for faster processing
+                        timeout=1.5,  # Aggressive timeout for speed
+                        stream=False  # Non-streaming for simplicity
+                    )
+                    
+                    result = response.choices[0].message.content.strip() if response.choices[0].message.content else "I'm here to help! What can I do for you today?"
+                    logger.info(f"🤖 OPENAI RESPONSE: {result}")
+                except Exception as openai_error:
+                    logger.error(f"OpenAI API error: {openai_error}")
                     return "I'm here to help! What can I do for you today?"
-                response = openai_client.chat.completions.create(
-                    model="gpt-4o-mini",  # FASTER model with lower latency
-                    messages=messages,
-                    max_tokens=150,  # Shorter for speed but still natural
-                    temperature=0.5,  # Lower temperature for faster processing
-                    timeout=1.5,  # Aggressive timeout for speed
-                    stream=False  # Non-streaming for simplicity
-                )
-                
-                result = response.choices[0].message.content.strip() if response.choices[0].message.content else "I'm here to help! What can I do for you today?"
-                
-                # Track response to prevent repetition
-                if call_sid not in response_tracker:
-                    response_tracker[call_sid] = []
-                response_tracker[call_sid].append(result)
-                
-                # Keep only last 5 responses to prevent memory bloat
-                if len(response_tracker[call_sid]) > 5:
-                    response_tracker[call_sid] = response_tracker[call_sid][-5:]
-                
-                return result
-                
-            except Exception as api_error:
-                logger.error(f"OpenAI API error: {api_error}")
-                return "I'm here to help! What can I do for you today?"
+            
+            # Track response to prevent repetition
+            if call_sid not in response_tracker:
+                response_tracker[call_sid] = []
+            response_tracker[call_sid].append(result)
+            
+            # Keep only last 5 responses to prevent memory bloat
+            if len(response_tracker[call_sid]) > 5:
+                response_tracker[call_sid] = response_tracker[call_sid][-5:]
+            
+            return result
             
         except Exception as e:
             logger.error(f"AI response error: {e}")
