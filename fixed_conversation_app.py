@@ -177,8 +177,8 @@ def create_voice_response(text):
         logger.error(f"Voice response error: {e}")
         # Safe fallback to Polly
         return f'<Say voice="Polly.Matthew-Neural">{text}</Say>'
+
 call_states = {}
-current_service_issue = {}
 
 def create_app():
     app = Flask(__name__)
@@ -956,6 +956,9 @@ PERSONALITY: Warm, empathetic, and intelligent. Show you're genuinely listening 
     def handle_speech_internal(call_sid, user_input, caller_phone, speech_confidence):
         """Internal speech handling logic"""
         try:
+            # Declare all global variables used in this function
+            global current_service_issue, conversation_history, verified_address_info
+            
             # Fix speech recognition errors BEFORE processing
             original_input = user_input
             user_lower = user_input.lower()
@@ -1520,9 +1523,11 @@ PERSONALITY: Warm, empathetic, and intelligent. Show you're genuinely listening 
                         logger.info(f"🏠 APARTMENT NUMBER NOT RECOGNIZED: {user_input}")
 
                 # PRIORITY 5: Check for SMS confirmation request
-                # Get the most recent service issue
-                recent_service_issue = current_service_issue.get(call_sid)
-                if not recent_service_issue and call_sid in conversation_history:
+                # Get the most recent service issue - FIX VARIABLE SCOPING
+                recent_service_issue = None
+                if call_sid in current_service_issue:
+                    recent_service_issue = current_service_issue[call_sid]
+                elif call_sid in conversation_history:
                     for entry in reversed(conversation_history[call_sid]):
                         if 'service_issue' in entry:
                             recent_service_issue = entry['service_issue']
