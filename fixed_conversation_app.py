@@ -260,7 +260,7 @@ def create_app():
                         }
                         
                         logger.info(f"✅ REAL SERVICE TICKET SUCCESSFULLY CREATED: #{ticket_number}")
-                        return f"Perfect! I've created service ticket #{ticket_number} for your {issue_type} issue at {address}. Someone from our maintenance team will contact you soon. Would you like me to text you the issue number? What's the best phone number to reach you?"
+                        return f"Perfect! I've created service ticket #{ticket_number} for your {issue_type} issue at {address}. Someone from our maintenance team will contact you soon. Would you like me to text you the issue number for your records?"
                     else:
                         logger.warning("❌ REAL TICKET CREATION FAILED - Using fallback")
                         
@@ -291,7 +291,7 @@ def create_app():
                     'timestamp': datetime.now()
                 })
             
-            return f"Perfect! I've created service ticket #{ticket_number} for your {issue_type} issue at {address}. Someone from our maintenance team will contact you soon. Would you like me to text you the issue number? What's the best phone number to reach you?"
+            return f"Perfect! I've created service ticket #{ticket_number} for your {issue_type} issue at {address}. Someone from our maintenance team will contact you soon. Would you like me to text you the issue number for your records?"
             
         except Exception as e:
             logger.error(f"Service ticket creation error: {e}")
@@ -305,8 +305,63 @@ def create_app():
                 'assigned_to': 'Dimitry Simanovsky'
             }
             
-            return f"Perfect! I've created service ticket #{ticket_number} for your {issue_type} issue at {address}. Someone from our maintenance team will contact you soon. Would you like me to text you the issue number? What's the best phone number to reach you?"
+            return f"Perfect! I've created service ticket #{ticket_number} for your {issue_type} issue at {address}. Someone from our maintenance team will contact you soon. Would you like me to text you the issue number for your records?"
     
+    def send_service_sms_to_number(service_issue, phone_number):
+        """Send SMS confirmation to specific phone number"""
+        try:
+            if not service_issue:
+                logger.warning(f"📱 NO SERVICE ISSUE PROVIDED for SMS")
+                return False
+            
+            # Format phone number
+            formatted_phone = re.sub(r'[^\d]', '', phone_number)
+            if len(formatted_phone) == 10:
+                formatted_phone = '+1' + formatted_phone
+            elif len(formatted_phone) == 11 and formatted_phone.startswith('1'):
+                formatted_phone = '+' + formatted_phone
+            else:
+                logger.warning(f"📱 INVALID PHONE FORMAT: {phone_number}")
+                return False
+            
+            # Create SMS message
+            issue_number = service_issue.get('issue_number', 'Unknown')
+            issue_type = service_issue.get('issue_type', 'maintenance')
+            address = service_issue.get('address', 'your property')
+            
+            sms_message = f"""Grinberg Management Service Confirmation
+
+Issue #{issue_number}
+Type: {issue_type.title()}
+Location: {address}
+Assigned to: Dimitry Simanovsky
+
+Dimitry will contact you within 2-4 hours.
+
+Questions? Call (718) 414-6984"""
+            
+            # Send SMS via Twilio
+            from twilio.rest import Client
+            import os
+            
+            twilio_client = Client(
+                os.environ.get('TWILIO_ACCOUNT_SID'),
+                os.environ.get('TWILIO_AUTH_TOKEN')
+            )
+            
+            message = twilio_client.messages.create(
+                body=sms_message,
+                from_=os.environ.get('TWILIO_PHONE_NUMBER', '+18886411102'),
+                to=formatted_phone
+            )
+            
+            logger.info(f"📱 SMS SENT to {formatted_phone}: {message.sid}")
+            return True
+            
+        except Exception as e:
+            logger.error(f"📱 SMS SEND ERROR: {e}")
+            return False
+
     def send_service_sms(call_sid, caller_phone):
         """Send SMS confirmation for service ticket - SIMPLIFIED & FIXED"""
         try:
@@ -963,6 +1018,9 @@ PERSONALITY: Warm, empathetic, and intelligent. Show you're genuinely listening 
             # Declare all global variables used in this function
             global current_service_issue, conversation_history, verified_address_info
             
+            # Initialize response_text at the beginning
+            response_text = None
+            
             # Fix speech recognition errors BEFORE processing
             original_input = user_input
             user_lower = user_input.lower()
@@ -1104,12 +1162,72 @@ PERSONALITY: Warm, empathetic, and intelligent. Show you're genuinely listening 
                 'detected_issues': detected_issues  # Track issues for better memory
             })
             
-            # PRIORITY 1: Check conversation memory for auto-ticket creation
-            auto_ticket_response = check_conversation_memory(call_sid, user_input)
-            if auto_ticket_response:
-                logger.info(f"🎫 AUTO-TICKET or MEMORY RESPONSE: {auto_ticket_response}")
-                response_text = auto_ticket_response
-            else:
+            # PRIORITY 1: Check for SMS workflow FIRST - before creating new tickets
+            # Get the most recent service issue for SMS handling
+            recent_service_issue = None
+            if call_sid in current_service_issue:
+                recent_service_issue = current_service_issue[call_sid]
+            elif call_sid in conversation_history:
+                for entry in reversed(conversation_history[call_sid]):
+                    if 'service_issue' in entry:
+                        recent_service_issue = entry['service_issue']
+                        break
+
+            # Enhanced SMS trigger detection - SEPARATE WORKFLOW STEPS
+            if recent_service_issue:
+                sms_yes_phrases = [
+                    'yes text', 'yes please text', 'yes send', 'yes please', 'yes',
+                    'text me', 'text please', 'send me text', 'text it', 'send sms',
+                    'please text', 'can you text', 'text the details', 'send it'
+                ]
+                
+                # Check if user confirmed SMS
+                if any(phrase in user_lower for phrase in sms_yes_phrases):
+                    # User wants SMS confirmation - ASK FOR PHONE NUMBER
+                    logger.info(f"📱 SMS CONFIRMED: '{user_input}' for issue #{recent_service_issue['issue_number']}")
+                    response_text = f"Great! What's the best phone number to text the issue details to?"
+                    
+                    # Mark this conversation as waiting for phone number
+                    conversation_history[call_sid].append({
+                        'role': 'system',
+                        'content': 'waiting_for_phone_number',
+                        'service_issue': recent_service_issue,
+                        'timestamp': datetime.now()
+                    })
+                    
+                # Check if this looks like a phone number (after SMS confirmation)
+                elif re.match(r'.*\d{3}.*\d{3}.*\d{4}.*', user_input):
+                    # This looks like a phone number - check if we're waiting for one
+                    waiting_for_phone = False
+                    for entry in reversed(conversation_history.get(call_sid, [])):
+                        if entry.get('content') == 'waiting_for_phone_number':
+                            waiting_for_phone = True
+                            recent_service_issue = entry.get('service_issue')
+                            break
+                    
+                    if waiting_for_phone and recent_service_issue:
+                        # Extract phone number and send SMS
+                        phone_match = re.search(r'(\d{3}[-.]?\d{3}[-.]?\d{4})', user_input)
+                        if phone_match:
+                            phone_number = phone_match.group(1)
+                            logger.info(f"📱 PHONE NUMBER RECEIVED: {phone_number} for issue #{recent_service_issue['issue_number']}")
+                            
+                            # Send SMS to provided number
+                            if send_service_sms_to_number(recent_service_issue, phone_number):
+                                response_text = f"Perfect! I've texted the details for service issue #{recent_service_issue['issue_number']} to {phone_number}. You should receive it shortly!"
+                                logger.info(f"📱 SMS SENT: Issue #{recent_service_issue['issue_number']} to {phone_number}")
+                            else:
+                                response_text = f"I had trouble sending the text to {phone_number}, but your service issue #{recent_service_issue['issue_number']} is created and someone from our maintenance team will contact you soon."
+                                logger.warning(f"📱 SMS FAILED to {phone_number}: Fallback message provided")
+
+            # PRIORITY 2: Check conversation memory for auto-ticket creation (ONLY if no SMS workflow active)
+            if not response_text:
+                auto_ticket_response = check_conversation_memory(call_sid, user_input)
+                if auto_ticket_response:
+                    logger.info(f"🎫 AUTO-TICKET or MEMORY RESPONSE: {auto_ticket_response}")
+                    response_text = auto_ticket_response
+
+            if not response_text:
                 # SKIP speech-based training activation - only use *1 keypad
                 response_text = None
                 user_lower = user_input.lower().strip()
@@ -1174,7 +1292,7 @@ PERSONALITY: Warm, empathetic, and intelligent. Show you're genuinely listening 
                         # ENHANCED issue detection - PRIORITY ORDER: Most specific first
                         # HEATING FIRST - must come before generic patterns
                         if any(word in user_lower for word in ['heat', 'heating', 'no heat', 'cold', 'thermostat', 'furnace', "don't have heat", "have no heat"]):
-                            response_text = "Heating issue! What's your address?"
+                            response_text = "I understand you have a heating issue. Working on creating a service ticket... What's your property address?"
                             logger.info(f"⚡ INSTANT HEATING DETECTION: {user_input}")
                         elif any(word in user_lower for word in ['washing machine', 'washer', 'dryer', 'dishwasher', 'appliance', 'laundry']):
                             response_text = "Appliance issue! What's your address?"
@@ -1292,7 +1410,7 @@ PERSONALITY: Warm, empathetic, and intelligent. Show you're genuinely listening 
                                     # Default to most common property
                                     suggested_address = "29 Port Richmond Avenue"
                                 
-                                response_text = f"I heard {number} Port Richmond Avenue but couldn't find that exact address in our system. Did you mean {suggested_address}? Please confirm if that's correct."
+                                response_text = f"I heard {number} Port Richmond Avenue but couldn't find that exact address in our system. Did you mean {suggested_address}? Please let me know if that's the correct address."
                                 logger.info(f"🎯 ADDRESS CONFIRMATION REQUIRED: '{user_input}' → suggesting '{suggested_address}' for confirmation")
                             else:
                                 # Valid address - but don't auto-create ticket, confirm first
@@ -1560,24 +1678,7 @@ PERSONALITY: Warm, empathetic, and intelligent. Show you're genuinely listening 
                             recent_service_issue = entry['service_issue']
                             break
                 
-                # Enhanced SMS trigger detection
-                if not response_text and recent_service_issue:
-                    sms_phrases = [
-                        'yes text', 'text me', 'send sms', 'yes please text', 
-                        'text please', 'send me text', 'yes send', 'text it',
-                        'please text', 'can you text', 'text the details'
-                    ]
-                    
-                    if any(phrase in user_lower for phrase in sms_phrases):
-                        # User wants SMS confirmation
-                        logger.info(f"📱 SMS REQUEST DETECTED: '{user_input}' for issue #{recent_service_issue['issue_number']}")
-                        
-                        if send_service_sms(call_sid, caller_phone):
-                            response_text = f"Perfect! I've texted you the details for service issue #{recent_service_issue['issue_number']}. Check your phone in a moment!"
-                            logger.info(f"📱 SMS SENT: Issue #{recent_service_issue['issue_number']} to {caller_phone}")
-                        else:
-                            response_text = f"I had trouble sending the text, but I've created service issue #{recent_service_issue['issue_number']} for your {recent_service_issue['issue_type']} issue. Someone from our maintenance team will contact you soon."
-                            logger.warning(f"📱 SMS FAILED: Fallback message provided")
+
                 
                 # PRIORITY 5: AI response if no instant match or actions (FASTER TRAINING)
                 if not response_text:
