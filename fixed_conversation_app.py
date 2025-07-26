@@ -872,13 +872,13 @@ Remember: You have persistent memory across calls and can make actual modificati
                     if is_complaint:
                         # Look for issue keywords in the complaint
                         if any(word in user_lower for word in ['washing machine', 'washer', 'dryer', 'dishwasher', 'appliance']):
-                            response_text = "I understand you're having an appliance issue. Let me help you get this resolved. What's your property address?"
+                            response_text = "Appliance issue! What's your address?"
                             logger.info(f"🚨 COMPLAINT DETECTED: Appliance issue in narrative")
                         elif any(word in user_lower for word in ['power', 'electrical', 'electricity', 'lights']) and not any(word in user_lower for word in ['washing machine', 'washer', 'dryer', 'dishwasher']):
-                            response_text = "Oh no, that sounds like an electrical issue. Let me get this reported immediately. What's your property address?"
+                            response_text = "Electrical issue! What's your address?"
                             logger.info(f"🚨 COMPLAINT DETECTED: Power issue in narrative")
                         elif any(word in user_lower for word in ['heat', 'heating', 'no heat', 'cold']):
-                            response_text = "I'm sorry you're having heating problems. Let me create a service request to get this fixed quickly. What's your property address?"
+                            response_text = "Heating issue! What's your address?"
                             logger.info(f"🚨 COMPLAINT DETECTED: Heating issue in narrative")
                         elif any(word in user_lower for word in ['toilet', 'bathroom', 'plumbing', 'water', 'leak', 'drain', 'sink', 'faucet']):
                             response_text = "That sounds like a plumbing issue. Let me help you get this resolved right away. What's your property address?"
@@ -914,6 +914,41 @@ Remember: You have persistent memory across calls and can make actual modificati
                                         break
                                 except Exception as e:
                                     logger.error(f"Instant response error for {pattern}: {e}")
+                
+                # PRIORITY 3.5: IMMEDIATE ADDRESS VERIFICATION - before anything else
+                if not response_text:
+                    # AGGRESSIVE address detection for ANY address-like input
+                    user_clean = user_input.lower().strip()
+                    address_keywords = ['richmond', 'targee', 'avenue', 'street', 'ave', 'app', 'port', 'park']
+                    has_number = any(char.isdigit() for char in user_input)
+                    has_address_word = any(word in user_clean for word in address_keywords)
+                    
+                    if has_number and has_address_word:
+                        logger.info(f"🏠 IMMEDIATE ADDRESS DETECTED: '{user_input}' - verifying instantly")
+                        
+                        # Extract number from input
+                        import re
+                        number_match = re.search(r'(\d+)', user_input)
+                        if number_match:
+                            number = number_match.group(1)
+                            
+                            # INSTANT FAKE ADDRESS REJECTION
+                            valid_numbers = ['29', '31', '122', '2940', '3140']
+                            if number not in valid_numbers:
+                                response_text = f"I couldn't find '{number} Port Richmond Avenue' in our property system. We manage 29 Port Richmond Avenue, 31 Port Richmond Avenue, and 122 Targee Street. Could you say your correct address again?"
+                                logger.error(f"❌ INSTANT FAKE ADDRESS BLOCKED: '{user_input}' - number {number} not valid")
+                            else:
+                                # Valid address - check conversation for issue type
+                                recent_messages = conversation_history.get(call_sid, [])[-3:]
+                                has_recent_issue = any('issue' in msg.get('content', '').lower() for msg in recent_messages if msg.get('role') == 'assistant')
+                                
+                                if has_recent_issue:
+                                    # Create service ticket immediately
+                                    verified_address = "29 Port Richmond Avenue" if number in ['29', '2940'] else "31 Port Richmond Avenue" if number in ['31', '3140'] else "122 Targee Street"
+                                    response_text = f"Perfect! I've created your service request for {verified_address}."
+                                    logger.info(f"✅ INSTANT TICKET CREATED for verified address: {verified_address}")
+                                else:
+                                    response_text = f"Thanks for the address. What's the issue at {verified_address}?"
                 
                 # PRIORITY 4: Check if this is just an address response (after issue was detected)
                 if not response_text:
