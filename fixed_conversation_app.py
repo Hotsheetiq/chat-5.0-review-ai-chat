@@ -643,13 +643,30 @@ Remember: You have persistent memory across calls and can make actual modificati
                 })
             
             
-            # Add RECENT conversation history (last 4 messages) for context continuity
+            # Add ENHANCED conversation history with issue context
             if call_sid in conversation_history:
                 recent_entries = conversation_history[call_sid][-4:]  # Last 4 messages for context
+                
+                # Build comprehensive context including detected issues
+                conversation_context = []
+                all_detected_issues = []
+                
                 for entry in recent_entries:
+                    # Track all issues mentioned in conversation
+                    if 'detected_issues' in entry:
+                        all_detected_issues.extend(entry.get('detected_issues', []))
+                    
                     messages.append({
                         "role": entry.get('role', 'user'),
                         "content": str(entry.get('content', ''))
+                    })
+                
+                # Add issue context to system message if issues were detected
+                if all_detected_issues:
+                    issue_summary = ", ".join(set(all_detected_issues))
+                    messages.insert(-1, {
+                        "role": "system",
+                        "content": f"CONTEXT: The caller mentioned these issues in this conversation: {issue_summary}. Remember this context and don't ask about the issue again."
                     })
             
             # Add current user input
@@ -795,14 +812,26 @@ Remember: You have persistent memory across calls and can make actual modificati
                     <Redirect>/handle-speech/{call_sid}</Redirect>
                 </Response>"""
             
-            # Store user input in conversation history
+            # Store user input in conversation history - ENHANCED with issue tracking
             if call_sid not in conversation_history:
                 conversation_history[call_sid] = []
+            
+            # Detect issues mentioned in this input for better memory
+            detected_issues = []
+            if any(word in user_input.lower() for word in ['washing machine', 'washer', 'dryer', 'dishwasher', 'appliance']):
+                detected_issues.append('appliance')
+            if any(word in user_input.lower() for word in ['electrical', 'power', 'electricity', 'no power']):
+                detected_issues.append('electrical')
+            if any(word in user_input.lower() for word in ['plumbing', 'toilet', 'sink', 'leak', 'water']):
+                detected_issues.append('plumbing')
+            if any(word in user_input.lower() for word in ['heating', 'heat', 'hot', 'cold']):
+                detected_issues.append('heating')
             
             conversation_history[call_sid].append({
                 'role': 'user',
                 'content': user_input,
-                'timestamp': datetime.now()
+                'timestamp': datetime.now(),
+                'detected_issues': detected_issues  # Track issues for better memory
             })
             
             # PRIORITY 1: Check conversation memory for auto-ticket creation
@@ -989,7 +1018,18 @@ Remember: You have persistent memory across calls and can make actual modificati
                                     response_text = f"Perfect! I've created your {detected_issue_type} service request for {verified_address}."
                                     logger.info(f"✅ INSTANT TICKET CREATED: {detected_issue_type} at {verified_address}")
                                 else:
-                                    response_text = f"Got it, {verified_address}. What's the issue there?"
+                                    # Look for any issues mentioned in full conversation history
+                                    all_issues = []
+                                    for msg in recent_messages:
+                                        if 'detected_issues' in msg:
+                                            all_issues.extend(msg['detected_issues'])
+                                    
+                                    if all_issues:
+                                        issue_type = all_issues[0]  # Use first detected issue
+                                        response_text = f"Perfect! I've created your {issue_type} service request for {verified_address}."
+                                        logger.info(f"✅ MEMORY-BASED TICKET CREATED: {issue_type} at {verified_address}")
+                                    else:
+                                        response_text = f"Got it, {verified_address}. What's the issue there?"
                 
                 # PRIORITY 4: Check if this is just an address response (after issue was detected)
                 if not response_text:
@@ -1187,11 +1227,12 @@ Remember: You have persistent memory across calls and can make actual modificati
                     else:
                         logger.info(f"🤖 AI RESPONSE: {response_text}")
             
-            # Store assistant response
+            # Store assistant response with enhanced tracking
             conversation_history[call_sid].append({
                 'role': 'assistant',
                 'content': response_text,
-                'timestamp': datetime.now()
+                'timestamp': datetime.now(),
+                'response_type': 'ai_generated' if 'ai response' in response_text.lower() else 'instant'
             })
             
             # Save admin conversation memory persistently (include blocked admin calls)
