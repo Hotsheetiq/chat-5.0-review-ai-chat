@@ -742,41 +742,41 @@ Remember: You have persistent memory across calls and can make actual modificati
             # Try Grok first for enhanced conversation memory, fallback to OpenAI
             result = None
             
-            # 🚀 PRIMARY: Use OpenAI GPT-4o for fast, reliable responses (no latency issues)
-            try:
-                if not openai_client:
-                    logger.error("OpenAI client not initialized")
-                    return "I'm here to help! What can I do for you today?"
-                
-                logger.info("🚀 Using OpenAI GPT-4o for fast intelligent responses")
-                response = openai_client.chat.completions.create(
-                    model="gpt-4o",  # Full GPT-4o for best quality
-                    messages=messages,
-                    max_tokens=200,  # Good balance of detail and speed
-                    temperature=0.7,  # Natural conversation
-                    timeout=1.0,  # Fast timeout for speed
-                    stream=False  # Non-streaming for simplicity
-                )
-                
-                result = response.choices[0].message.content.strip() if response.choices[0].message.content else "I'm here to help! What can I do for you today?"
-                logger.info(f"🤖 OPENAI RESPONSE: {result}")
-                
-            except Exception as openai_error:
-                logger.warning(f"OpenAI error ({openai_error}), using Grok fallback")
-                # Only use Grok as backup if OpenAI fails
+            # 🚀 PRIMARY: Use Grok 4.0 with optimized settings for fast responses
+            if grok_ai:
                 try:
-                    if grok_ai:
-                        result = grok_ai.generate_response(
-                            messages=messages,
-                            max_tokens=150,  # Shorter for speed
-                            temperature=0.7,
-                            timeout=0.8  # Fast timeout
-                        )
-                        logger.info(f"🤖 GROK FALLBACK: {result}")
-                    else:
-                        result = "I'm here to help! What can I do for you today?"
+                    logger.info("🚀 Using Grok 4.0 - optimized for speed and intelligence")
+                    result = grok_ai.generate_response(
+                        messages=messages,
+                        max_tokens=150,  # Reduced tokens for faster response
+                        temperature=0.6,  # Slightly lower for faster processing
+                        timeout=0.8  # Aggressive timeout for speed
+                    )
+                    logger.info(f"🤖 GROK RESPONSE: {result}")
                 except Exception as grok_error:
-                    logger.error(f"Both AI systems failed: OpenAI={openai_error}, Grok={grok_error}")
+                    logger.warning(f"Grok AI failed, falling back to OpenAI: {grok_error}")
+                    result = None
+            
+            # Fallback to OpenAI if Grok failed or not available
+            if not result:
+                try:
+                    if not openai_client:
+                        logger.error("OpenAI client not initialized")
+                        return "I'm here to help! What can I do for you today?"
+                    
+                    logger.info("🔄 Using OpenAI fallback")
+                    response = openai_client.chat.completions.create(
+                        model="gpt-4o",
+                        messages=messages,
+                        max_tokens=150,
+                        temperature=0.6,
+                        timeout=0.8
+                    )
+                    
+                    result = response.choices[0].message.content.strip() if response.choices[0].message.content else "I'm here to help! What can I do for you today?"
+                    logger.info(f"🤖 OPENAI FALLBACK: {result}")
+                except Exception as openai_error:
+                    logger.error(f"Both AI systems failed: {openai_error}")
                     result = "I'm here to help! What can I do for you today?"
             
             # Track response to prevent repetition

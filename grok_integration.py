@@ -20,33 +20,35 @@ class GrokAI:
         )
         logger.info("✅ Grok AI client initialized successfully")
     
-    def generate_response(self, messages, max_tokens=200, temperature=0.7, timeout=2.0):
-        """Generate response using Grok with enhanced conversation memory"""
+    def generate_response(self, messages, max_tokens=150, temperature=0.6, timeout=0.8):
+        """Generate fast response using optimized Grok settings"""
         try:
-            # Try Grok 4.0 first, fallback to Grok 2 if not available
+            # Use Grok 2 for speed - it's faster than Grok 4.0 with similar quality
             try:
                 response = self.client.chat.completions.create(
-                    model="grok-4-0709",  # Grok 4.0 - xAI's flagship model
+                    model="grok-2-1212",  # Grok 2 - faster and more reliable
                     messages=messages,
                     max_tokens=max_tokens,
                     temperature=temperature,
-                    timeout=timeout*2  # Longer timeout for Grok 4.0
+                    timeout=timeout  # Fast timeout for speed
                 )
-                logger.info("✅ Using Grok 4.0 successfully")
+                logger.info("✅ Using Grok 2 - optimized for speed")
+                return response.choices[0].message.content.strip()
             except Exception as e:
-                logger.warning(f"Grok 4.0 not available ({e}), falling back to Grok 2")
+                # If Grok 2 fails, try Grok 4.0 as backup
+                logger.warning(f"Grok 2 failed ({e}), trying Grok 4.0")
                 response = self.client.chat.completions.create(
-                    model="grok-2-1212",  # Fallback to reliable Grok 2
+                    model="grok-4-0709",  # Backup Grok 4.0
                     messages=messages,
                     max_tokens=max_tokens,
                     temperature=temperature,
-                    timeout=timeout
+                    timeout=timeout + 0.2  # Slightly longer timeout for Grok 4.0
                 )
-            
-            return response.choices[0].message.content.strip()
+                logger.info("✅ Using Grok 4.0 as backup")
+                return response.choices[0].message.content.strip()
             
         except Exception as e:
-            logger.error(f"Grok API error: {e}")
+            logger.error(f"All Grok models failed: {e}")
             raise
     
     def analyze_conversation_context(self, conversation_history):
