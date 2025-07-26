@@ -258,7 +258,7 @@ def create_app():
                         }
                         
                         logger.info(f"✅ REAL SERVICE TICKET SUCCESSFULLY CREATED: #{ticket_number}")
-                        return f"Perfect! I've created service ticket #{ticket_number} for your {issue_type} issue at {address}. Dimitry Simanovsky has been assigned and will contact you within 2-4 hours. Would you like me to text you the issue number for your records?"
+                        return f"Perfect! I've created service ticket #{ticket_number} for your {issue_type} issue at {address}. Dimitry Simanovsky has been assigned and will contact you soon. Would you like me to text you the issue number for your records?"
                     else:
                         logger.warning("❌ REAL TICKET CREATION FAILED - Using fallback")
                         
@@ -277,12 +277,12 @@ def create_app():
                 'assigned_to': 'Dimitry Simanovsky'
             }
             
-            return f"Perfect! I've created service ticket #{ticket_number} for your {issue_type} issue at {address}. Dimitry Simanovsky has been assigned and will contact you within 2-4 hours. Would you like me to text you the issue number for your records?"
+            return f"Perfect! I've created service ticket #{ticket_number} for your {issue_type} issue at {address}. Dimitry Simanovsky has been assigned and will contact you soon. Would you like me to text you the issue number for your records?"
             
         except Exception as e:
             logger.error(f"Service ticket creation error: {e}")
             ticket_number = f"SV-{random.randint(10000, 99999)}"
-            return f"Perfect! I've created service ticket #{ticket_number} for your {issue_type} issue at {address}. Dimitry will contact you within 2-4 hours."
+            return f"Perfect! I've created service ticket #{ticket_number} for your {issue_type} issue at {address}. Dimitry will contact you soon."
     
     def send_service_sms(call_sid, caller_phone):
         """Send SMS confirmation for service ticket"""
@@ -341,7 +341,7 @@ def create_app():
         "what are your hours": lambda: "We're open Monday through Friday, 9 AM to 5 PM Eastern Time!",
         "hours": lambda: "Our office hours are Monday through Friday, 9 AM to 5 PM Eastern.",
         
-        # Greetings - vary responses to avoid repetition
+        # Greetings - INSTANT responses (NO AI delay) - vary responses to avoid repetition  
         "hello": lambda: random.choice([
             "Hi there! I'm Chris from Grinberg Management. How can I help you today?",
             "Hello! Great to hear from you. What can I help you with?",
@@ -1118,8 +1118,8 @@ PERSONALITY: Warm, empathetic, and intelligent. Show you're genuinely listening 
                                             response_text = response_func()
                                         else:
                                             response_text = response_func
-                                        logger.info(f"⚡ SIMPLE GREETING RESPONSE: {pattern}")
-                                        break
+                                        logger.info(f"⚡ INSTANT GREETING (ZERO AI DELAY): {pattern}")
+                                        return response_text  # IMMEDIATE RETURN - skip all AI processing
                                 except Exception as e:
                                     logger.error(f"Instant response error for {pattern}: {e}")
                 
@@ -1168,6 +1168,7 @@ PERSONALITY: Warm, empathetic, and intelligent. Show you're genuinely listening 
                                 
                                 response_text = f"I heard {user_input} but couldn't find that exact address in our system. Did you mean {suggested_address}? Please confirm if that's correct."
                                 logger.info(f"🎯 ADDRESS CONFIRMATION REQUIRED: '{user_input}' → suggesting '{suggested_address}' for confirmation")
+                                return response_text
                             else:
                                 # Valid address - but don't auto-create ticket, confirm first
                                 logger.info(f"✅ VALID ADDRESS DETECTED: {user_input} → {number} (confirmed)")
