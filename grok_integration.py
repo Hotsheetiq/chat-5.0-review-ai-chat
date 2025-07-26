@@ -20,7 +20,7 @@ class GrokAI:
         )
         logger.info("✅ Grok AI client initialized successfully")
     
-    def generate_response(self, messages, max_tokens=150, temperature=0.6, timeout=0.8):
+    def generate_response(self, messages, max_tokens=100, temperature=0.5, timeout=0.6):
         """Generate fast response using optimized Grok settings"""
         try:
             # Use Grok 2 for speed - it's faster than Grok 4.0 with similar quality

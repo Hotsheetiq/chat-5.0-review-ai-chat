@@ -745,12 +745,12 @@ Remember: You have persistent memory across calls and can make actual modificati
             # 🚀 PRIMARY: Use Grok 4.0 with optimized settings for fast responses
             if grok_ai:
                 try:
-                    logger.info("🚀 Using Grok 4.0 - optimized for speed and intelligence")
+                    logger.info("🚀 Using Grok 2 - optimized for speed and intelligence")
                     result = grok_ai.generate_response(
                         messages=messages,
-                        max_tokens=150,  # Reduced tokens for faster response
-                        temperature=0.6,  # Slightly lower for faster processing
-                        timeout=0.8  # Aggressive timeout for speed
+                        max_tokens=100,  # Further reduced for faster response
+                        temperature=0.5,  # Lower for faster processing
+                        timeout=0.6  # More aggressive timeout for speed
                     )
                     logger.info(f"🤖 GROK RESPONSE: {result}")
                 except Exception as grok_error:
@@ -907,8 +907,23 @@ Remember: You have persistent memory across calls and can make actual modificati
                 logger.warning(f"🔍 EMPTY SPEECH DEBUG - All params: {all_params}")
             
             if not user_input:
-                # Fast response without extra "I'm listening" message
-                no_input_voice = create_voice_response("I didn't catch that. What can I help you with?")
+                # ENHANCED: Clarification requests with tracking
+                unclear_attempts = conversation_history.get(call_sid, [])
+                recent_unclear = sum(1 for msg in unclear_attempts[-3:] if msg.get('unclear', False))
+                
+                if recent_unclear < 2:
+                    error_text = "I didn't catch that clearly. Could you please repeat what you said?"
+                    # Mark this as an unclear attempt
+                    conversation_history.setdefault(call_sid, []).append({
+                        'role': 'system',
+                        'content': 'unclear_speech_request',
+                        'unclear': True,
+                        'timestamp': datetime.now()
+                    })
+                else:
+                    error_text = "I'm having trouble hearing you clearly. If you're reporting a maintenance issue, could you start by telling me just the house number of your address?"
+                
+                no_input_voice = create_voice_response(error_text)
                 
                 return f"""<?xml version="1.0" encoding="UTF-8"?>
                 <Response>
@@ -1088,18 +1103,27 @@ Remember: You have persistent memory across calls and can make actual modificati
                             # ENHANCED FAKE ADDRESS REJECTION - Check against valid properties
                             valid_numbers = ['29', '31', '122', '2940', '3140']
                             if number not in valid_numbers:
-                                # Suggest closest match instead of listing all addresses
-                                if number.startswith('2'):
-                                    suggested_address = "29 Port Richmond Avenue"
+                                # INTELLIGENT ADDRESS MATCHING - prioritize street name similarity
+                                user_clean_address = user_clean.lower()
+                                
+                                if 'richmond' in user_clean_address or 'port' in user_clean_address:
+                                    # Richmond Avenue addresses
+                                    if number.startswith('2') or int(number) < 100:
+                                        suggested_address = "29 Port Richmond Avenue"
+                                    else:
+                                        suggested_address = "2940 Richmond Avenue"
+                                elif 'targee' in user_clean_address:
+                                    suggested_address = "122 Targee Street"
                                 elif number.startswith('3'):
-                                    suggested_address = "31 Port Richmond Avenue" 
+                                    suggested_address = "31 Port Richmond Avenue"
                                 elif number.startswith('1'):
                                     suggested_address = "122 Targee Street"
                                 else:
+                                    # Default to most common property
                                     suggested_address = "29 Port Richmond Avenue"
                                 
                                 response_text = f"I couldn't find that address in our system. Did you mean {suggested_address}?"
-                                logger.error(f"❌ INSTANT FAKE ADDRESS BLOCKED: '{user_input}' - number {number} not valid")
+                                logger.error(f"❌ INTELLIGENT ADDRESS BLOCKED: '{user_input}' - suggested {suggested_address} based on street name")
                             else:
                                 # Valid address - check conversation for issue type
                                 recent_messages = conversation_history.get(call_sid, [])[-5:]
