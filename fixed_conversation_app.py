@@ -742,39 +742,42 @@ Remember: You have persistent memory across calls and can make actual modificati
             # Try Grok first for enhanced conversation memory, fallback to OpenAI
             result = None
             
-            if grok_ai:
-                try:
-                    logger.info("🚀 Using Grok 4.0 - xAI's flagship model for superior intelligence")
-                    result = grok_ai.generate_response(
-                        messages=messages,
-                        max_tokens=200,  # More tokens for comprehensive responses
-                        temperature=0.7,  # Natural conversation
-                        timeout=2.0  # Reasonable timeout
-                    )
-                    logger.info(f"🤖 GROK RESPONSE: {result}")
-                except Exception as grok_error:
-                    logger.warning(f"Grok AI failed, falling back to OpenAI: {grok_error}")
-            
-            # Fallback to OpenAI if Grok failed or not available
-            if not result:
-                try:
-                    if not openai_client:
-                        logger.error("OpenAI client not initialized")
-                        return "I'm here to help! What can I do for you today?"
-                    response = openai_client.chat.completions.create(
-                        model="gpt-4o-mini",  # FASTER model with lower latency
-                        messages=messages,
-                        max_tokens=150,  # Shorter for speed but still natural
-                        temperature=0.5,  # Lower temperature for faster processing
-                        timeout=1.5,  # Aggressive timeout for speed
-                        stream=False  # Non-streaming for simplicity
-                    )
-                    
-                    result = response.choices[0].message.content.strip() if response.choices[0].message.content else "I'm here to help! What can I do for you today?"
-                    logger.info(f"🤖 OPENAI RESPONSE: {result}")
-                except Exception as openai_error:
-                    logger.error(f"OpenAI API error: {openai_error}")
+            # 🚀 PRIMARY: Use OpenAI GPT-4o for fast, reliable responses (no latency issues)
+            try:
+                if not openai_client:
+                    logger.error("OpenAI client not initialized")
                     return "I'm here to help! What can I do for you today?"
+                
+                logger.info("🚀 Using OpenAI GPT-4o for fast intelligent responses")
+                response = openai_client.chat.completions.create(
+                    model="gpt-4o",  # Full GPT-4o for best quality
+                    messages=messages,
+                    max_tokens=200,  # Good balance of detail and speed
+                    temperature=0.7,  # Natural conversation
+                    timeout=1.0,  # Fast timeout for speed
+                    stream=False  # Non-streaming for simplicity
+                )
+                
+                result = response.choices[0].message.content.strip() if response.choices[0].message.content else "I'm here to help! What can I do for you today?"
+                logger.info(f"🤖 OPENAI RESPONSE: {result}")
+                
+            except Exception as openai_error:
+                logger.warning(f"OpenAI error ({openai_error}), using Grok fallback")
+                # Only use Grok as backup if OpenAI fails
+                try:
+                    if grok_ai:
+                        result = grok_ai.generate_response(
+                            messages=messages,
+                            max_tokens=150,  # Shorter for speed
+                            temperature=0.7,
+                            timeout=0.8  # Fast timeout
+                        )
+                        logger.info(f"🤖 GROK FALLBACK: {result}")
+                    else:
+                        result = "I'm here to help! What can I do for you today?"
+                except Exception as grok_error:
+                    logger.error(f"Both AI systems failed: OpenAI={openai_error}, Grok={grok_error}")
+                    result = "I'm here to help! What can I do for you today?"
             
             # Track response to prevent repetition
             if call_sid not in response_tracker:
