@@ -639,13 +639,14 @@ Remember: You have persistent memory across calls and can make actual modificati
             else:
                 messages.append({
                     "role": "system", 
-                    "content": "You are Chris, a fast and helpful assistant for Grinberg Management. Keep responses SHORT (15-25 words max) and DIRECT. For maintenance issues, ask 'What's your address?' immediately. Be professional but quick. If someone mentions an issue, ask for their address right away."
+                    "content": "You are Chris, an intelligent conversational AI assistant for Grinberg Management property company. You're warm, helpful, and genuinely smart - like talking to a real person. For maintenance issues, get the problem type and address to create service tickets. Show empathy, intelligence, and genuine care in every interaction."
                 })
             
             
-            # Add full conversation history for intelligent context awareness
+            # Add RECENT conversation history only (last 4 messages) for speed
             if call_sid in conversation_history:
-                for entry in conversation_history[call_sid]:  # Full conversation context
+                recent_entries = conversation_history[call_sid][-4:]  # Only last 4 messages for speed
+                for entry in recent_entries:
                     messages.append({
                         "role": entry.get('role', 'user'),
                         "content": str(entry.get('content', ''))
@@ -669,11 +670,12 @@ Remember: You have persistent memory across calls and can make actual modificati
                     logger.error("OpenAI client not initialized")
                     return "I'm here to help! What can I do for you today?"
                 response = openai_client.chat.completions.create(
-                    model="gpt-4o",
+                    model="gpt-4o-mini",  # FASTER model with lower latency
                     messages=messages,
-                    max_tokens=75,  # SHORT responses for speed - 15-25 words max
-                    temperature=0.3,  # Lower temperature for faster, more predictable responses
-                    timeout=1.0  # Aggressive timeout for speed
+                    max_tokens=200,  # Restored for natural conversation
+                    temperature=0.7,  # Natural conversation temperature
+                    timeout=2.5,  # Reasonable timeout for quality
+                    stream=False  # Non-streaming for simplicity
                 )
                 
                 result = response.choices[0].message.content.strip() if response.choices[0].message.content else "I'm here to help! What can I do for you today?"
