@@ -69,6 +69,8 @@ conversation_history = {}
 response_tracker = {}
 # Service issue storage for SMS functionality
 current_service_issue = {}
+# Address verification storage
+verified_address_info = {}
 # Admin phone numbers for training access
 ADMIN_PHONE_NUMBERS = [
     "+13477430880",  # Add your admin phone number here
@@ -198,8 +200,10 @@ def create_app():
             return "Our office hours are Monday through Friday, 9 AM to 5 PM Eastern. How can I help you today?"
     
     def create_service_ticket(issue_type, address):
-        """Create service ticket with REAL Rent Manager integration and SMS confirmation"""
+        """Create service ticket with REAL Rent Manager integration - ONLY called after address verification"""
         global current_service_issue
+        
+        logger.info(f"🎫 CREATING VERIFIED TICKET: {issue_type} at {address} (Address already verified)")
         try:
             if service_handler:
                 # Create REAL service ticket using Rent Manager API
@@ -1026,12 +1030,33 @@ Remember: You have persistent memory across calls and can make actual modificati
                                     break
                             
                             if verified_property:
-                                result = create_service_ticket(detected_issue_type, verified_property)
-                                response_text = result if result else f"Perfect! I've created a {detected_issue_type} service ticket for {verified_property}. We are on it and will get back to you with a follow up call or text. Can you confirm the best phone number to text you?"
-                                logger.info(f"🎫 FUZZY MATCHED TICKET: {detected_issue_type} at {verified_property}")
+                                # ADDRESS VERIFIED - Check if this is a multi-unit property that needs apartment number
+                                multi_unit_properties = ["29 Port Richmond Avenue", "31 Port Richmond Avenue"]  # Multi-unit properties
+                                single_family_properties = ["122 Targee Street"]  # Single family properties
+                                
+                                if verified_property in multi_unit_properties:
+                                    # Multi-unit property - ask for apartment number
+                                    response_text = f"Great! I found {verified_property} in our system. What apartment number are you in?"
+                                    logger.info(f"✅ MULTI-UNIT ADDRESS VERIFIED: {verified_property} - Requesting apartment number")
+                                    
+                                    # Store verified info for ticket creation
+                                    global verified_address_info
+                                    verified_address_info = {
+                                        'issue_type': detected_issue_type,
+                                        'address': verified_property,
+                                        'waiting_for_apartment': True
+                                    }
+                                else:
+                                    # Single family home - create ticket immediately
+                                    logger.info(f"✅ SINGLE FAMILY VERIFIED: {verified_property} - Creating ticket immediately")
+                                    
+                                    # Create ticket immediately after address verification
+                                    result = create_service_ticket(detected_issue_type, verified_property)
+                                    response_text = result if result else f"Perfect! I've created a {detected_issue_type} service ticket for {verified_property}. Dimitry will contact you within 2-4 hours."
+                                    logger.info(f"🎫 SINGLE FAMILY TICKET CREATED: {detected_issue_type} at {verified_property}")
                             else:
                                 response_text = f"I couldn't find '{potential_address}' in our property system. We manage 29 Port Richmond Avenue, 31 Port Richmond Avenue, and 122 Targee Street. Could you say your address again?"
-                                logger.warning(f"❌ FUZZY MATCH FAILED: '{potential_address}' not recognized")
+                                logger.warning(f"❌ ADDRESS NOT FOUND: '{potential_address}' not in property system")
 
                 # PRIORITY 5: General admin actions fallback (training mode only)
                 if not response_text and call_sid in training_sessions and is_potential_admin:
@@ -1046,7 +1071,29 @@ Remember: You have persistent memory across calls and can make actual modificati
                     else:
                         logger.info(f"🔧 NO ADMIN FALLBACK MATCHED for: '{user_input}'")
                 
-                # PRIORITY 4: Check for SMS confirmation request
+                # PRIORITY 4: Check for apartment number response (after address verification)
+                if not response_text and verified_address_info.get('waiting_for_apartment'):
+                    # User provided apartment number after address verification
+                    import re
+                    apt_pattern = r'(\d+[A-Z]?|\w+)'
+                    apt_match = re.search(apt_pattern, user_input, re.IGNORECASE)
+                    
+                    if apt_match:
+                        apartment = apt_match.group(1)
+                        full_address = f"{verified_address_info['address']}, Apt {apartment}"
+                        
+                        # Now create the service ticket with complete address
+                        result = create_service_ticket(verified_address_info['issue_type'], full_address)
+                        response_text = result if result else f"Perfect! I've created a {verified_address_info['issue_type']} service ticket for {full_address}. Dimitry will contact you within 2-4 hours."
+                        logger.info(f"🎫 APARTMENT VERIFIED TICKET CREATED: {verified_address_info['issue_type']} at {full_address}")
+                        
+                        # Clear verification info
+                        verified_address_info = {}
+                    else:
+                        response_text = "I didn't catch the apartment number. Could you tell me your apartment number again?"
+                        logger.info(f"🏠 APARTMENT NUMBER NOT RECOGNIZED: {user_input}")
+
+                # PRIORITY 5: Check for SMS confirmation request
                 if not response_text and current_service_issue:
                     sms_triggers = ['text', 'send', 'yes', 'sure', 'please', 'sms']
                     if any(trigger in user_lower for trigger in sms_triggers):
