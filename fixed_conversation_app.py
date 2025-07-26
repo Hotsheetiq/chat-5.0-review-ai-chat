@@ -196,6 +196,8 @@ def create_app():
             is_business_day = current_day < 5  # Monday through Friday
             is_business_hours = 9 <= current_hour < 17  # 9 AM to 5 PM
             
+            logger.info(f"🕐 OFFICE HOURS CHECK: Day={current_day} (0=Mon), Hour={current_hour}, Business_day={is_business_day}, Business_hours={is_business_hours}")
+            
             if is_business_day and is_business_hours:
                 return "Yes, we're open right now! Our office hours are Monday through Friday, 9 AM to 5 PM Eastern. How can I help you?"
             elif is_business_day and current_hour < 9:
@@ -258,7 +260,7 @@ def create_app():
                         }
                         
                         logger.info(f"✅ REAL SERVICE TICKET SUCCESSFULLY CREATED: #{ticket_number}")
-                        return f"Perfect! I've created service ticket #{ticket_number} for your {issue_type} issue at {address}. Dimitry Simanovsky has been assigned and will contact you soon. Would you like me to text you the issue number for your records?"
+                        return f"Perfect! I've created service ticket #{ticket_number} for your {issue_type} issue at {address}. Someone from our maintenance team will contact you soon. Would you like me to text you the issue number? What's the best phone number to reach you?"
                     else:
                         logger.warning("❌ REAL TICKET CREATION FAILED - Using fallback")
                         
@@ -289,7 +291,7 @@ def create_app():
                     'timestamp': datetime.now()
                 })
             
-            return f"Perfect! I've created service ticket #{ticket_number} for your {issue_type} issue at {address}. Dimitry Simanovsky has been assigned and will contact you soon. Would you like me to text you the issue number for your records?"
+            return f"Perfect! I've created service ticket #{ticket_number} for your {issue_type} issue at {address}. Someone from our maintenance team will contact you soon. Would you like me to text you the issue number? What's the best phone number to reach you?"
             
         except Exception as e:
             logger.error(f"Service ticket creation error: {e}")
@@ -303,7 +305,7 @@ def create_app():
                 'assigned_to': 'Dimitry Simanovsky'
             }
             
-            return f"Perfect! I've created service ticket #{ticket_number} for your {issue_type} issue at {address}. Dimitry will contact you soon."
+            return f"Perfect! I've created service ticket #{ticket_number} for your {issue_type} issue at {address}. Someone from our maintenance team will contact you soon. Would you like me to text you the issue number? What's the best phone number to reach you?"
     
     def send_service_sms(call_sid, caller_phone):
         """Send SMS confirmation for service ticket - SIMPLIFIED & FIXED"""
@@ -340,7 +342,7 @@ def create_app():
                 client = Client(TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN)
                 
                 # Format SMS message
-                sms_message = f"Grinberg Management Service Confirmation\n\nIssue #{service_issue['issue_number']}\nType: {service_issue['issue_type'].title()}\nLocation: {service_issue['address']}\nAssigned to: Dimitry Simanovsky\n\nDimitry will contact you soon.\n\nQuestions? Call (718) 414-6984"
+                sms_message = f"Grinberg Management Service Confirmation\n\nIssue #{service_issue['issue_number']}\nType: {service_issue['issue_type'].title()}\nLocation: {service_issue['address']}\nAssigned to: Maintenance Team\n\nSomeone will contact you soon.\n\nQuestions? Call (718) 414-6984"
                 
                 # Send SMS
                 message = client.messages.create(
@@ -365,6 +367,8 @@ def create_app():
         # Office hours - FIXED LOGIC with speech recognition variations
         "are you open": get_office_hours_response,
         "you open": get_office_hours_response,
+        "you guys open": get_office_hours_response,  # Fix for "Are you guys open today?"
+        "are you guys open": get_office_hours_response,  # Fix for "Are you guys open today?"
         "you guys are open": get_office_hours_response,  # Fix for "if you guys are open"
         "know if you guys are open": get_office_hours_response,  # Fix for exact phrase
         "wanted to know if you guys are open": get_office_hours_response,  # Complete phrase
@@ -979,7 +983,7 @@ PERSONALITY: Warm, empathetic, and intelligent. Show you're genuinely listening 
                 number = match.group(1)
                 if number not in ['29', '31']:  # Invalid Port Richmond numbers
                     if number in ['26', '64', '24', '28', '6', 'funny', '16']:  # Common misheard numbers for 29
-                        response_text = f"I heard {number} Port Richmond Avenue but couldn't find that exact address in our system. Did you mean 29 Port Richmond Avenue? Please confirm if that's correct."
+                        response_text = f"I heard {number} Port Richmond Avenue but couldn't find that exact address in our system. Did you mean 29 Port Richmond Avenue? Please confirm the correct address."
                         logger.info(f"🎯 ADDRESS CONFIRMATION REQUIRED: '{user_input}' → suggesting '29 Port Richmond Avenue'")
                         
                         # Store conversation entry with detected issues
@@ -988,6 +992,10 @@ PERSONALITY: Warm, empathetic, and intelligent. Show you're genuinely listening 
                             detected_issues.append('appliance')
                         if any(word in user_input.lower() for word in ['electrical', 'power', 'electricity', 'no power']):
                             detected_issues.append('electrical')
+                        if any(word in user_input.lower() for word in ['plumbing', 'toilet', 'water', 'leak']):
+                            detected_issues.append('plumbing')
+                        if any(word in user_input.lower() for word in ['heating', 'heat', 'cold']):
+                            detected_issues.append('heating')
                         
                         conversation_history[call_sid].append({
                             'role': 'user',
@@ -1201,6 +1209,23 @@ PERSONALITY: Warm, empathetic, and intelligent. Show you're genuinely listening 
                             response_text = "Plumbing issue! What's your address?"
                             logger.info(f"🚨 COMPLAINT DETECTED: Toilet flush issue in narrative")
                     
+                    # PRIORITY: Check office hours questions FIRST (before word limit)
+                    if not response_text:
+                        office_patterns = ["are you open", "you open", "you guys open", "are you guys open", "you guys are open", "know if you guys are open"]
+                        for pattern in office_patterns:
+                            if pattern in user_lower:
+                                try:
+                                    response_func = INSTANT_RESPONSES.get(pattern)
+                                    if response_func:
+                                        if callable(response_func):
+                                            response_text = response_func()
+                                        else:
+                                            response_text = response_func
+                                        logger.info(f"⚡ INSTANT OFFICE HOURS (ZERO AI DELAY): '{pattern}' → '{response_text[:50]}...'")
+                                        break
+                                except Exception as e:
+                                    logger.error(f"Office hours instant response error for {pattern}: {e}")
+                    
                     # SMART instant responses - only for simple greetings, not complex sentences
                     if not response_text and len(user_input.split()) <= 3:
                         # Only use instant responses for simple phrases like "hello", "hi", "hey"
@@ -1316,7 +1341,7 @@ PERSONALITY: Warm, empathetic, and intelligent. Show you're genuinely listening 
                                         'timestamp': datetime.now()
                                     })
                                     
-                                    response_text = f"Perfect! I've created service ticket #{current_service_issue['issue_number']} for your {detected_issue_type} issue at {verified_address}. Dimitry will contact you soon. Would you like me to text you the issue number for your records?"
+                                    response_text = f"Perfect! I've created service ticket #{current_service_issue['issue_number']} for your {detected_issue_type} issue at {verified_address}. Someone from our maintenance team will contact you soon. Would you like me to text you the issue number? What's the best phone number to reach you?"
                                     logger.info(f"✅ INSTANT TICKET CREATED: #{current_service_issue['issue_number']} for {detected_issue_type} at {verified_address}")
                                     return response_text  # CRITICAL: Return immediately to prevent repetitive questions
                                 else:
@@ -1342,7 +1367,7 @@ PERSONALITY: Warm, empathetic, and intelligent. Show you're genuinely listening 
                                             'timestamp': datetime.now()
                                         })
                                         
-                                        response_text = f"Perfect! I've created service ticket #{current_service_issue['issue_number']} for your {issue_type} issue at {verified_address}. Dimitry will contact you soon. Would you like me to text you the issue number for your records?"
+                                        response_text = f"Perfect! I've created service ticket #{current_service_issue['issue_number']} for your {issue_type} issue at {verified_address}. Someone from our maintenance team will contact you soon. Would you like me to text you the issue number? What's the best phone number to reach you?"
                                         logger.info(f"✅ MEMORY-BASED TICKET CREATED: #{current_service_issue['issue_number']} for {issue_type} at {verified_address}")
                                         return response_text  # CRITICAL: Return immediately to prevent repetitive questions
                                     else:
@@ -1549,7 +1574,7 @@ PERSONALITY: Warm, empathetic, and intelligent. Show you're genuinely listening 
                             response_text = f"Perfect! I've texted you the details for service issue #{recent_service_issue['issue_number']}. Check your phone in a moment!"
                             logger.info(f"📱 SMS SENT: Issue #{recent_service_issue['issue_number']} to {caller_phone}")
                         else:
-                            response_text = f"I had trouble sending the text, but I've created service issue #{recent_service_issue['issue_number']} for your {recent_service_issue['issue_type']} issue. Dimitry will contact you soon."
+                            response_text = f"I had trouble sending the text, but I've created service issue #{recent_service_issue['issue_number']} for your {recent_service_issue['issue_type']} issue. Someone from our maintenance team will contact you soon."
                             logger.warning(f"📱 SMS FAILED: Fallback message provided")
                 
                 # PRIORITY 5: AI response if no instant match or actions (FASTER TRAINING)
