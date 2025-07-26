@@ -639,13 +639,13 @@ Remember: You have persistent memory across calls and can make actual modificati
             else:
                 messages.append({
                     "role": "system", 
-                    "content": "You are Chris, an intelligent conversational AI assistant for Grinberg Management property company. You're warm, helpful, and genuinely smart - like talking to a real person. For maintenance issues, get the problem type and address to create service tickets. Show empathy, intelligence, and genuine care in every interaction."
+                    "content": "You are Chris, an intelligent conversational AI assistant for Grinberg Management property company. You're warm, helpful, and genuinely smart - like talking to a real person. IMPORTANT: Always maintain conversation context and memory. If someone apologizes or refers to previous conversation, acknowledge it naturally. For maintenance issues, get the problem type and address to create service tickets. Show empathy, intelligence, and genuine care in every interaction."
                 })
             
             
-            # Add MINIMAL conversation history only (last 2 messages) for maximum speed
+            # Add RECENT conversation history (last 4 messages) for context continuity
             if call_sid in conversation_history:
-                recent_entries = conversation_history[call_sid][-2:]  # Only last 2 messages for speed
+                recent_entries = conversation_history[call_sid][-4:]  # Last 4 messages for context
                 for entry in recent_entries:
                     messages.append({
                         "role": entry.get('role', 'user'),
@@ -963,16 +963,33 @@ Remember: You have persistent memory across calls and can make actual modificati
                                 logger.error(f"❌ INSTANT FAKE ADDRESS BLOCKED: '{user_input}' - number {number} not valid")
                             else:
                                 # Valid address - check conversation for issue type
-                                recent_messages = conversation_history.get(call_sid, [])[-3:]
-                                has_recent_issue = any('issue' in msg.get('content', '').lower() for msg in recent_messages if msg.get('role') == 'assistant')
+                                recent_messages = conversation_history.get(call_sid, [])[-5:]
+                                detected_issue_type = None
                                 
-                                if has_recent_issue:
-                                    # Create service ticket immediately
-                                    verified_address = "29 Port Richmond Avenue" if number in ['29', '2940'] else "31 Port Richmond Avenue" if number in ['31', '3140'] else "122 Targee Street"
-                                    response_text = f"Perfect! I've created your service request for {verified_address}."
-                                    logger.info(f"✅ INSTANT TICKET CREATED for verified address: {verified_address}")
+                                # Look for issue type in conversation history
+                                for msg in recent_messages:
+                                    content = msg.get('content', '').lower()
+                                    if 'appliance' in content or 'washing machine' in content:
+                                        detected_issue_type = "appliance"
+                                        break
+                                    elif 'electrical' in content or 'power' in content:
+                                        detected_issue_type = "electrical"
+                                        break
+                                    elif 'plumbing' in content:
+                                        detected_issue_type = "plumbing"
+                                        break
+                                    elif 'heating' in content:
+                                        detected_issue_type = "heating"
+                                        break
+                                
+                                verified_address = "29 Port Richmond Avenue" if number in ['29', '2940'] else "31 Port Richmond Avenue" if number in ['31', '3140'] else "122 Targee Street"
+                                
+                                if detected_issue_type:
+                                    # Create service ticket with detected issue
+                                    response_text = f"Perfect! I've created your {detected_issue_type} service request for {verified_address}."
+                                    logger.info(f"✅ INSTANT TICKET CREATED: {detected_issue_type} at {verified_address}")
                                 else:
-                                    response_text = f"Thanks for the address. What's the issue at {verified_address}?"
+                                    response_text = f"Got it, {verified_address}. What's the issue there?"
                 
                 # PRIORITY 4: Check if this is just an address response (after issue was detected)
                 if not response_text:
@@ -1041,7 +1058,8 @@ Remember: You have persistent memory across calls and can make actual modificati
                             logger.info(f"🎫 DETECTED ADDRESS RESPONSE FOR {detected_issue_type.upper()}: {potential_address}")
                             
                             # Enhanced appliance detection for conversation memory
-                            if any(word in ' '.join([msg.get('content', '') for msg in recent_messages]).lower() for word in ['washing machine', 'washer', 'dryer', 'dishwasher', 'appliance']):
+                            full_conversation = ' '.join([msg.get('content', '') for msg in recent_messages]).lower()
+                            if any(word in full_conversation for word in ['washing machine', 'washer', 'dryer', 'dishwasher', 'appliance']):
                                 detected_issue_type = "appliance"
                                 logger.info(f"🔄 UPDATED ISSUE TYPE TO APPLIANCE based on conversation memory")
                             
