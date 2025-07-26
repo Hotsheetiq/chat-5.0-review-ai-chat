@@ -269,60 +269,95 @@ def create_app():
             ticket_number = f"SV-{random.randint(10000, 99999)}"
             logger.warning(f"⚠️ FALLBACK TICKET GENERATED (Rent Manager API unavailable): {ticket_number}")
             
-            # Store ticket info for SMS
-            current_service_issue = {
+            # Store ticket info for SMS in conversation history
+            service_issue_info = {
                 'issue_number': ticket_number,
                 'issue_type': issue_type,
                 'address': address,
                 'assigned_to': 'Dimitry Simanovsky'
             }
             
+            # Store in global variable and conversation history
+            current_service_issue[call_sid] = service_issue_info
+            
+            # Also store in conversation history for SMS lookup
+            if call_sid in conversation_history:
+                conversation_history[call_sid].append({
+                    'role': 'system',
+                    'content': f'Service ticket #{ticket_number} created',
+                    'service_issue': service_issue_info,
+                    'timestamp': datetime.now()
+                })
+            
             return f"Perfect! I've created service ticket #{ticket_number} for your {issue_type} issue at {address}. Dimitry Simanovsky has been assigned and will contact you soon. Would you like me to text you the issue number for your records?"
             
         except Exception as e:
             logger.error(f"Service ticket creation error: {e}")
             ticket_number = f"SV-{random.randint(10000, 99999)}"
+            
+            # Store ticket info for SMS - fallback scenario
+            service_issue_info = {
+                'issue_number': ticket_number,
+                'issue_type': issue_type,
+                'address': address,
+                'assigned_to': 'Dimitry Simanovsky'
+            }
+            
             return f"Perfect! I've created service ticket #{ticket_number} for your {issue_type} issue at {address}. Dimitry will contact you soon."
     
     def send_service_sms(call_sid, caller_phone):
-        """Send SMS confirmation for service ticket"""
+        """Send SMS confirmation for service ticket - SIMPLIFIED & FIXED"""
         try:
-            if not current_service_issue or not caller_phone or caller_phone == "Anonymous":
-                logger.warning(f"📱 SMS SKIPPED: Missing ticket info or phone number")
+            # Get current service issue from global variable OR conversation history
+            service_issue = current_service_issue.get(call_sid) if call_sid in current_service_issue else None
+            
+            if not service_issue and call_sid in conversation_history:
+                for entry in reversed(conversation_history[call_sid]):
+                    if 'service_issue' in entry:
+                        service_issue = entry['service_issue']
+                        break
+            
+            if not service_issue:
+                logger.warning(f"📱 NO SERVICE ISSUE FOUND for SMS: {call_sid}")
                 return False
             
-            # Use ServiceIssueHandler SMS functionality
-            if service_handler and hasattr(service_handler, 'send_sms_confirmation'):
-                import asyncio
-                try:
-                    loop = asyncio.new_event_loop()
-                    asyncio.set_event_loop(loop)
-                    sms_sent = loop.run_until_complete(
-                        service_handler.send_sms_confirmation(
-                            caller_phone,
-                            current_service_issue['issue_number'],
-                            current_service_issue['issue_type'],
-                            current_service_issue['address']
-                        )
-                    )
-                    loop.close()
-                    
-                    if sms_sent:
-                        logger.info(f"✅ SMS CONFIRMATION SENT: {current_service_issue['issue_number']} to {caller_phone}")
-                        return True
-                    else:
-                        logger.warning(f"❌ SMS SENDING FAILED")
-                        return False
-                        
-                except Exception as e:
-                    logger.error(f"SMS async error: {e}")
+            # Validate phone number - allow any real phone number
+            if not caller_phone or caller_phone in ['unknown', 'Anonymous']:
+                logger.warning(f"📱 INVALID PHONE NUMBER for SMS: {caller_phone}")
+                return False
+            
+            # SIMPLIFIED: Use direct Twilio SMS without async complications
+            try:
+                from twilio.rest import Client
+                TWILIO_ACCOUNT_SID = os.environ.get("TWILIO_ACCOUNT_SID")
+                TWILIO_AUTH_TOKEN = os.environ.get("TWILIO_AUTH_TOKEN") 
+                TWILIO_PHONE_NUMBER = os.environ.get("TWILIO_PHONE_NUMBER", "+18886411102")
+                
+                if not all([TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN]):
+                    logger.error("📱 TWILIO CREDENTIALS MISSING")
                     return False
-            else:
-                logger.warning(f"📱 SMS HANDLER NOT AVAILABLE")
+                
+                client = Client(TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN)
+                
+                # Format SMS message
+                sms_message = f"Grinberg Management Service Confirmation\n\nIssue #{service_issue['issue_number']}\nType: {service_issue['issue_type'].title()}\nLocation: {service_issue['address']}\nAssigned to: Dimitry Simanovsky\n\nDimitry will contact you soon.\n\nQuestions? Call (718) 414-6984"
+                
+                # Send SMS
+                message = client.messages.create(
+                    body=sms_message,
+                    from_=TWILIO_PHONE_NUMBER,
+                    to=caller_phone
+                )
+                
+                logger.info(f"✅ SMS SENT SUCCESSFULLY: SID={message.sid} to {caller_phone}")
+                return True
+                
+            except Exception as twilio_error:
+                logger.error(f"📱 TWILIO SMS ERROR: {twilio_error}")
                 return False
                 
         except Exception as e:
-            logger.error(f"SMS sending error: {e}")
+            logger.error(f"📱 SMS GENERAL ERROR: {e}")
             return False
     
     # INSTANT RESPONSES - No AI delay, immediate answers
@@ -925,7 +960,58 @@ PERSONALITY: Warm, empathetic, and intelligent. Show you're genuinely listening 
             original_input = user_input
             user_lower = user_input.lower()
             
-            # Common speech recognition corrections for addresses
+            # Initialize conversation history first
+            if call_sid not in conversation_history:
+                conversation_history[call_sid] = []
+            
+            # CRITICAL FIX: Check for address confirmation BEFORE speech corrections
+            # This ensures we ask "Did you mean 29 Port Richmond?" for "26 Port Richmond"
+            import re
+            
+            # Check for invalid Port Richmond addresses that need confirmation
+            invalid_port_richmond_pattern = r'(\d{1,3})\s*port\s*richmond'
+            match = re.search(invalid_port_richmond_pattern, user_lower)
+            
+            if match:
+                number = match.group(1)
+                if number not in ['29', '31']:  # Invalid Port Richmond numbers
+                    if number in ['26', '64', '24', '28', '6', 'funny', '16']:  # Common misheard numbers for 29
+                        response_text = f"I heard {number} Port Richmond Avenue but couldn't find that exact address in our system. Did you mean 29 Port Richmond Avenue? Please confirm if that's correct."
+                        logger.info(f"🎯 ADDRESS CONFIRMATION REQUIRED: '{user_input}' → suggesting '29 Port Richmond Avenue'")
+                        
+                        # Store conversation entry with detected issues
+                        detected_issues = []
+                        if any(word in user_input.lower() for word in ['washing machine', 'washer', 'dryer', 'dishwasher', 'appliance']):
+                            detected_issues.append('appliance')
+                        if any(word in user_input.lower() for word in ['electrical', 'power', 'electricity', 'no power']):
+                            detected_issues.append('electrical')
+                        
+                        conversation_history[call_sid].append({
+                            'role': 'user',
+                            'content': user_input,
+                            'timestamp': datetime.now(),
+                            'detected_issues': detected_issues,
+                            'awaiting_address_confirmation': True
+                        })
+                        
+                        conversation_history[call_sid].append({
+                            'role': 'assistant',
+                            'content': response_text,
+                            'timestamp': datetime.now()
+                        })
+                        
+                        # Generate voice response and return immediately
+                        main_voice = create_voice_response(response_text)
+                        return f"""<?xml version="1.0" encoding="UTF-8"?>
+                        <Response>
+                            {main_voice}
+                            <Gather input="speech dtmf" timeout="6" speechTimeout="2" dtmfTimeout="1" language="en-US" profanityFilter="false" enhanced="true" action="/handle-input/{call_sid}" method="POST">
+                            </Gather>
+                            <Redirect>/handle-speech/{call_sid}</Redirect>
+                        </Response>"""
+            
+            # Common speech recognition corrections for addresses - AFTER confirmation check
+            # CRITICAL FIX: More precise speech corrections to avoid double-corrections
             speech_fixes = [
                 ("164 richmond", "2940 richmond"),
                 ("4640 richmond", "2940 richmond"), 
@@ -933,7 +1019,9 @@ PERSONALITY: Warm, empathetic, and intelligent. Show you're genuinely listening 
                 ("640 richmond", "2940 richmond"),
                 ("19640 richmond", "2940 richmond"),  # New pattern from logs
                 ("192940 richmond", "2940 richmond"), # Another new pattern
-                ("port rich", "port richmond"),
+                # Fixed port richmond corrections - only match "port rich" not "port richmond"
+                ("port rich ", "port richmond "),  # Only match when followed by space
+                ("port rich.", "port richmond."),  # Or followed by period
                 ("poor richmond", "port richmond"),
                 ("target", "targee"),
                 ("targe", "targee"),
@@ -1432,15 +1520,31 @@ PERSONALITY: Warm, empathetic, and intelligent. Show you're genuinely listening 
                         logger.info(f"🏠 APARTMENT NUMBER NOT RECOGNIZED: {user_input}")
 
                 # PRIORITY 5: Check for SMS confirmation request
-                if not response_text and current_service_issue:
-                    sms_triggers = ['text', 'send', 'yes', 'sure', 'please', 'sms']
-                    if any(trigger in user_lower for trigger in sms_triggers):
+                # Get the most recent service issue
+                recent_service_issue = current_service_issue.get(call_sid)
+                if not recent_service_issue and call_sid in conversation_history:
+                    for entry in reversed(conversation_history[call_sid]):
+                        if 'service_issue' in entry:
+                            recent_service_issue = entry['service_issue']
+                            break
+                
+                # Enhanced SMS trigger detection
+                if not response_text and recent_service_issue:
+                    sms_phrases = [
+                        'yes text', 'text me', 'send sms', 'yes please text', 
+                        'text please', 'send me text', 'yes send', 'text it',
+                        'please text', 'can you text', 'text the details'
+                    ]
+                    
+                    if any(phrase in user_lower for phrase in sms_phrases):
                         # User wants SMS confirmation
+                        logger.info(f"📱 SMS REQUEST DETECTED: '{user_input}' for issue #{recent_service_issue['issue_number']}")
+                        
                         if send_service_sms(call_sid, caller_phone):
-                            response_text = f"Perfect! I've texted you the details for service issue #{current_service_issue['issue_number']}. Check your phone in a moment!"
-                            logger.info(f"📱 SMS SENT: Issue #{current_service_issue['issue_number']} to {caller_phone}")
+                            response_text = f"Perfect! I've texted you the details for service issue #{recent_service_issue['issue_number']}. Check your phone in a moment!"
+                            logger.info(f"📱 SMS SENT: Issue #{recent_service_issue['issue_number']} to {caller_phone}")
                         else:
-                            response_text = f"I've created service issue #{current_service_issue['issue_number']} for your {current_service_issue['issue_type']} issue. Dimitry will contact you soon."
+                            response_text = f"I had trouble sending the text, but I've created service issue #{recent_service_issue['issue_number']} for your {recent_service_issue['issue_type']} issue. Dimitry will contact you soon."
                             logger.warning(f"📱 SMS FAILED: Fallback message provided")
                 
                 # PRIORITY 5: AI response if no instant match or actions (FASTER TRAINING)
