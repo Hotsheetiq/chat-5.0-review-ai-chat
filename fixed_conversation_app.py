@@ -1171,20 +1171,22 @@ PERSONALITY: Warm, empathetic, and intelligent. Show you're genuinely listening 
                     is_complaint = any(pattern in user_lower for pattern in complaint_patterns)
                     
                     if is_complaint:
-                        # ENHANCED issue detection - catch more variations for instant responses
-                        if any(word in user_lower for word in ['washing machine', 'washer', 'dryer', 'dishwasher', 'appliance', 'laundry']):
+                        # ENHANCED issue detection - PRIORITY ORDER: Most specific first
+                        # HEATING FIRST - must come before generic patterns
+                        if any(word in user_lower for word in ['heat', 'heating', 'no heat', 'cold', 'thermostat', 'furnace', "don't have heat", "have no heat"]):
+                            response_text = "Heating issue! What's your address?"
+                            logger.info(f"⚡ INSTANT HEATING DETECTION: {user_input}")
+                        elif any(word in user_lower for word in ['washing machine', 'washer', 'dryer', 'dishwasher', 'appliance', 'laundry']):
                             response_text = "Appliance issue! What's your address?"
                             logger.info(f"⚡ INSTANT APPLIANCE DETECTION: {user_input}")
                         elif any(word in user_lower for word in ['power', 'electrical', 'electricity', 'lights', 'outlet', 'breaker']) and not any(word in user_lower for word in ['washing machine', 'washer', 'dryer', 'dishwasher']):
                             response_text = "Electrical issue! What's your address?"
                             logger.info(f"⚡ INSTANT ELECTRICAL DETECTION: {user_input}")
-                        elif any(word in user_lower for word in ['heat', 'heating', 'no heat', 'cold', 'thermostat', 'furnace']):
-                            response_text = "Heating issue! What's your address?"
-                            logger.info(f"⚡ INSTANT HEATING DETECTION: {user_input}")
                         elif any(word in user_lower for word in ['toilet', 'bathroom', 'plumbing', 'water', 'leak', 'drain', 'sink', 'faucet', 'pipe']):
                             response_text = "Plumbing issue! What's your address?"
                             logger.info(f"⚡ INSTANT PLUMBING DETECTION: {user_input}")
-                        elif any(word in user_lower for word in ['door', 'lock', 'key', 'stuck', 'jammed']):
+                        # DOOR DETECTION LAST - only if not heating issue
+                        elif any(word in user_lower for word in ['door', 'lock', 'key', 'stuck', 'jammed']) and not any(word in user_lower for word in ['heat', 'heating', 'cold']):
                             response_text = "Door issue! What's your address?"
                             logger.info(f"⚡ INSTANT DOOR DETECTION: {user_input}")
                         elif any(word in user_lower for word in ['noise', 'loud', 'neighbors', 'music', 'party']):
