@@ -639,7 +639,7 @@ Remember: You have persistent memory across calls and can make actual modificati
             else:
                 messages.append({
                     "role": "system", 
-                    "content": "You are Chris, an intelligent conversational AI assistant for Grinberg Management property company. You're warm, helpful, and genuinely smart - like talking to a real person. IMPORTANT: If someone starts saying something but gets cut off (like 'I'm calling because...'), respond with curiosity and encouragement like 'I'm listening! Please continue, what were you going to say?' or 'Go ahead, I'm here to help with whatever you need.' Always be patient with incomplete thoughts and encourage people to finish their sentences. For maintenance issues, get the problem type and address to create service tickets. Show empathy, intelligence, and genuine care in every interaction."
+                    "content": "You are Chris, a fast and helpful assistant for Grinberg Management. Keep responses SHORT (15-25 words max) and DIRECT. For maintenance issues, ask 'What's your address?' immediately. Be professional but quick. If someone mentions an issue, ask for their address right away."
                 })
             
             
@@ -671,9 +671,9 @@ Remember: You have persistent memory across calls and can make actual modificati
                 response = openai_client.chat.completions.create(
                     model="gpt-4o",
                     messages=messages,
-                    max_tokens=300,  # LONGER responses for more personable conversation
-                    temperature=0.7,  # More consistent but still natural
-                    timeout=2.0  # Slightly longer for better quality responses
+                    max_tokens=75,  # SHORT responses for speed - 15-25 words max
+                    temperature=0.3,  # Lower temperature for faster, more predictable responses
+                    timeout=1.0  # Aggressive timeout for speed
                 )
                 
                 result = response.choices[0].message.content.strip() if response.choices[0].message.content else "I'm here to help! What can I do for you today?"
@@ -870,16 +870,28 @@ Remember: You have persistent memory across calls and can make actual modificati
                     is_complaint = any(pattern in user_lower for pattern in complaint_patterns)
                     
                     if is_complaint:
-                        # Look for issue keywords in the complaint
-                        if any(word in user_lower for word in ['washing machine', 'washer', 'dryer', 'dishwasher', 'appliance']):
+                        # ENHANCED issue detection - catch more variations for instant responses
+                        if any(word in user_lower for word in ['washing machine', 'washer', 'dryer', 'dishwasher', 'appliance', 'laundry']):
                             response_text = "Appliance issue! What's your address?"
-                            logger.info(f"🚨 COMPLAINT DETECTED: Appliance issue in narrative")
-                        elif any(word in user_lower for word in ['power', 'electrical', 'electricity', 'lights']) and not any(word in user_lower for word in ['washing machine', 'washer', 'dryer', 'dishwasher']):
+                            logger.info(f"⚡ INSTANT APPLIANCE DETECTION: {user_input}")
+                        elif any(word in user_lower for word in ['power', 'electrical', 'electricity', 'lights', 'outlet', 'breaker']) and not any(word in user_lower for word in ['washing machine', 'washer', 'dryer', 'dishwasher']):
                             response_text = "Electrical issue! What's your address?"
-                            logger.info(f"🚨 COMPLAINT DETECTED: Power issue in narrative")
-                        elif any(word in user_lower for word in ['heat', 'heating', 'no heat', 'cold']):
+                            logger.info(f"⚡ INSTANT ELECTRICAL DETECTION: {user_input}")
+                        elif any(word in user_lower for word in ['heat', 'heating', 'no heat', 'cold', 'thermostat', 'furnace']):
                             response_text = "Heating issue! What's your address?"
-                            logger.info(f"🚨 COMPLAINT DETECTED: Heating issue in narrative")
+                            logger.info(f"⚡ INSTANT HEATING DETECTION: {user_input}")
+                        elif any(word in user_lower for word in ['toilet', 'bathroom', 'plumbing', 'water', 'leak', 'drain', 'sink', 'faucet', 'pipe']):
+                            response_text = "Plumbing issue! What's your address?"
+                            logger.info(f"⚡ INSTANT PLUMBING DETECTION: {user_input}")
+                        elif any(word in user_lower for word in ['door', 'lock', 'key', 'stuck', 'jammed']):
+                            response_text = "Door issue! What's your address?"
+                            logger.info(f"⚡ INSTANT DOOR DETECTION: {user_input}")
+                        elif any(word in user_lower for word in ['noise', 'loud', 'neighbors', 'music', 'party']):
+                            response_text = "Noise complaint! What's your address?"
+                            logger.info(f"⚡ INSTANT NOISE DETECTION: {user_input}")
+                        elif any(word in user_lower for word in ['broken', 'not working', "doesn't work", "won't work"]):
+                            response_text = "What's broken? I can help create a service ticket."
+                            logger.info(f"⚡ INSTANT BROKEN DETECTION: {user_input}")
                         elif any(word in user_lower for word in ['toilet', 'bathroom', 'plumbing', 'water', 'leak', 'drain', 'sink', 'faucet']):
                             response_text = "That sounds like a plumbing issue. Let me help you get this resolved right away. What's your property address?"
                             logger.info(f"🚨 COMPLAINT DETECTED: Plumbing issue in narrative")
