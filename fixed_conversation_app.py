@@ -442,7 +442,10 @@ def create_app():
         
         for entry in recent_messages:
             content = entry.get('content', '').lower()
-            if any(word in content for word in ['power', 'electrical', 'electricity', 'lights']):
+            if any(word in content for word in ['washing machine', 'washer', 'dryer', 'dishwasher', 'appliance']):
+                detected_issue = "appliance"
+                break
+            elif any(word in content for word in ['power', 'electrical', 'electricity', 'lights']) and not any(word in content for word in ['washing machine', 'washer', 'dryer', 'dishwasher']):
                 detected_issue = "electrical"
                 break
             elif any(word in content for word in ['toilet', 'flush', 'plumbing', 'water', 'leak', 'bathroom']):
@@ -868,7 +871,10 @@ Remember: You have persistent memory across calls and can make actual modificati
                     
                     if is_complaint:
                         # Look for issue keywords in the complaint
-                        if any(word in user_lower for word in ['power', 'electrical', 'electricity', 'lights']):
+                        if any(word in user_lower for word in ['washing machine', 'washer', 'dryer', 'dishwasher', 'appliance']):
+                            response_text = "I understand you're having an appliance issue. Let me help you get this resolved. What's your property address?"
+                            logger.info(f"🚨 COMPLAINT DETECTED: Appliance issue in narrative")
+                        elif any(word in user_lower for word in ['power', 'electrical', 'electricity', 'lights']) and not any(word in user_lower for word in ['washing machine', 'washer', 'dryer', 'dishwasher']):
                             response_text = "Oh no, that sounds like an electrical issue. Let me get this reported immediately. What's your property address?"
                             logger.info(f"🚨 COMPLAINT DETECTED: Power issue in narrative")
                         elif any(word in user_lower for word in ['heat', 'heating', 'no heat', 'cold']):
@@ -1029,7 +1035,7 @@ Remember: You have persistent memory across calls and can make actual modificati
                                     
                                     # Create ticket immediately after address verification
                                     result = create_service_ticket(detected_issue_type, verified_property)
-                                    response_text = result if result else f"Perfect! I've created a {detected_issue_type} service ticket for {verified_property}. Dimitry will contact you within 2-4 hours."
+                                    response_text = result if result else f"Perfect! I've created a {detected_issue_type} service ticket for {verified_property}."
                                     logger.info(f"🎫 SINGLE FAMILY TICKET CREATED: {detected_issue_type} at {verified_property}")
                             else:
                                 response_text = f"I couldn't find '{potential_address}' in our property system. We manage 29 Port Richmond Avenue, 31 Port Richmond Avenue, and 122 Targee Street. Could you say your correct address again?"
@@ -1061,7 +1067,7 @@ Remember: You have persistent memory across calls and can make actual modificati
                         
                         # Now create the service ticket with complete address
                         result = create_service_ticket(verified_address_info['issue_type'], full_address)
-                        response_text = result if result else f"Perfect! I've created a {verified_address_info['issue_type']} service ticket for {full_address}. Dimitry will contact you within 2-4 hours."
+                        response_text = result if result else f"Perfect! I've created a {verified_address_info['issue_type']} service ticket for {full_address}."
                         logger.info(f"🎫 APARTMENT VERIFIED TICKET CREATED: {verified_address_info['issue_type']} at {full_address}")
                         
                         # Clear verification info
