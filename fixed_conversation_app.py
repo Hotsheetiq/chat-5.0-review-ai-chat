@@ -643,9 +643,9 @@ Remember: You have persistent memory across calls and can make actual modificati
                 })
             
             
-            # Add RECENT conversation history only (last 4 messages) for speed
+            # Add MINIMAL conversation history only (last 2 messages) for maximum speed
             if call_sid in conversation_history:
-                recent_entries = conversation_history[call_sid][-4:]  # Only last 4 messages for speed
+                recent_entries = conversation_history[call_sid][-2:]  # Only last 2 messages for speed
                 for entry in recent_entries:
                     messages.append({
                         "role": entry.get('role', 'user'),
@@ -672,9 +672,9 @@ Remember: You have persistent memory across calls and can make actual modificati
                 response = openai_client.chat.completions.create(
                     model="gpt-4o-mini",  # FASTER model with lower latency
                     messages=messages,
-                    max_tokens=200,  # Restored for natural conversation
-                    temperature=0.7,  # Natural conversation temperature
-                    timeout=2.5,  # Reasonable timeout for quality
+                    max_tokens=150,  # Shorter for speed but still natural
+                    temperature=0.5,  # Lower temperature for faster processing
+                    timeout=1.5,  # Aggressive timeout for speed
                     stream=False  # Non-streaming for simplicity
                 )
                 
@@ -949,7 +949,17 @@ Remember: You have persistent memory across calls and can make actual modificati
                             # INSTANT FAKE ADDRESS REJECTION
                             valid_numbers = ['29', '31', '122', '2940', '3140']
                             if number not in valid_numbers:
-                                response_text = f"I couldn't find '{number} Port Richmond Avenue' in our property system. We manage 29 Port Richmond Avenue, 31 Port Richmond Avenue, and 122 Targee Street. Could you say your correct address again?"
+                                # Suggest closest match instead of listing all addresses
+                                if number.startswith('2'):
+                                    suggested_address = "29 Port Richmond Avenue"
+                                elif number.startswith('3'):
+                                    suggested_address = "31 Port Richmond Avenue" 
+                                elif number.startswith('1'):
+                                    suggested_address = "122 Targee Street"
+                                else:
+                                    suggested_address = "29 Port Richmond Avenue"
+                                
+                                response_text = f"I couldn't find that address in our system. Did you mean {suggested_address}?"
                                 logger.error(f"❌ INSTANT FAKE ADDRESS BLOCKED: '{user_input}' - number {number} not valid")
                             else:
                                 # Valid address - check conversation for issue type
