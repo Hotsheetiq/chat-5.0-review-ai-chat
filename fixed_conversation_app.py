@@ -1167,11 +1167,15 @@ PERSONALITY: Warm, empathetic, and intelligent. Show you're genuinely listening 
             recent_service_issue = None
             if call_sid in current_service_issue:
                 recent_service_issue = current_service_issue[call_sid]
+                logger.info(f"📱 FOUND SERVICE ISSUE IN current_service_issue: {recent_service_issue}")
             elif call_sid in conversation_history:
                 for entry in reversed(conversation_history[call_sid]):
                     if 'service_issue' in entry:
                         recent_service_issue = entry['service_issue']
+                        logger.info(f"📱 FOUND SERVICE ISSUE IN conversation_history: {recent_service_issue}")
                         break
+
+            logger.info(f"📱 SMS WORKFLOW CHECK: recent_service_issue = {recent_service_issue}")
 
             # Enhanced SMS trigger detection - SEPARATE WORKFLOW STEPS
             if recent_service_issue:
@@ -1473,22 +1477,26 @@ PERSONALITY: Warm, empathetic, and intelligent. Show you're genuinely listening 
                                     
                                     if all_issues:
                                         issue_type = all_issues[0]  # Use first detected issue
-                                        current_service_issue = {
+                                        service_issue_data = {
                                             'issue_type': issue_type,
                                             'address': verified_address,
                                             'issue_number': f"SV-{random.randint(10000, 99999)}"
                                         }
                                         
-                                        # Store for SMS follow-up
+                                        # CRITICAL FIX: Store in global dictionary for SMS workflow
+                                        current_service_issue[call_sid] = service_issue_data
+                                        logger.info(f"📱 STORED SERVICE ISSUE FOR SMS: {service_issue_data}")
+                                        
+                                        # Store for SMS follow-up in conversation history too
                                         conversation_history.setdefault(call_sid, []).append({
                                             'role': 'system',
-                                            'content': f'service_issue_created_{current_service_issue["issue_number"]}',
-                                            'service_issue': current_service_issue,
+                                            'content': f'service_issue_created_{service_issue_data["issue_number"]}',
+                                            'service_issue': service_issue_data,
                                             'timestamp': datetime.now()
                                         })
                                         
-                                        response_text = f"Perfect! I've created service ticket #{current_service_issue['issue_number']} for your {issue_type} issue at {verified_address}. Someone from our maintenance team will contact you soon. Would you like me to text you the issue number? What's the best phone number to reach you?"
-                                        logger.info(f"✅ MEMORY-BASED TICKET CREATED: #{current_service_issue['issue_number']} for {issue_type} at {verified_address}")
+                                        response_text = f"Perfect! I've created service ticket #{service_issue_data['issue_number']} for your {issue_type} issue at {verified_address}. Someone from our maintenance team will contact you soon. Would you like me to text you the issue number?"
+                                        logger.info(f"✅ MEMORY-BASED TICKET CREATED: #{service_issue_data['issue_number']} for {issue_type} at {verified_address}")
                                         return response_text  # CRITICAL: Return immediately to prevent repetitive questions
                                     else:
                                         response_text = f"Got it, {verified_address}. What's the issue there?"
