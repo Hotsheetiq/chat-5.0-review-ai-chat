@@ -85,6 +85,11 @@ try:
     else:
         logger.warning("⚠️ AI Speech Intelligence initialization failed")
         
+    # Initialize Service Warm-up System
+    from service_warmup import initialize_warmup_system
+    initialize_warmup_system()
+    logger.info("🔥 Service warm-up system started - all services will stay active")
+        
     # Create hold audio if it doesn't exist
     if not os.path.exists("static/please_hold.mp3"):
         from create_hold_audio import create_hold_message
@@ -2724,6 +2729,7 @@ PERSONALITY: Warm, empathetic, and intelligent. Show you're genuinely listening 
                                 <p>Active calls: {{ call_count }}</p>
                                 <p>Total conversations: {{ total_conversations }}</p>
                                 <a href="/admin-training" class="btn btn-primary">🧠 Train Chris</a>
+                                <a href="/warmup-status" class="btn btn-secondary ms-2">🔥 Warm-up Status</a>
                             </div>
                         </div>
                     </div>
