@@ -1133,9 +1133,28 @@ PERSONALITY: Warm, empathetic, and intelligent. Show you're genuinely listening 
                     elif any(word in content for word in ['washing machine', 'dishwasher', 'appliance']):
                         detected_issue_from_memory = "appliance"
                 
-                # Check for addresses in conversation memory using AI understanding
-                if ai_address_understanding and ai_address_understanding.get('confidence', 0) > 0.7:
-                    detected_address_from_memory = ai_address_understanding.get('understood_address')
+                # Check for addresses in conversation memory
+                for msg in conversation_messages:
+                    content = msg.get('content', '').lower()
+                    if any(addr_keyword in content for addr_keyword in ['port richmond', 'targee', 'richmond avenue']):
+                        import re
+                        # Extract address patterns from conversation
+                        addr_patterns = [
+                            r'(\d+)\s*port\s*richmond',
+                            r'(\d+)\s*targee',
+                            r'(\d+)\s*richmond'
+                        ]
+                        for pattern in addr_patterns:
+                            match = re.search(pattern, content)
+                            if match:
+                                number = match.group(1)
+                                if 'port richmond' in content or 'richmond avenue' in content:
+                                    if number in ['25', '29', '31']:
+                                        detected_address_from_memory = f"{number} Port Richmond Avenue"
+                                elif 'targee' in content:
+                                    if number == '122':
+                                        detected_address_from_memory = "122 Targee Street"
+                                break
             
             # If we have both issue and address from memory, create service ticket
             if detected_issue_from_memory and detected_address_from_memory:
@@ -2034,6 +2053,33 @@ PERSONALITY: Warm, empathetic, and intelligent. Show you're genuinely listening 
                             except Exception as e:
                                 logger.error(f"Rent Manager API verification error: {e}")
                             
+                            if not api_verified_address:
+                                # SIMPLE FALLBACK: Ask user to double-check address when verification fails
+                                response_text = f"I couldn't find '{user_input}' in our property system. Could you please double-check and provide the correct address? We manage properties at 25 Port Richmond Avenue, 29 Port Richmond Avenue, 31 Port Richmond Avenue, and 122 Targee Street."
+                                logger.info(f"🤔 ADDRESS NOT FOUND: '{user_input}' → asking for correct address")
+                                
+                                conversation_history[call_sid].append({
+                                    'role': 'user',
+                                    'content': user_input,
+                                    'timestamp': datetime.now()
+                                })
+                                
+                                conversation_history[call_sid].append({
+                                    'role': 'assistant',
+                                    'content': response_text,
+                                    'timestamp': datetime.now()
+                                })
+                                
+                                main_voice = create_voice_response(response_text)
+                                return f"""<?xml version="1.0" encoding="UTF-8"?>
+                                <Response>
+                                    {main_voice}
+                                    <Gather input="speech dtmf" timeout="8" speechTimeout="4" dtmfTimeout="2" language="en-US" action="/handle-input/{call_sid}" method="POST">
+                                    </Gather>
+                                    <Redirect>/handle-speech/{call_sid}</Redirect>
+                                </Response>"""
+                            
+                            # If we reach here, continue with complex address verification logic
                             if not api_verified_address:
                                 # MULTI-UNIT BUILDING CLARIFICATION - Check if user gave base address for multi-unit property
                                 potential_multi_unit_matches = []
