@@ -1991,14 +1991,13 @@ PERSONALITY: Warm, empathetic, and intelligent. Show you're genuinely listening 
                                             address_match = True
                                             logger.info(f"🎯 EXACT UNIT MATCH: '{user_input}' → '{prop_address}'")
                                         
-                                        # Check for base address match (for single-unit properties)
-                                        elif (number in prop_lower and 
-                                            (('richmond' in user_lower_input and 'richmond' in prop_lower) or
-                                             ('targee' in user_lower_input and 'targee' in prop_lower) or
-                                             ('port' in user_lower_input and 'port' in prop_lower) or
-                                             ('maple' in user_lower_input and 'maple' in prop_lower))):
+                                        # STRICT MATCHING: Only match exact valid addresses to prevent false matches
+                                        elif (number in ['25', '29', '31'] and 'port richmond' in user_lower_input and 'port richmond' in prop_lower and number in prop_lower):
                                             address_match = True
-                                            logger.info(f"🏠 BASE ADDRESS MATCH: '{user_input}' → '{prop_address}'")
+                                            logger.info(f"🏠 VALID PORT RICHMOND MATCH: '{user_input}' → '{prop_address}'")
+                                        elif (number in ['122'] and 'targee' in user_lower_input and 'targee' in prop_lower and number in prop_lower):
+                                            address_match = True
+                                            logger.info(f"🏠 VALID TARGEE MATCH: '{user_input}' → '{prop_address}'")
                                         
                                         if address_match:
                                             api_verified_address = prop_address
