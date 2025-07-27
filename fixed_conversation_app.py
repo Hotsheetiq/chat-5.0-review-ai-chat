@@ -1699,11 +1699,25 @@ PERSONALITY: Warm, empathetic, and intelligent. Show you're genuinely listening 
                                         prop_lower = prop_address.lower()
                                         user_lower_input = user_input.lower()
                                         
-                                        # Enhanced address matching logic
-                                        if (number in prop_lower and 
+                                        # ENHANCED UNIT-SPECIFIC ADDRESS MATCHING
+                                        # Handle both single properties (29 Port Richmond) and multi-unit buildings (158-A Port Richmond)
+                                        address_match = False
+                                        
+                                        # Check for exact match including unit letters (158-A, 95-B, etc.)
+                                        if user_lower_input.replace(' ', '').replace('-', '') in prop_lower.replace(' ', '').replace('-', ''):
+                                            address_match = True
+                                            logger.info(f"🎯 EXACT UNIT MATCH: '{user_input}' → '{prop_address}'")
+                                        
+                                        # Check for base address match (for single-unit properties)
+                                        elif (number in prop_lower and 
                                             (('richmond' in user_lower_input and 'richmond' in prop_lower) or
                                              ('targee' in user_lower_input and 'targee' in prop_lower) or
-                                             ('port' in user_lower_input and 'port' in prop_lower))):
+                                             ('port' in user_lower_input and 'port' in prop_lower) or
+                                             ('maple' in user_lower_input and 'maple' in prop_lower))):
+                                            address_match = True
+                                            logger.info(f"🏠 BASE ADDRESS MATCH: '{user_input}' → '{prop_address}'")
+                                        
+                                        if address_match:
                                             api_verified_address = prop_address
                                             logger.info(f"✅ API VERIFIED ADDRESS MATCH: {api_verified_address} (matched with '{user_input}')")
                                             break
@@ -1729,6 +1743,55 @@ PERSONALITY: Warm, empathetic, and intelligent. Show you're genuinely listening 
                                 logger.error(f"Rent Manager API verification error: {e}")
                             
                             if not api_verified_address:
+                                # MULTI-UNIT BUILDING CLARIFICATION - Check if user gave base address for multi-unit property
+                                potential_multi_unit_matches = []
+                                
+                                try:
+                                    if rent_manager:
+                                        for prop in properties:
+                                            prop_address = str(prop.get('Name', '')).strip()
+                                            prop_lower = prop_address.lower()
+                                            
+                                            # Check if this could be a multi-unit building match
+                                            if (number in prop_lower and 
+                                                (('richmond' in user_input.lower() and 'richmond' in prop_lower) or
+                                                 ('targee' in user_input.lower() and 'targee' in prop_lower) or
+                                                 ('maple' in user_input.lower() and 'maple' in prop_lower)) and
+                                                ('-' in prop_address or 'apt' in prop_lower or 'unit' in prop_lower)):
+                                                potential_multi_unit_matches.append(prop_address)
+                                
+                                    # If we found multiple units for the same base address, ask for clarification
+                                    if potential_multi_unit_matches:
+                                        units_list = ', '.join(sorted(potential_multi_unit_matches))
+                                        response_text = f"I found multiple units at that address: {units_list}. Could you please specify which unit you're calling about?"
+                                        logger.info(f"🏢 MULTI-UNIT CLARIFICATION: '{user_input}' → found units: {units_list}")
+                                        
+                                        conversation_history[call_sid].append({
+                                            'role': 'user',
+                                            'content': user_input,
+                                            'timestamp': datetime.now(),
+                                            'awaiting_unit_clarification': True,
+                                            'potential_units': potential_multi_unit_matches
+                                        })
+                                        
+                                        conversation_history[call_sid].append({
+                                            'role': 'assistant',
+                                            'content': response_text,
+                                            'timestamp': datetime.now()
+                                        })
+                                        
+                                        main_voice = create_voice_response(response_text)
+                                        return f"""<?xml version="1.0" encoding="UTF-8"?>
+                                        <Response>
+                                            {main_voice}
+                                            <Gather input="speech dtmf" timeout="8" speechTimeout="4" dtmfTimeout="2" language="en-US" action="/handle-input/{call_sid}" method="POST">
+                                            </Gather>
+                                            <Redirect>/handle-speech/{call_sid}</Redirect>
+                                        </Response>"""
+                                
+                                except Exception as e:
+                                    logger.error(f"Multi-unit checking error: {e}")
+                                
                                 # INTELLIGENT ADDRESS MATCHING - prioritize street name similarity
                                 user_clean_address = user_clean.lower()
                                 
