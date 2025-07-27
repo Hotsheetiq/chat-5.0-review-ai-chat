@@ -710,10 +710,22 @@ Questions? Call (718) 414-6984"""
                             # If verification fails, block the address for security
                             return f"I'm sorry, but I couldn't verify '{potential_address}' in our property system. Could you please provide the correct address?"
         
-        # If we have both issue and verified address, create ticket immediately
+        # If we have both issue and verified address, start caller info collection
         if detected_issue and detected_address:
-            logger.info(f"🎫 AUTO-CREATING TICKET: {detected_issue} at {detected_address}")
-            return create_service_ticket(detected_issue, detected_address)
+            logger.info(f"🎫 STARTING CALLER INFO COLLECTION: {detected_issue} at {detected_address}")
+            
+            # Store pending ticket data for caller info collection
+            conversation_history.setdefault(call_sid, []).append({
+                'role': 'system',
+                'content': 'waiting_for_caller_name',
+                'pending_ticket': {
+                    'issue_type': detected_issue,
+                    'address': detected_address
+                },
+                'timestamp': datetime.now()
+            })
+            
+            return f"I've got your {detected_issue} issue at {detected_address}. To complete the service ticket, can you tell me your name please?"
         
         # ENHANCED MEMORY CHECK - look for BOTH issues and addresses in conversation history
         if call_sid in conversation_history:
@@ -749,24 +761,58 @@ Questions? Call (718) 414-6984"""
                         history_addresses.append(address)
                         break
             
-            # CRITICAL FIX: If we have BOTH issue and address from history, create ticket immediately
+            # CRITICAL FIX: If we have BOTH issue and address from history, start caller info collection
             if history_issues and history_addresses:
                 issue_type = history_issues[-1]  # Use most recent issue
                 address = history_addresses[-1]  # Use most recent address
-                logger.info(f"🧠 COMPLETE MEMORY MATCH: Creating ticket for {issue_type} at {address} (both from history)")
-                return create_service_ticket(issue_type, address)
+                logger.info(f"🧠 COMPLETE MEMORY MATCH: Starting caller info collection for {issue_type} at {address}")
+                
+                # Store pending ticket data for caller info collection
+                conversation_history.setdefault(call_sid, []).append({
+                    'role': 'system',
+                    'content': 'waiting_for_caller_name',
+                    'pending_ticket': {
+                        'issue_type': issue_type,
+                        'address': address
+                    },
+                    'timestamp': datetime.now()
+                })
+                
+                return f"I've got your {issue_type} issue at {address}. To complete the service ticket, can you tell me your name please?"
             
-            # If we found a previous issue and current message has an address, create ticket
+            # If we found a previous issue and current message has an address, start caller info collection
             if history_issues and detected_address:
                 issue_type = history_issues[-1]  # Use most recent issue
-                logger.info(f"🧠 ISSUE FROM HISTORY + NEW ADDRESS: Creating ticket for {issue_type} at {detected_address}")
-                return create_service_ticket(issue_type, detected_address)
+                logger.info(f"🧠 ISSUE FROM HISTORY + NEW ADDRESS: Starting caller info collection for {issue_type} at {detected_address}")
+                
+                conversation_history.setdefault(call_sid, []).append({
+                    'role': 'system',
+                    'content': 'waiting_for_caller_name',
+                    'pending_ticket': {
+                        'issue_type': issue_type,
+                        'address': detected_address
+                    },
+                    'timestamp': datetime.now()
+                })
+                
+                return f"I've got your {issue_type} issue at {detected_address}. To complete the service ticket, can you tell me your name please?"
             
-            # If we found a previous address and current message has an issue, create ticket
+            # If we found a previous address and current message has an issue, start caller info collection
             if history_addresses and detected_issue:
                 address = history_addresses[-1]  # Use most recent address
-                logger.info(f"🧠 ADDRESS FROM HISTORY + NEW ISSUE: Creating ticket for {detected_issue} at {address}")
-                return create_service_ticket(detected_issue, address)
+                logger.info(f"🧠 ADDRESS FROM HISTORY + NEW ISSUE: Starting caller info collection for {detected_issue} at {address}")
+                
+                conversation_history.setdefault(call_sid, []).append({
+                    'role': 'system',
+                    'content': 'waiting_for_caller_name',
+                    'pending_ticket': {
+                        'issue_type': detected_issue,
+                        'address': address
+                    },
+                    'timestamp': datetime.now()
+                })
+                
+                return f"I've got your {detected_issue} issue at {address}. To complete the service ticket, can you tell me your name please?"
         
         # If we have issue but no address, ask for address with context
         if detected_issue and not detected_address:
@@ -1162,23 +1208,87 @@ PERSONALITY: Warm, empathetic, and intelligent. Show you're genuinely listening 
                 'detected_issues': detected_issues  # Track issues for better memory
             })
             
-            # PRIORITY 1: Check for SMS workflow FIRST - before creating new tickets
-            # Get the most recent service issue for SMS handling
-            recent_service_issue = None
-            if call_sid in current_service_issue:
-                recent_service_issue = current_service_issue[call_sid]
-                logger.info(f"📱 FOUND SERVICE ISSUE IN current_service_issue: {recent_service_issue}")
-            elif call_sid in conversation_history:
-                for entry in reversed(conversation_history[call_sid]):
-                    if 'service_issue' in entry:
-                        recent_service_issue = entry['service_issue']
-                        logger.info(f"📱 FOUND SERVICE ISSUE IN conversation_history: {recent_service_issue}")
-                        break
+            # PRIORITY 1: Check for caller information collection workflow
+            # Check if we're collecting caller name or phone number
+            waiting_for_name = False
+            waiting_for_phone_collection = False
+            pending_ticket_data = None
+            
+            for entry in reversed(conversation_history.get(call_sid, [])):
+                if entry.get('content') == 'waiting_for_caller_name':
+                    waiting_for_name = True
+                    pending_ticket_data = entry.get('pending_ticket')
+                    logger.info(f"👤 FOUND WAITING_FOR_NAME STATE: {pending_ticket_data}")
+                    break
+                elif entry.get('content') == 'waiting_for_phone_collection':
+                    waiting_for_phone_collection = True
+                    pending_ticket_data = entry.get('pending_ticket')
+                    logger.info(f"📞 FOUND WAITING_FOR_PHONE STATE: {pending_ticket_data}")
+                    break
+            
+            logger.info(f"🔍 CALLER INFO STATE CHECK: waiting_for_name={waiting_for_name}, waiting_for_phone={waiting_for_phone_collection}, pending_data={pending_ticket_data}")
+            
+            # Handle caller name collection
+            if waiting_for_name and pending_ticket_data:
+                caller_name = user_input.strip()
+                logger.info(f"👤 CALLER NAME RECEIVED: {caller_name}")
+                
+                # Update pending ticket with caller name
+                pending_ticket_data['caller_name'] = caller_name
+                
+                # Ask for phone number
+                response_text = f"Thank you, {caller_name}. What's the best phone number to reach you at?"
+                
+                conversation_history[call_sid].append({
+                    'role': 'system',
+                    'content': 'waiting_for_phone_collection',
+                    'pending_ticket': pending_ticket_data,
+                    'timestamp': datetime.now()
+                })
+                
+            # Handle phone number collection  
+            elif waiting_for_phone_collection and pending_ticket_data:
+                # Extract phone number
+                phone_match = re.search(r'(\d{3}[-.]?\d{3}[-.]?\d{4})', user_input)
+                if phone_match:
+                    caller_phone = phone_match.group(1)
+                    logger.info(f"📞 CALLER PHONE RECEIVED: {caller_phone}")
+                    
+                    # Now create the complete service ticket
+                    ticket_number = f"SV-{random.randint(10000, 99999)}"
+                    service_issue_data = {
+                        'issue_type': pending_ticket_data['issue_type'],
+                        'address': pending_ticket_data['address'],
+                        'issue_number': ticket_number,
+                        'caller_name': pending_ticket_data['caller_name'],
+                        'caller_phone': caller_phone
+                    }
+                    
+                    # Store completed ticket
+                    current_service_issue[call_sid] = service_issue_data
+                    logger.info(f"✅ COMPLETE TICKET CREATED: {service_issue_data}")
+                    
+                    response_text = f"Perfect! I've created service ticket #{ticket_number} for your {pending_ticket_data['issue_type']} issue at {pending_ticket_data['address']}. Someone from our maintenance team will contact you soon. Would you like me to text you the ticket details?"
+                else:
+                    response_text = "I didn't catch that phone number clearly. Could you repeat it please?"
 
-            logger.info(f"📱 SMS WORKFLOW CHECK: recent_service_issue = {recent_service_issue}")
+            # PRIORITY 2: Check for SMS workflow - only after ticket is complete
+            recent_service_issue = None
+            if not response_text:
+                if call_sid in current_service_issue:
+                    recent_service_issue = current_service_issue[call_sid]
+                    logger.info(f"📱 FOUND SERVICE ISSUE IN current_service_issue: {recent_service_issue}")
+                elif call_sid in conversation_history:
+                    for entry in reversed(conversation_history[call_sid]):
+                        if 'service_issue' in entry:
+                            recent_service_issue = entry['service_issue']
+                            logger.info(f"📱 FOUND SERVICE ISSUE IN conversation_history: {recent_service_issue}")
+                            break
+
+                logger.info(f"📱 SMS WORKFLOW CHECK: recent_service_issue = {recent_service_issue}")
 
             # Enhanced SMS trigger detection - SEPARATE WORKFLOW STEPS
-            if recent_service_issue:
+            if recent_service_issue and not response_text:
                 sms_yes_phrases = [
                     'yes text', 'yes please text', 'yes send', 'yes please', 'yes',
                     'text me', 'text please', 'send me text', 'text it', 'send sms',
@@ -1224,8 +1334,8 @@ PERSONALITY: Warm, empathetic, and intelligent. Show you're genuinely listening 
                                 response_text = f"I had trouble sending the text to {phone_number}, but your service issue #{recent_service_issue['issue_number']} is created and someone from our maintenance team will contact you soon."
                                 logger.warning(f"📱 SMS FAILED to {phone_number}: Fallback message provided")
 
-            # PRIORITY 2: Check conversation memory for auto-ticket creation (ONLY if no SMS workflow active)
-            if not response_text:
+            # PRIORITY 3: Check conversation memory for auto-ticket creation (ONLY if no caller info or SMS workflow active)
+            if not response_text and not waiting_for_name and not waiting_for_phone_collection:
                 auto_ticket_response = check_conversation_memory(call_sid, user_input)
                 if auto_ticket_response:
                     logger.info(f"🎫 AUTO-TICKET or MEMORY RESPONSE: {auto_ticket_response}")
@@ -1483,19 +1593,21 @@ PERSONALITY: Warm, empathetic, and intelligent. Show you're genuinely listening 
                                             'issue_number': f"SV-{random.randint(10000, 99999)}"
                                         }
                                         
-                                        # CRITICAL FIX: Store in global dictionary for SMS workflow
-                                        current_service_issue[call_sid] = service_issue_data
-                                        logger.info(f"📱 STORED SERVICE ISSUE FOR SMS: {service_issue_data}")
+                                        # ENHANCED: Store pending ticket data for caller info collection
+                                        pending_ticket = {
+                                            'issue_type': issue_type,
+                                            'address': verified_address
+                                        }
                                         
-                                        # Store for SMS follow-up in conversation history too
+                                        # Start caller information collection process
                                         conversation_history.setdefault(call_sid, []).append({
                                             'role': 'system',
-                                            'content': f'service_issue_created_{service_issue_data["issue_number"]}',
-                                            'service_issue': service_issue_data,
+                                            'content': 'waiting_for_caller_name',
+                                            'pending_ticket': pending_ticket,
                                             'timestamp': datetime.now()
                                         })
                                         
-                                        response_text = f"Perfect! I've created service ticket #{service_issue_data['issue_number']} for your {issue_type} issue at {verified_address}. Someone from our maintenance team will contact you soon. Would you like me to text you the issue number?"
+                                        response_text = f"I've got your {issue_type} issue at {verified_address}. To complete the service ticket, can you tell me your name please?"
                                         logger.info(f"✅ MEMORY-BASED TICKET CREATED: #{service_issue_data['issue_number']} for {issue_type} at {verified_address}")
                                         return response_text  # CRITICAL: Return immediately to prevent repetitive questions
                                     else:
