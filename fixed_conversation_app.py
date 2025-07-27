@@ -1405,18 +1405,29 @@ PERSONALITY: Warm, empathetic, and intelligent. Show you're genuinely listening 
                             <Redirect>/handle-speech/{call_sid}</Redirect>
                         </Response>"""
             
-            # Common speech recognition corrections for addresses - AFTER confirmation check
-            # CRITICAL FIX: More precise speech corrections to avoid double-corrections
+            # SPEECH RECOGNITION FIXES: Handle common Twilio speech errors
+            # CRITICAL FIX: Address number mishearing patterns
             speech_fixes = [
+                # Fix "25" → "2540" pattern for Port Richmond
+                ("2540 port richmond", "25 port richmond"),
+                ("2540 richmond", "25 richmond"),  
+                ("254 port richmond", "25 port richmond"),
+                ("250 port richmond", "25 port richmond"),
+                # Fix other common number additions
+                ("290 port richmond", "29 port richmond"),
+                ("310 port richmond", "31 port richmond"),
+                ("1220 targee", "122 targee"),
+                ("1225 targee", "122 targee"),
+                # Fix "164" patterns for 2940
                 ("164 richmond", "2940 richmond"),
                 ("4640 richmond", "2940 richmond"), 
                 ("46 richmond", "2940 richmond"),
                 ("640 richmond", "2940 richmond"),
-                ("19640 richmond", "2940 richmond"),  # New pattern from logs
-                ("192940 richmond", "2940 richmond"), # Another new pattern
-                # Fixed port richmond corrections - only match "port rich" not "port richmond"
-                ("port rich ", "port richmond "),  # Only match when followed by space
-                ("port rich.", "port richmond."),  # Or followed by period
+                ("19640 richmond", "2940 richmond"),
+                ("192940 richmond", "2940 richmond"),
+                # Fixed port richmond corrections - only match incomplete phrases
+                ("port rich ", "port richmond "),
+                ("port rich.", "port richmond."),
                 ("poor richmond", "port richmond"),
                 ("target", "targee"),
                 ("targe", "targee"),
