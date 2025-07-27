@@ -75,6 +75,7 @@ grok_ai = None
 try:
     from grok_integration import GrokAI
     from ai_speech_intelligence import initialize_ai_speech_intelligence, ai_speech_intelligence
+    from simple_background_processing import wrap_with_hold_processing, add_hold_processing_route
     grok_ai = GrokAI()
     logger.info("✅ Grok AI initialized successfully")
     
@@ -83,6 +84,13 @@ try:
         logger.info("✅ AI Speech Intelligence initialized successfully")
     else:
         logger.warning("⚠️ AI Speech Intelligence initialization failed")
+        
+    # Create hold audio if it doesn't exist
+    if not os.path.exists("static/please_hold.mp3"):
+        from create_hold_audio import create_hold_message
+        create_hold_message()
+        logger.info("✅ Hold message audio created")
+        
 except Exception as e:
     logger.warning(f"Grok AI initialization failed: {e}")
     grok_ai = None
@@ -2931,7 +2939,49 @@ Respond thoughtfully, showing your reasoning if this is a test scenario, or ackn
         <Response>
             <Say>{message}</Say>
         </Response>"""
+    
+    # Background processing result route
+    @app.route('/get-result/<call_sid>', methods=['GET', 'POST'])
+    def get_background_result(call_sid):
+        """Get result from background AI processing"""
+        try:
+            # Wait for background processing to complete
+            result = get_processing_result(call_sid, timeout=4.0)
+            
+            if result:
+                logger.info(f"✅ BACKGROUND PROCESSING COMPLETE: {call_sid}")
+                cleanup_processing_task(call_sid)
+                
+                # Create TwiML with the AI response
+                return create_result_twiml(result, call_sid)
+            else:
+                logger.warning(f"⏰ BACKGROUND PROCESSING TIMEOUT: {call_sid}")
+                cleanup_processing_task(call_sid)
+                
+                # Fallback response if processing takes too long
+                fallback_response = "I'm processing your request. Let me help you with that."
+                return create_result_twiml(fallback_response, call_sid)
+                
+        except Exception as e:
+            logger.error(f"❌ Background processing error: {e}")
+            cleanup_processing_task(call_sid)
+            
+            # Emergency fallback
+            return f'''<?xml version="1.0" encoding="UTF-8"?>
+            <Response>
+                <Say voice="Polly.Matthew-Neural">I'm sorry, there was a technical issue. How can I help you?</Say>
+                <Gather input="speech dtmf" timeout="8" speechTimeout="4" dtmfTimeout="2" language="en-US" action="/handle-input/{call_sid}" method="POST">
+                </Gather>
+                <Redirect>/handle-speech/{call_sid}</Redirect>
+            </Response>'''
 
+    # Wrap the handle_speech_internal function with background processing
+    global handle_speech_internal_with_hold
+    handle_speech_internal_with_hold = wrap_with_hold_processing(handle_speech_internal)
+    
+    # Add the continue processing route
+    add_hold_processing_route(app, handle_speech_internal)
+    
     return app
 
 if __name__ == "__main__":
