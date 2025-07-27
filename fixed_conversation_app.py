@@ -1684,9 +1684,52 @@ PERSONALITY: Warm, empathetic, and intelligent. Show you're genuinely listening 
                         if number_match:
                             number = number_match.group(1)
                             
-                            # ENHANCED FAKE ADDRESS REJECTION - Check against valid properties
-                            valid_numbers = ['29', '31', '122', '2940', '3140']
-                            if number not in valid_numbers:
+                            # REAL API ADDRESS VERIFICATION - Query Rent Manager database
+                            logger.info(f"🔍 QUERYING RENT MANAGER API to verify address: {user_input}")
+                            api_verified_address = None
+                            
+                            try:
+                                if rent_manager:
+                                    import asyncio
+                                    properties = asyncio.run(rent_manager.get_all_properties())
+                                    logger.info(f"📋 FOUND {len(properties)} TOTAL PROPERTIES in Rent Manager")
+                                    
+                                    # Check if exact address exists in API with improved matching
+                                    for prop in properties:
+                                        prop_address = str(prop.get('Address', '')).strip()
+                                        prop_lower = prop_address.lower()
+                                        user_lower_input = user_input.lower()
+                                        
+                                        # More flexible address matching
+                                        if (number in prop_lower and 
+                                            (('richmond' in user_lower_input and 'richmond' in prop_lower) or
+                                             ('targee' in user_lower_input and 'targee' in prop_lower) or
+                                             ('port' in user_lower_input and 'port' in prop_lower))):
+                                            api_verified_address = prop_address
+                                            logger.info(f"✅ API VERIFIED ADDRESS MATCH: {api_verified_address} (matched with '{user_input}')")
+                                            break
+                                        
+                                    # Debug: Log full property structure to understand the data format
+                                    if properties:
+                                        sample_prop = properties[0]
+                                        logger.info(f"🔍 SAMPLE PROPERTY STRUCTURE: {list(sample_prop.keys())}")
+                                        logger.info(f"🔍 SAMPLE PROPERTY DATA: {sample_prop}")
+                                        
+                                        # Check different possible address field names
+                                        address_fields = ['Address', 'PropertyAddress', 'StreetAddress', 'address', 'Address1']
+                                        found_addresses = []
+                                        for field in address_fields:
+                                            if field in sample_prop and sample_prop[field]:
+                                                found_addresses.append(f"{field}: {sample_prop[field]}")
+                                        logger.info(f"🏠 FOUND ADDRESS FIELDS: {found_addresses}")
+                                    
+                                    if not api_verified_address:
+                                        logger.warning(f"❌ API VERIFICATION FAILED: {user_input} not found in Rent Manager properties")
+                                        
+                            except Exception as e:
+                                logger.error(f"Rent Manager API verification error: {e}")
+                            
+                            if not api_verified_address:
                                 # INTELLIGENT ADDRESS MATCHING - prioritize street name similarity
                                 user_clean_address = user_clean.lower()
                                 
@@ -1724,8 +1767,8 @@ PERSONALITY: Warm, empathetic, and intelligent. Show you're genuinely listening 
                                     response_text = f"I couldn't find '{number} {user_clean_address}' in our property system. Could you please double-check and provide the correct address?"
                                     logger.info(f"🤔 INTELLIGENT CLARIFICATION: '{user_input}' → asking for correct address")
                             else:
-                                # Valid address - but don't auto-create ticket, confirm first
-                                logger.info(f"✅ VALID ADDRESS DETECTED: {user_input} → {number} (confirmed)")
+                                # API verified address - proceed with confidence
+                                logger.info(f"✅ API VERIFIED ADDRESS: {api_verified_address} (confirmed by Rent Manager API)")
                                 
                                 # Check conversation for issue type
                                 recent_messages = conversation_history.get(call_sid, [])[-5:]
