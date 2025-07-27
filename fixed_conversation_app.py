@@ -2053,10 +2053,14 @@ PERSONALITY: Warm, empathetic, and intelligent. Show you're genuinely listening 
                                 logger.error(f"Rent Manager API verification error: {e}")
                             
                             if not api_verified_address:
-                                # SIMPLE FALLBACK: Ask user to double-check address when verification fails
-                                response_text = f"I couldn't find '{user_input}' in our property system. Could you please double-check and provide the correct address? We manage properties at 25 Port Richmond Avenue, 29 Port Richmond Avenue, 31 Port Richmond Avenue, and 122 Targee Street."
+                                # CRITICAL FIX: Address not found - simple response and return immediately
+                                response_text = f"I couldn't find '{user_input}' in our property system. Could you please provide the correct address? We manage properties at 25 Port Richmond Avenue, 29 Port Richmond Avenue, 31 Port Richmond Avenue, and 122 Targee Street."
                                 logger.info(f"🤔 ADDRESS NOT FOUND: '{user_input}' → asking for correct address")
                                 
+                                # Store conversation properly
+                                if call_sid not in conversation_history:
+                                    conversation_history[call_sid] = []
+                                    
                                 conversation_history[call_sid].append({
                                     'role': 'user',
                                     'content': user_input,
@@ -2068,6 +2072,11 @@ PERSONALITY: Warm, empathetic, and intelligent. Show you're genuinely listening 
                                     'content': response_text,
                                     'timestamp': datetime.now()
                                 })
+                                
+                                # Track the response to prevent repetition
+                                if call_sid not in response_tracker:
+                                    response_tracker[call_sid] = {'used_phrases': set(), 'phrase_counts': {}}
+                                response_tracker[call_sid]['used_phrases'].add(response_text[:50])
                                 
                                 main_voice = create_voice_response(response_text)
                                 return f"""<?xml version="1.0" encoding="UTF-8"?>
