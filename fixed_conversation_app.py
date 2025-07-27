@@ -753,15 +753,18 @@ Questions? Call (718) 414-6984"""
                                         
                                         except Exception as e:
                                             logger.error(f"Rent Manager API error: {e}")
-                                            # Fallback to enhanced validation with real property suggestions
+                                            # Intelligent address clarification based on logical reasoning
                                             if '21 port richmond' in user_lower:
-                                                logger.info(f"🔄 FALLBACK: '21 Port Richmond' → suggesting '31 Port Richmond Avenue' (real property)")
-                                                return f"I heard 21 Port Richmond Avenue but couldn't find that exact address in our system. Did you mean 31 Port Richmond Avenue? Please confirm the correct address."
+                                                logger.info(f"🤔 INTELLIGENT CLARIFICATION: '21 Port Richmond' → asking for clarification between 29 and 31")
+                                                return f"I heard 21 Port Richmond Avenue, but we don't have that exact address. We have properties at 29 Port Richmond Avenue and 31 Port Richmond Avenue. Could you double-check which address you meant?"
                                             elif '26 port richmond' in user_lower or '28 port richmond' in user_lower:
-                                                logger.info(f"🔄 FALLBACK: '{potential_address}' → suggesting '29 Port Richmond Avenue' (real property)")
-                                                return f"I heard {potential_address} but couldn't find that exact address in our system. Did you mean 29 Port Richmond Avenue? Please confirm the correct address."
+                                                logger.info(f"🤔 INTELLIGENT CLARIFICATION: '{potential_address}' → asking for clarification near 29")
+                                                return f"I heard {potential_address}, but we don't have that exact address. We have a property at 29 Port Richmond Avenue. Could you double-check the address number?"
+                                            elif '32 port richmond' in user_lower or '33 port richmond' in user_lower:
+                                                logger.info(f"🤔 INTELLIGENT CLARIFICATION: '{potential_address}' → asking for clarification near 31")
+                                                return f"I heard {potential_address}, but we don't have that exact address. We have a property at 31 Port Richmond Avenue. Could you double-check the address number?"
                                             else:
-                                                return f"I'm having trouble verifying '{potential_address}'. Could you please confirm the correct address?"
+                                                return f"I couldn't find '{potential_address}' in our property system. Could you please double-check and provide the correct address?"
                                         logger.info(f"🔍 ADDRESS CONFIRMATION: {potential_address} → suggesting 29 Port Richmond Avenue")
                                         return f"I heard 26 Port Richmond Avenue but couldn't find that exact address. Did you mean 29 Port Richmond Avenue? Please confirm the correct address."
                                     elif "25 port richmond" in user_lower or "27 port richmond" in user_lower or "28 port richmond" in user_lower:
@@ -1171,9 +1174,20 @@ PERSONALITY: Warm, empathetic, and intelligent. Show you're genuinely listening 
             if match:
                 number = match.group(1)
                 if number not in ['29', '31']:  # Invalid Port Richmond numbers
-                    if number in ['26', '64', '24', '28', '6', 'funny', '16']:  # Common misheard numbers for 29
-                        response_text = f"I heard {number} Port Richmond Avenue but couldn't find that exact address in our system. Did you mean 29 Port Richmond Avenue? Please confirm the correct address."
-                        logger.info(f"🎯 ADDRESS CONFIRMATION REQUIRED: '{user_input}' → suggesting '29 Port Richmond Avenue'")
+                    if number == '21':
+                        # 21 could be either 29 or 31 - ask for clarification
+                        response_text = f"I heard 21 Port Richmond Avenue, but we don't have that exact address. We have properties at 29 Port Richmond Avenue and 31 Port Richmond Avenue. Could you double-check which address you meant?"
+                        logger.info(f"🤔 INTELLIGENT CLARIFICATION: '21 Port Richmond' → asking for clarification between 29 and 31")
+                    elif number in ['26', '64', '24', '28', '6', 'funny', '16']:  # Numbers close to 29
+                        response_text = f"I heard {number} Port Richmond Avenue, but we don't have that exact address. We have a property at 29 Port Richmond Avenue. Could you double-check the address number?"
+                        logger.info(f"🤔 INTELLIGENT CLARIFICATION: '{number} Port Richmond' → asking for clarification near 29")
+                    elif number in ['32', '33', '30']:  # Numbers close to 31
+                        response_text = f"I heard {number} Port Richmond Avenue, but we don't have that exact address. We have a property at 31 Port Richmond Avenue. Could you double-check the address number?"
+                        logger.info(f"🤔 INTELLIGENT CLARIFICATION: '{number} Port Richmond' → asking for clarification near 31")
+                    else:
+                        # Far from valid numbers - general clarification
+                        response_text = f"I heard {number} Port Richmond Avenue, but we don't have that exact address. We have properties at 29 Port Richmond Avenue and 31 Port Richmond Avenue. Could you double-check which address you meant?"
+                        logger.info(f"🤔 INTELLIGENT CLARIFICATION: '{number} Port Richmond' → asking for clarification between all options")
                         
                         # Store conversation entry with detected issues
                         detected_issues = []
@@ -1676,26 +1690,39 @@ PERSONALITY: Warm, empathetic, and intelligent. Show you're genuinely listening 
                                 # INTELLIGENT ADDRESS MATCHING - prioritize street name similarity
                                 user_clean_address = user_clean.lower()
                                 
+                                # INTELLIGENT ADDRESS CLARIFICATION - Use logical reasoning instead of assumptions
                                 if 'richmond' in user_clean_address or 'port' in user_clean_address:
-                                    # Richmond Avenue addresses - be more specific about what user said vs what we suggest
-                                    if number in ['26', '64', '24', '28']:  # Common misheard numbers for 29
-                                        suggested_address = "29 Port Richmond Avenue"
-                                    elif number.startswith('2') or int(number) < 100:
-                                        suggested_address = "29 Port Richmond Avenue"
+                                    if number == '21':
+                                        # 21 could be either 29 or 31 - ask for clarification
+                                        response_text = f"I heard 21 Port Richmond Avenue, but we don't have that exact address. We have properties at 29 Port Richmond Avenue and 31 Port Richmond Avenue. Could you double-check which address you meant?"
+                                        logger.info(f"🤔 INTELLIGENT CLARIFICATION: '21 Port Richmond' → asking for clarification between 29 and 31")
+                                    elif number in ['26', '28', '24']:
+                                        # Close to 29 - ask for confirmation
+                                        response_text = f"I heard {number} Port Richmond Avenue, but we don't have that exact address. We have a property at 29 Port Richmond Avenue. Could you double-check the address number?"
+                                        logger.info(f"🤔 INTELLIGENT CLARIFICATION: '{number} Port Richmond' → asking for clarification near 29")
+                                    elif number in ['32', '33', '30']:
+                                        # Close to 31 - ask for confirmation
+                                        response_text = f"I heard {number} Port Richmond Avenue, but we don't have that exact address. We have a property at 31 Port Richmond Avenue. Could you double-check the address number?"
+                                        logger.info(f"🤔 INTELLIGENT CLARIFICATION: '{number} Port Richmond' → asking for clarification near 31")
+                                    elif number in ['29', '31']:
+                                        # Valid addresses - proceed normally
+                                        detected_address = f"{number} Port Richmond Avenue"
+                                        logger.info(f"✅ VALID PORT RICHMOND ADDRESS: {detected_address}")
                                     else:
-                                        suggested_address = "2940 Richmond Avenue"
+                                        # Far from valid numbers - general clarification
+                                        response_text = f"I heard {number} Port Richmond Avenue, but we don't have that exact address. We have properties at 29 Port Richmond Avenue and 31 Port Richmond Avenue. Could you double-check which address you meant?"
+                                        logger.info(f"🤔 INTELLIGENT CLARIFICATION: '{number} Port Richmond' → asking for clarification between all options")
                                 elif 'targee' in user_clean_address:
-                                    suggested_address = "122 Targee Street"
-                                elif number.startswith('3'):
-                                    suggested_address = "31 Port Richmond Avenue"
-                                elif number.startswith('1'):
-                                    suggested_address = "122 Targee Street"
+                                    if number == '122':
+                                        detected_address = "122 Targee Street"
+                                        logger.info(f"✅ VALID TARGEE ADDRESS: {detected_address}")
+                                    else:
+                                        response_text = f"I heard {number} Targee Street, but we don't have that exact address. We have a property at 122 Targee Street. Could you double-check the address number?"
+                                        logger.info(f"🤔 INTELLIGENT CLARIFICATION: '{number} Targee' → asking for clarification near 122")
                                 else:
-                                    # Default to most common property
-                                    suggested_address = "29 Port Richmond Avenue"
-                                
-                                response_text = f"I heard {number} Port Richmond Avenue but couldn't find that exact address in our system. Did you mean {suggested_address}? Please let me know if that's the correct address."
-                                logger.info(f"🎯 ADDRESS CONFIRMATION REQUIRED: '{user_input}' → suggesting '{suggested_address}' for confirmation")
+                                    # Generic address clarification
+                                    response_text = f"I couldn't find '{number} {user_clean_address}' in our property system. Could you please double-check and provide the correct address?"
+                                    logger.info(f"🤔 INTELLIGENT CLARIFICATION: '{user_input}' → asking for correct address")
                             else:
                                 # Valid address - but don't auto-create ticket, confirm first
                                 logger.info(f"✅ VALID ADDRESS DETECTED: {user_input} → {number} (confirmed)")
