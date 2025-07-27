@@ -72,8 +72,15 @@ except Exception as e:
 grok_ai = None
 try:
     from grok_integration import GrokAI
+    from ai_speech_intelligence import initialize_ai_speech_intelligence, ai_speech_intelligence
     grok_ai = GrokAI()
     logger.info("✅ Grok AI initialized successfully")
+    
+    # Initialize AI Speech Intelligence
+    if initialize_ai_speech_intelligence():
+        logger.info("✅ AI Speech Intelligence initialized successfully")
+    else:
+        logger.warning("⚠️ AI Speech Intelligence initialization failed")
 except Exception as e:
     logger.warning(f"Grok AI initialization failed: {e}")
     grok_ai = None
@@ -1405,41 +1412,30 @@ PERSONALITY: Warm, empathetic, and intelligent. Show you're genuinely listening 
                             <Redirect>/handle-speech/{call_sid}</Redirect>
                         </Response>"""
             
-            # SPEECH RECOGNITION FIXES: Handle common Twilio speech errors
-            # CRITICAL FIX: Address number mishearing patterns
-            speech_fixes = [
-                # Fix "25" → "2540" pattern for Port Richmond
-                ("2540 port richmond", "25 port richmond"),
-                ("2540 richmond", "25 richmond"),  
-                ("254 port richmond", "25 port richmond"),
-                ("250 port richmond", "25 port richmond"),
-                # Fix other common number additions
-                ("290 port richmond", "29 port richmond"),
-                ("310 port richmond", "31 port richmond"),
-                ("1220 targee", "122 targee"),
-                ("1225 targee", "122 targee"),
-                # Fix "164" patterns for 2940
-                ("164 richmond", "2940 richmond"),
-                ("4640 richmond", "2940 richmond"), 
-                ("46 richmond", "2940 richmond"),
-                ("640 richmond", "2940 richmond"),
-                ("19640 richmond", "2940 richmond"),
-                ("192940 richmond", "2940 richmond"),
-                # Fixed port richmond corrections - only match incomplete phrases
-                ("port rich ", "port richmond "),
-                ("port rich.", "port richmond."),
-                ("poor richmond", "port richmond"),
-                ("target", "targee"),
-                ("targe", "targee"),
-                ("twenty nine", "29"),
-                ("one twenty two", "122")
-            ]
+            # AI-POWERED SPEECH INTELLIGENCE: Use Grok AI to understand speech recognition errors
+            ai_address_understanding = None
+            ai_issue_understanding = None
             
-            for mistake, correction in speech_fixes:
-                if mistake in user_lower:
-                    user_input = user_lower.replace(mistake, correction)
-                    logger.info(f"🔧 SPEECH CORRECTION: '{mistake}' → '{correction}'")
-                    break
+            if ai_speech_intelligence:
+                try:
+                    # Use AI to understand what address the caller actually means
+                    conversation_context = conversation_history.get(call_sid, [])
+                    ai_address_understanding = ai_speech_intelligence.understand_address_intent(
+                        user_input, conversation_context
+                    )
+                    
+                    # Use AI to understand what maintenance issue they're reporting
+                    ai_issue_understanding = ai_speech_intelligence.understand_maintenance_issue(
+                        user_input, conversation_context  
+                    )
+                    
+                    logger.info(f"🧠 AI UNDERSTOOD ADDRESS: {ai_address_understanding.get('understood_address')} (confidence: {ai_address_understanding.get('confidence')})")
+                    logger.info(f"🔧 AI UNDERSTOOD ISSUE: {ai_issue_understanding.get('issue_type')} (confidence: {ai_issue_understanding.get('confidence')})")
+                    
+                except Exception as e:
+                    logger.warning(f"AI speech intelligence failed: {e}")
+                    ai_address_understanding = None
+                    ai_issue_understanding = None
             
             logger.info(f"📞 CALL {call_sid}: '{user_input}' (confidence: {speech_confidence}) from {caller_phone}")
             if original_input != user_input:
