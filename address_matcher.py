@@ -108,3 +108,97 @@ class AddressMatcher:
         """Check if an address exists in the property database"""
         matching_prop = await self.find_matching_property(address)
         return matching_prop is not None
+
+    def _extract_street_components(self, address: str) -> Dict:
+        """Extract components from a spoken address for intelligent matching"""
+        import re
+        
+        address_lower = address.lower().strip()
+        
+        # Extract numbers
+        numbers = re.findall(r'\b\d+\b', address)
+        
+        # Extract words (excluding common filler words)
+        filler_words = {'i', 'think', 'its', 'it\'s', 'the', 'a', 'an', 'is', 'was', 'that', 'this'}
+        words = [word for word in re.findall(r'\b[a-zA-Z]+\b', address_lower) if word not in filler_words]
+        
+        # Extract street-specific words (excluding directional and type words)
+        directional_words = {'north', 'south', 'east', 'west', 'n', 's', 'e', 'w'}
+        type_words = {'street', 'avenue', 'ave', 'road', 'rd', 'lane', 'ln', 'drive', 'dr', 'blvd', 'boulevard'}
+        street_words = [word for word in words if word not in directional_words and word not in type_words]
+        
+        return {
+            'numbers': numbers,
+            'words': words,
+            'street_words': street_words,
+            'has_richmond': 'richmond' in address_lower,
+            'has_port': 'port' in address_lower,
+            'has_targee': 'targee' in address_lower,
+            'original': address
+        }
+
+    def _calculate_match_score(self, street_info: Dict, property_name: str) -> float:
+        """Calculate intelligent match score for property name with geographic relevance"""
+        score = 0.0
+        prop_lower = property_name.lower()
+        
+        # Number matches (important for addresses)
+        for num in street_info['numbers']:
+            if num in prop_lower:
+                score += 3.0  # High weight for number matches
+        
+        # Street word matches
+        for word in street_info['street_words']:
+            if word in prop_lower:
+                score += 2.0 if len(word) > 4 else 1.0
+        
+        # Geographic area matching - prioritize similar areas
+        if street_info['has_richmond'] and 'richmond' in prop_lower:
+            score += 3.0  # Higher weight for same street area
+        if street_info['has_port'] and 'port' in prop_lower:
+            score += 2.5  # Port Richmond area
+        
+        # PENALTY for unrelated areas - don't suggest Targee for Richmond addresses
+        if (street_info['has_richmond'] or street_info['has_port']) and 'targee' in prop_lower:
+            score -= 5.0  # Strong penalty for different geographic areas
+        
+        if street_info['has_targee'] and 'targee' in prop_lower:
+            score += 3.0  # Match Targee area
+        
+        # PENALTY for suggesting Targee when user mentioned Richmond area
+        if (street_info['has_richmond'] or street_info['has_port']) and 'targee' in prop_lower:
+            score -= 10.0  # Don't suggest Targee Street for Port Richmond addresses
+        
+        # Bonus for multiple word matches within same geographic area
+        word_matches = sum(1 for word in street_info['words'] if word in prop_lower)
+        if word_matches >= 2:
+            score += 1.5
+        
+        return score
+
+    async def get_suggested_addresses(self, spoken_address: str, limit: int = 3) -> List[str]:
+        """Get suggested addresses when exact match not found"""
+        try:
+            if not self.cache_loaded:
+                await self.load_properties()
+            
+            if not self.properties_cache:
+                return []
+            
+            street_info = self._extract_street_components(spoken_address)
+            suggestions = []
+            
+            for prop in self.properties_cache:
+                prop_name = prop.get('Name', '')
+                if prop_name:
+                    score = self._calculate_match_score(street_info, prop_name)
+                    if score > 0:
+                        suggestions.append((score, prop_name))
+            
+            # Sort by score and return top suggestions
+            suggestions.sort(reverse=True, key=lambda x: x[0])
+            return [name for score, name in suggestions[:limit] if score > 0]
+            
+        except Exception as e:
+            logger.error(f"Error getting address suggestions: {e}")
+            return []

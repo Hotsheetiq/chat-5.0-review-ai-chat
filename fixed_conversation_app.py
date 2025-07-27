@@ -1998,13 +1998,37 @@ PERSONALITY: Warm, empathetic, and intelligent. Show you're genuinely listening 
                                 logger.error(f"Rent Manager API verification error: {e}")
                             
                             if not api_verified_address:
-                                # INTELLIGENT SUGGESTIONS: Address not found - provide smart suggestions if available
-                                if suggested_addresses:
-                                    # Offer the best suggestions for confirmation
-                                    suggestion_text = " or ".join(suggested_addresses[:2])
-                                    response_text = f"I couldn't find '{user_input}' in our property system. Did you mean {suggestion_text}? Please confirm the correct address."
+                                # AI-POWERED ADDRESS UNDERSTANDING: Use Grok AI to intelligently suggest closest match
+                                logger.info(f"🤖 USING AI INTELLIGENCE for address: {user_input}")
+                                
+                                ai_response = None
+                                if grok_ai and suggested_addresses:
+                                    try:
+                                        # Use AI to intelligently pick the BEST single match and respond naturally
+                                        ai_messages = [
+                                            {"role": "system", "content": f"You are Chris, a helpful property assistant. The caller said '{user_input}' but we couldn't find that exact address. Here are the closest properties in our system: {', '.join(suggested_addresses[:3])}. Pick the ONE most likely match and respond naturally as a human would. Don't repeat their address back word-for-word. Just suggest the closest match naturally. Keep it short and conversational."},
+                                            {"role": "user", "content": f"I said my address is {user_input}"}
+                                        ]
+                                        
+                                        ai_response = grok_ai.generate_response(
+                                            messages=ai_messages,
+                                            max_tokens=50,
+                                            temperature=0.7,
+                                            timeout=1.0
+                                        )
+                                        logger.info(f"🧠 AI GENERATED INTELLIGENT RESPONSE: {ai_response}")
+                                        
+                                    except Exception as e:
+                                        logger.warning(f"AI address intelligence failed: {e}")
+                                
+                                if ai_response:
+                                    response_text = ai_response
+                                elif suggested_addresses:
+                                    # Fallback: Show only the BEST match, not all addresses
+                                    best_match = suggested_addresses[0]
+                                    response_text = f"I couldn't find that exact address. Did you mean {best_match}?"
                                 else:
-                                    response_text = f"I couldn't find '{user_input}' in our property system. Could you please provide the correct address? We manage properties at 25 Port Richmond Avenue, 29 Port Richmond Avenue, 31 Port Richmond Avenue, and 122 Targee Street."
+                                    response_text = f"I couldn't find that address in our system. What's the correct address?"
                                 logger.info(f"🤔 ADDRESS NOT FOUND: '{user_input}' → asking for correct address")
                                 
                                 # Store conversation properly
