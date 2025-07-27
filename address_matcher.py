@@ -138,14 +138,39 @@ class AddressMatcher:
         }
 
     def _calculate_match_score(self, street_info: Dict, property_name: str) -> float:
-        """Calculate intelligent match score for property name with geographic relevance"""
+        """Calculate intelligent match score with numerical proximity for addresses"""
         score = 0.0
         prop_lower = property_name.lower()
         
-        # Number matches (important for addresses)
-        for num in street_info['numbers']:
-            if num in prop_lower:
-                score += 3.0  # High weight for number matches
+        # ENHANCED: Numerical proximity scoring (most important for addresses)
+        import re
+        user_numbers = [int(n) for n in street_info['numbers']]
+        prop_numbers = [int(match) for match in re.findall(r'\b\d+\b', prop_lower)]
+        
+        best_number_score = 0.0
+        if user_numbers and prop_numbers:
+            # Find closest numerical match
+            for user_num in user_numbers:
+                for prop_num in prop_numbers:
+                    difference = abs(user_num - prop_num)
+                    if difference == 0:
+                        # Exact match - highest score
+                        best_number_score = max(best_number_score, 10.0)
+                    elif difference <= 2:
+                        # Very close (within 2 numbers)
+                        best_number_score = max(best_number_score, 8.0)
+                    elif difference <= 5:
+                        # Close (within 5 numbers)
+                        best_number_score = max(best_number_score, 6.0)
+                    elif difference <= 10:
+                        # Moderately close (within 10 numbers)
+                        best_number_score = max(best_number_score, 4.0)
+                    elif difference <= 20:
+                        # Somewhat close (within 20 numbers)
+                        best_number_score = max(best_number_score, 2.0)
+                    # Numbers >20 apart get 0 points
+        
+        score += best_number_score
         
         # Street word matches
         for word in street_info['street_words']:
@@ -160,14 +185,10 @@ class AddressMatcher:
         
         # PENALTY for unrelated areas - don't suggest Targee for Richmond addresses
         if (street_info['has_richmond'] or street_info['has_port']) and 'targee' in prop_lower:
-            score -= 5.0  # Strong penalty for different geographic areas
+            score -= 10.0  # Strong penalty for different geographic areas
         
         if street_info['has_targee'] and 'targee' in prop_lower:
             score += 3.0  # Match Targee area
-        
-        # PENALTY for suggesting Targee when user mentioned Richmond area
-        if (street_info['has_richmond'] or street_info['has_port']) and 'targee' in prop_lower:
-            score -= 10.0  # Don't suggest Targee Street for Port Richmond addresses
         
         # Bonus for multiple word matches within same geographic area
         word_matches = sum(1 for word in street_info['words'] if word in prop_lower)
