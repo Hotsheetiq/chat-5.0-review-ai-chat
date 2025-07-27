@@ -1167,13 +1167,11 @@ PERSONALITY: Warm, empathetic, and intelligent. Show you're genuinely listening 
             # This ensures we ask "Did you mean 29 Port Richmond?" for "26 Port Richmond"
             import re
             
-            # Check for invalid Port Richmond addresses that need confirmation
-            invalid_port_richmond_pattern = r'(\d{1,3})\s*port\s*richmond'
-            match = re.search(invalid_port_richmond_pattern, user_lower)
-            
-            if match:
-                number = match.group(1)
-                if number not in ['29', '31']:  # Invalid Port Richmond numbers
+            # TEMPORARILY DISABLE EARLY ADDRESS PATTERNS - Let API verification handle all addresses
+            # This allows the real API to determine which addresses exist instead of hardcoded assumptions
+            if False and False:  # Disabled - use API verification instead
+                number = "disabled"
+                if False:  # Disabled
                     if number == '21':
                         # 21 could be either 29 or 31 - ask for clarification
                         response_text = f"I heard 21 Port Richmond Avenue, but we don't have that exact address. We have properties at 29 Port Richmond Avenue and 31 Port Richmond Avenue. Could you double-check which address you meant?"
@@ -1694,13 +1692,14 @@ PERSONALITY: Warm, empathetic, and intelligent. Show you're genuinely listening 
                                     properties = asyncio.run(rent_manager.get_all_properties())
                                     logger.info(f"📋 FOUND {len(properties)} TOTAL PROPERTIES in Rent Manager")
                                     
-                                    # Check if exact address exists in API with improved matching
+                                    # Check if exact address exists in API - use "Name" field which contains actual addresses
                                     for prop in properties:
-                                        prop_address = str(prop.get('Address', '')).strip()
+                                        # Rent Manager uses "Name" field for property addresses
+                                        prop_address = str(prop.get('Name', '')).strip()
                                         prop_lower = prop_address.lower()
                                         user_lower_input = user_input.lower()
                                         
-                                        # More flexible address matching
+                                        # Enhanced address matching logic
                                         if (number in prop_lower and 
                                             (('richmond' in user_lower_input and 'richmond' in prop_lower) or
                                              ('targee' in user_lower_input and 'targee' in prop_lower) or
