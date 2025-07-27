@@ -1333,25 +1333,7 @@ PERSONALITY: Warm, empathetic, and intelligent. Show you're genuinely listening 
             # Declare all global variables used in this function
             global current_service_issue, conversation_history, verified_address_info
             
-            # LATENCY OPTIMIZATION: Early response for first input to prevent 10+ second delays
-            if call_sid not in conversation_history or len(conversation_history.get(call_sid, [])) == 0:
-                # First message - provide immediate acknowledgment while processing
-                if user_input and len(user_input.strip()) > 0:
-                    logger.info(f"🚀 FIRST INPUT DETECTED: '{user_input}' - providing immediate acknowledgment")
-                    immediate_response = get_varied_response(call_sid, "acknowledgment")
-                    quick_voice = create_voice_response(immediate_response)
-                    
-                    # Process the actual request in background and return immediate response
-                    import threading
-                    threading.Thread(target=lambda: process_delayed_response(call_sid, user_input, caller_phone, speech_confidence)).start()
-                    
-                    return f"""<?xml version="1.0" encoding="UTF-8"?>
-                    <Response>
-                        {quick_voice}
-                        <Gather input="speech dtmf" timeout="8" speechTimeout="4" dtmfTimeout="2" language="en-US" action="/handle-input/{call_sid}" method="POST">
-                        </Gather>
-                        <Redirect>/handle-speech/{call_sid}</Redirect>
-                    </Response>"""
+            # REMOVED: Problematic immediate acknowledgment system that added delays
             
             # Initialize response_text at the beginning
             response_text = None
@@ -1936,7 +1918,7 @@ PERSONALITY: Warm, empathetic, and intelligent. Show you're genuinely listening 
                                                     try:
                                                         caller_tenant_info = asyncio.run(asyncio.wait_for(
                                                             rent_manager.lookup_tenant_by_phone(caller_phone), 
-                                                            timeout=2.0  # 2 second timeout to prevent delays
+                                                            timeout=0.5  # ULTRA-FAST: 0.5s timeout to prevent any delays
                                                         ))
                                                         if caller_tenant_info:
                                                             tenant_address = caller_tenant_info.get('address', '')
@@ -1952,7 +1934,7 @@ PERSONALITY: Warm, empathetic, and intelligent. Show you're genuinely listening 
                                                         else:
                                                             logger.info(f"🔍 CALLER NOT FOUND: {caller_phone} not recognized as tenant - treating as general inquiry")
                                                     except asyncio.TimeoutError:
-                                                        logger.warning(f"⏰ TENANT LOOKUP TIMEOUT: Skipping tenant lookup to prevent delay")
+                                                        logger.info(f"⚡ SPEED OPTIMIZATION: Skipped tenant lookup (0.5s timeout) to maintain fast response")
                                             except Exception as e:
                                                 logger.error(f"Error looking up tenant: {e}")
                                             
@@ -2497,15 +2479,13 @@ PERSONALITY: Warm, empathetic, and intelligent. Show you're genuinely listening 
             greeting_text = "Good morning, hey it's Chris with Grinberg Management. How can I help you today?"
             main_voice = create_voice_response(greeting_text)
             
-            # PRE-WARM SYSTEMS: Start background processes to reduce first response latency
-            import threading
-            threading.Thread(target=lambda: prewarm_systems_for_call(call_sid, caller_phone)).start()
+            # REMOVED: Pre-warming system that may cause delays - prioritize immediate response
             
             return f"""<?xml version="1.0" encoding="UTF-8"?>
             <Response>
                 <Record timeout="1800" recordingStatusCallback="/recording-status" />
                 {main_voice}
-                <Gather input="speech dtmf" timeout="8" speechTimeout="2" dtmfTimeout="2" language="en-US" profanityFilter="false" enhanced="true" action="/handle-input/{call_sid}" method="POST">
+                <Gather input="speech dtmf" timeout="6" speechTimeout="1" dtmfTimeout="1" language="en-US" profanityFilter="false" enhanced="true" action="/handle-input/{call_sid}" method="POST">
                 </Gather>
                 <Redirect>/handle-speech/{call_sid}</Redirect>
             </Response>"""
