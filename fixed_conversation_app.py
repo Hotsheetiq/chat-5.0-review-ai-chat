@@ -80,8 +80,43 @@ except Exception as e:
 
 # Global state storage - PERSISTENT across calls
 conversation_history = {}
-# Anti-repetition tracking per call
+# Anti-repetition tracking per call - tracks all phrases used
 response_tracker = {}
+# Varied response pools for common situations
+ACKNOWLEDGMENT_PHRASES = [
+    "Got it, give me just a moment...",
+    "I understand, let me help you with that...",
+    "Okay, I'm on it...",
+    "I hear you, working on this now...",
+    "Sure thing, processing that for you...",
+    "Absolutely, let me take care of that...",
+    "I've got this, one second please...",
+    "Perfect, handling that right away...",
+    "Understood, let me get that sorted...",
+    "No problem, checking on that now..."
+]
+
+PROCESSING_PHRASES = [
+    "Working on creating a service ticket...",
+    "Let me set up that service request...",
+    "Processing your maintenance request...",
+    "Setting up your service ticket now...",
+    "Getting that maintenance issue logged...",
+    "Creating your service request...",
+    "Handling your maintenance ticket...",
+    "Processing that service issue..."
+]
+
+COMPLETION_PHRASES = [
+    "Perfect! I've created",
+    "All set! I've created", 
+    "Done! I've created",
+    "Great! I've set up",
+    "Excellent! I've created",
+    "There we go! I've created",
+    "Completed! I've created",
+    "All done! I've created"
+]
 # Service issue storage for SMS functionality
 current_service_issue = {}
 # Address verification storage
@@ -1198,6 +1233,100 @@ PERSONALITY: Warm, empathetic, and intelligent. Show you're genuinely listening 
         except Exception as e:
             logger.error(f"Pre-warming error: {e}")
     
+    def get_varied_response(call_sid, response_type):
+        """Get a varied response that hasn't been used before in this conversation"""
+        if call_sid not in response_tracker:
+            response_tracker[call_sid] = {'used_phrases': set(), 'phrase_counts': {}}
+        
+        if response_type == "acknowledgment":
+            available_phrases = [p for p in ACKNOWLEDGMENT_PHRASES if p not in response_tracker[call_sid]['used_phrases']]
+            if not available_phrases:
+                # Reset if we've used all phrases
+                response_tracker[call_sid]['used_phrases'].clear()
+                available_phrases = ACKNOWLEDGMENT_PHRASES
+        elif response_type == "processing":
+            available_phrases = [p for p in PROCESSING_PHRASES if p not in response_tracker[call_sid]['used_phrases']]
+            if not available_phrases:
+                response_tracker[call_sid]['used_phrases'].clear()
+                available_phrases = PROCESSING_PHRASES
+        elif response_type == "completion":
+            available_phrases = [p for p in COMPLETION_PHRASES if p not in response_tracker[call_sid]['used_phrases']]
+            if not available_phrases:
+                response_tracker[call_sid]['used_phrases'].clear()
+                available_phrases = COMPLETION_PHRASES
+        else:
+            return "I understand."
+        
+        import random
+        selected_phrase = random.choice(available_phrases)
+        response_tracker[call_sid]['used_phrases'].add(selected_phrase)
+        
+        logger.info(f"🔄 VARIED RESPONSE: '{selected_phrase}' (avoiding repetition for {call_sid})")
+        return selected_phrase
+    
+    def track_response_usage(call_sid, response_text):
+        """Track any response to prevent future repetition"""
+        if call_sid not in response_tracker:
+            response_tracker[call_sid] = {'used_phrases': set(), 'phrase_counts': {}}
+        
+        # Track exact phrases and key phrases within longer responses
+        response_tracker[call_sid]['used_phrases'].add(response_text.lower().strip())
+        
+        # Track key phrases within longer responses
+        key_phrases = [
+            "give me just a moment", "got it", "I understand", "working on", 
+            "let me help", "processing", "creating", "perfect", "all set", "done"
+        ]
+        
+        for phrase in key_phrases:
+            if phrase in response_text.lower():
+                response_tracker[call_sid]['used_phrases'].add(phrase)
+        
+        logger.info(f"📝 TRACKED RESPONSE: '{response_text[:50]}...' for call {call_sid}")
+    
+    def ensure_unique_response(call_sid, response_text):
+        """Ensure Chris never repeats the same response within a conversation"""
+        if call_sid not in response_tracker:
+            response_tracker[call_sid] = {'used_phrases': set(), 'phrase_counts': {}}
+        
+        # Check if exact response has been used
+        original_response = response_text.lower().strip()
+        if original_response in response_tracker[call_sid]['used_phrases']:
+            logger.info(f"🚫 BLOCKED REPETITION: '{response_text[:30]}...' - generating alternative")
+            
+            # Generate alternative responses based on response type
+            if "perfect" in original_response and "created" in original_response:
+                alternatives = [
+                    response_text.replace("Perfect!", "All set!"),
+                    response_text.replace("Perfect!", "Done!"),
+                    response_text.replace("Perfect!", "Great!"),
+                    response_text.replace("Perfect!", "Excellent!"),
+                    response_text.replace("Perfect!", "There we go!"),
+                ]
+                response_text = next((alt for alt in alternatives if alt.lower().strip() not in response_tracker[call_sid]['used_phrases']), response_text)
+            
+            elif "got it" in original_response:
+                alternatives = [
+                    response_text.replace("Got it", "I understand"),
+                    response_text.replace("Got it", "I hear you"),
+                    response_text.replace("Got it", "Okay"),
+                    response_text.replace("Got it", "Sure thing"),
+                ]
+                response_text = next((alt for alt in alternatives if alt.lower().strip() not in response_tracker[call_sid]['used_phrases']), response_text)
+            
+            elif "working on" in original_response:
+                alternatives = [
+                    response_text.replace("Working on", "Processing"),
+                    response_text.replace("Working on", "Handling"),
+                    response_text.replace("Working on", "Setting up"),
+                    response_text.replace("Working on", "Taking care of"),  
+                ]
+                response_text = next((alt for alt in alternatives if alt.lower().strip() not in response_tracker[call_sid]['used_phrases']), response_text)
+        
+        # Track the final response
+        track_response_usage(call_sid, response_text)
+        return response_text
+    
     def handle_speech_internal(call_sid, user_input, caller_phone, speech_confidence):
         """Internal speech handling logic"""
         try:
@@ -1209,7 +1338,7 @@ PERSONALITY: Warm, empathetic, and intelligent. Show you're genuinely listening 
                 # First message - provide immediate acknowledgment while processing
                 if user_input and len(user_input.strip()) > 0:
                     logger.info(f"🚀 FIRST INPUT DETECTED: '{user_input}' - providing immediate acknowledgment")
-                    immediate_response = "Got it, give me just a moment..."
+                    immediate_response = get_varied_response(call_sid, "acknowledgment")
                     quick_voice = create_voice_response(immediate_response)
                     
                     # Process the actual request in background and return immediate response
@@ -1376,6 +1505,11 @@ PERSONALITY: Warm, empathetic, and intelligent. Show you're genuinely listening 
                 'timestamp': datetime.now(),
                 'detected_issues': detected_issues  # Track issues for better memory
             })
+            
+            # Track user input to prevent Chris from repeating it back
+            if call_sid not in response_tracker:
+                response_tracker[call_sid] = {'used_phrases': set(), 'phrase_counts': {}}
+            response_tracker[call_sid]['used_phrases'].add(user_input.lower().strip())
             
             # PRIORITY 1: Check for caller information collection workflow
             # Check if we're collecting caller name or phone number
@@ -2002,9 +2136,10 @@ PERSONALITY: Warm, empathetic, and intelligent. Show you're genuinely listening 
                                         'timestamp': datetime.now()
                                     })
                                     
-                                    # Enhanced response with tenant-specific information
+                                    # Enhanced response with varied completion phrases
+                                    completion_start = get_varied_response(call_sid, "completion")
                                     unit_info = f" (Unit: {current_service_issue['specific_unit']})" if current_service_issue['specific_unit'] else ""
-                                    response_text = f"Perfect! I've created service ticket #{current_service_issue['issue_number']} for your {detected_issue_type} issue at {current_service_issue['address']}{unit_info}. Someone from our maintenance team will contact you soon. Would you like me to text you the issue number? What's the best phone number to reach you?"
+                                    response_text = f"{completion_start} service ticket #{current_service_issue['issue_number']} for your {detected_issue_type} issue at {current_service_issue['address']}{unit_info}. Someone from our maintenance team will contact you soon. Would you like me to text you the issue number? What's the best phone number to reach you?"
                                     logger.info(f"✅ INSTANT TICKET CREATED: #{current_service_issue['issue_number']} for {detected_issue_type} at {verified_address}")
                                     return response_text  # CRITICAL: Return immediately to prevent repetitive questions
                                 else:
@@ -2255,6 +2390,9 @@ PERSONALITY: Warm, empathetic, and intelligent. Show you're genuinely listening 
                 # Save blocked admin calls under the admin number for continuity
                 admin_conversation_memory["+13477430880"] = conversation_history[call_sid].copy()
                 logger.info(f"💾 SAVED BLOCKED ADMIN MEMORY: {len(admin_conversation_memory['+13477430880'])} messages")
+            
+            # ANTI-REPETITION: Ensure Chris never uses the same phrase twice
+            response_text = ensure_unique_response(call_sid, response_text)
             
             # Fast response without redundant listening prompts
             main_voice = create_voice_response(response_text)
