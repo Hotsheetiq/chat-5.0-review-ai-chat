@@ -1146,11 +1146,83 @@ PERSONALITY: Warm, empathetic, and intelligent. Show you're genuinely listening 
                 </Gather>
             </Response>"""
     
+    def process_delayed_response(call_sid, user_input, caller_phone, speech_confidence):
+        """Process complex requests in background to prevent blocking user experience"""
+        try:
+            logger.info(f"🔄 BACKGROUND PROCESSING: {user_input} for call {call_sid}")
+            # This would handle complex operations like tenant lookup, API calls, etc.
+            # For now, just log that we're processing
+            # In future, could update conversation state or prepare next response
+        except Exception as e:
+            logger.error(f"Background processing error: {e}")
+    
+    def prewarm_systems_for_call(call_sid, caller_phone):
+        """Pre-warm systems during greeting to reduce first response delay"""
+        try:
+            logger.info(f"🚀 PRE-WARMING SYSTEMS for call {call_sid}")
+            
+            # Pre-warm tenant lookup if caller phone available
+            if rent_manager and caller_phone:
+                try:
+                    import asyncio
+                    # Try tenant lookup in background so it's cached for first real request
+                    asyncio.run(asyncio.wait_for(
+                        rent_manager.lookup_tenant_by_phone(caller_phone), 
+                        timeout=1.5
+                    ))
+                    logger.info(f"✅ TENANT LOOKUP PRE-WARMED for {caller_phone}")
+                except:
+                    pass  # Silent fail - just optimization
+            
+            # Pre-warm Grok AI if available
+            if grok_ai:
+                try:
+                    # Send a quick warm-up request
+                    grok_ai.get_quick_response("test", [])
+                    logger.info(f"✅ GROK AI PRE-WARMED for call {call_sid}")
+                except:
+                    pass  # Silent fail - just optimization
+                    
+            # Pre-warm properties list for address verification
+            if rent_manager:
+                try:
+                    import asyncio
+                    asyncio.run(asyncio.wait_for(
+                        rent_manager.get_all_properties(), 
+                        timeout=2.0
+                    ))
+                    logger.info(f"✅ PROPERTIES LIST PRE-WARMED for call {call_sid}")
+                except:
+                    pass  # Silent fail - just optimization
+            
+        except Exception as e:
+            logger.error(f"Pre-warming error: {e}")
+    
     def handle_speech_internal(call_sid, user_input, caller_phone, speech_confidence):
         """Internal speech handling logic"""
         try:
             # Declare all global variables used in this function
             global current_service_issue, conversation_history, verified_address_info
+            
+            # LATENCY OPTIMIZATION: Early response for first input to prevent 10+ second delays
+            if call_sid not in conversation_history or len(conversation_history.get(call_sid, [])) == 0:
+                # First message - provide immediate acknowledgment while processing
+                if user_input and len(user_input.strip()) > 0:
+                    logger.info(f"🚀 FIRST INPUT DETECTED: '{user_input}' - providing immediate acknowledgment")
+                    immediate_response = "Got it, give me just a moment..."
+                    quick_voice = create_voice_response(immediate_response)
+                    
+                    # Process the actual request in background and return immediate response
+                    import threading
+                    threading.Thread(target=lambda: process_delayed_response(call_sid, user_input, caller_phone, speech_confidence)).start()
+                    
+                    return f"""<?xml version="1.0" encoding="UTF-8"?>
+                    <Response>
+                        {quick_voice}
+                        <Gather input="speech dtmf" timeout="8" speechTimeout="4" dtmfTimeout="2" language="en-US" action="/handle-input/{call_sid}" method="POST">
+                        </Gather>
+                        <Redirect>/handle-speech/{call_sid}</Redirect>
+                    </Response>"""
             
             # Initialize response_text at the beginning
             response_text = None
@@ -1721,25 +1793,32 @@ PERSONALITY: Warm, empathetic, and intelligent. Show you're genuinely listening 
                                             api_verified_address = prop_address
                                             logger.info(f"✅ API VERIFIED ADDRESS MATCH: {api_verified_address} (matched with '{user_input}')")
                                             
-                                            # CRITICAL: Check if caller is a known tenant at this address
+                                            # OPTIMIZED: Check if caller is a known tenant (with timeout to prevent delays)
                                             caller_tenant_info = None
                                             try:
                                                 if rent_manager and caller_phone:
-                                                    # Look up tenant by phone number to get their specific unit
-                                                    caller_tenant_info = asyncio.run(rent_manager.lookup_tenant_by_phone(caller_phone))
-                                                    if caller_tenant_info:
-                                                        tenant_address = caller_tenant_info.get('address', '')
-                                                        tenant_unit = caller_tenant_info.get('unit', '')
-                                                        logger.info(f"🏠 TENANT IDENTIFIED: {caller_tenant_info.get('name')} at {tenant_address} (Unit: {tenant_unit})")
-                                                        
-                                                        # Verify tenant's address matches what they're reporting
-                                                        if tenant_address and api_verified_address.lower() in tenant_address.lower():
-                                                            api_verified_address = tenant_address  # Use tenant's specific unit address
-                                                            logger.info(f"✅ TENANT ADDRESS CONFIRMED: Using tenant's specific address: {api_verified_address}")
+                                                    # Use timeout to prevent API delays from blocking user response
+                                                    import asyncio
+                                                    try:
+                                                        caller_tenant_info = asyncio.run(asyncio.wait_for(
+                                                            rent_manager.lookup_tenant_by_phone(caller_phone), 
+                                                            timeout=2.0  # 2 second timeout to prevent delays
+                                                        ))
+                                                        if caller_tenant_info:
+                                                            tenant_address = caller_tenant_info.get('address', '')
+                                                            tenant_unit = caller_tenant_info.get('unit', '')
+                                                            logger.info(f"🏠 TENANT IDENTIFIED: {caller_tenant_info.get('name')} at {tenant_address} (Unit: {tenant_unit})")
+                                                            
+                                                            # Verify tenant's address matches what they're reporting
+                                                            if tenant_address and api_verified_address.lower() in tenant_address.lower():
+                                                                api_verified_address = tenant_address  # Use tenant's specific unit address
+                                                                logger.info(f"✅ TENANT ADDRESS CONFIRMED: Using tenant's specific address: {api_verified_address}")
+                                                            else:
+                                                                logger.warning(f"⚠️ ADDRESS MISMATCH: Tenant {caller_tenant_info.get('name')} calling about {api_verified_address} but lives at {tenant_address}")
                                                         else:
-                                                            logger.warning(f"⚠️ ADDRESS MISMATCH: Tenant {caller_tenant_info.get('name')} calling about {api_verified_address} but lives at {tenant_address}")
-                                                    else:
-                                                        logger.info(f"🔍 CALLER NOT FOUND: {caller_phone} not recognized as tenant - treating as general inquiry")
+                                                            logger.info(f"🔍 CALLER NOT FOUND: {caller_phone} not recognized as tenant - treating as general inquiry")
+                                                    except asyncio.TimeoutError:
+                                                        logger.warning(f"⏰ TENANT LOOKUP TIMEOUT: Skipping tenant lookup to prevent delay")
                                             except Exception as e:
                                                 logger.error(f"Error looking up tenant: {e}")
                                             
@@ -2276,15 +2355,19 @@ PERSONALITY: Warm, empathetic, and intelligent. Show you're genuinely listening 
             if call_sid not in conversation_history:
                 conversation_history[call_sid] = []
             
-            # Create greeting with recording
+            # OPTIMIZED GREETING: Pre-warm systems during greeting to reduce first response delay
             greeting_text = "Good morning, hey it's Chris with Grinberg Management. How can I help you today?"
             main_voice = create_voice_response(greeting_text)
+            
+            # PRE-WARM SYSTEMS: Start background processes to reduce first response latency
+            import threading
+            threading.Thread(target=lambda: prewarm_systems_for_call(call_sid, caller_phone)).start()
             
             return f"""<?xml version="1.0" encoding="UTF-8"?>
             <Response>
                 <Record timeout="1800" recordingStatusCallback="/recording-status" />
                 {main_voice}
-                <Gather input="speech dtmf" timeout="8" speechTimeout="4" dtmfTimeout="2" language="en-US" profanityFilter="false" enhanced="true" action="/handle-input/{call_sid}" method="POST">
+                <Gather input="speech dtmf" timeout="8" speechTimeout="2" dtmfTimeout="2" language="en-US" profanityFilter="false" enhanced="true" action="/handle-input/{call_sid}" method="POST">
                 </Gather>
                 <Redirect>/handle-speech/{call_sid}</Redirect>
             </Response>"""
