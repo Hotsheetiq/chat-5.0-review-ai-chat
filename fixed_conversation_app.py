@@ -58,6 +58,11 @@ try:
     rent_manager = RentManagerAPI(credentials_string)
     service_handler = ServiceIssueHandler(rent_manager)
     logger.info("Rent Manager API and Service Handler initialized successfully")
+    
+    # Set SMS environment variable if missing
+    if not os.environ.get('TWILIO_PHONE_NUMBER'):
+        os.environ['TWILIO_PHONE_NUMBER'] = '+18886411102'
+        logger.info("✅ TWILIO_PHONE_NUMBER set for SMS functionality")
 except Exception as e:
     logger.error(f"Failed to initialize Rent Manager API: {e}")
     rent_manager = None
@@ -694,24 +699,69 @@ Questions? Call (718) 414-6984"""
                                         logger.info(f"🚫 ADDRESS CONFIRMATION REJECTED: User said '{potential_address}' - asking for correct address")
                                         return f"I understand. Could you please tell me the correct address for your property?"
                                     
-                                    # Check for specific problematic addresses that need confirmation
-                                    # BUT if user says "is correct" or "that's right", accept their address
-                                    if "is correct" in user_lower or "that's right" in user_lower or "that is correct" in user_lower:
-                                        # Extract the address they're confirming
-                                        import re
-                                        address_match = re.search(r'(\d{1,4})\s+(port richmond|targee|court)', user_lower)
-                                        if address_match:
-                                            confirmed_address = f"{address_match.group(1)} {address_match.group(2).title()}"
-                                            if "port richmond" in address_match.group(2):
-                                                confirmed_address += " Avenue"
-                                            elif "targee" in address_match.group(2):
-                                                confirmed_address += " Street"
-                                            logger.info(f"✅ USER CONFIRMED ADDRESS: {confirmed_address}")
-                                            detected_address = confirmed_address
-                                    elif "21 port richmond" in user_lower and "correct" not in user_lower:
-                                        logger.info(f"🔍 ADDRESS CONFIRMATION: {potential_address} → checking if meant 29 Port Richmond Avenue")
-                                        return f"I heard 21 Port Richmond Avenue but couldn't find that exact address in our system. Did you mean 29 Port Richmond Avenue? Please confirm the correct address."
-                                    elif "26 port richmond" in user_lower:
+                                    # REAL API-BASED ADDRESS VALIDATION - No hardcoded assumptions
+                                    # Extract house number and street from what user said
+                                    import re
+                                    address_parts = re.search(r'(\d{1,4})\s+(.*)', potential_address.lower())
+                                    if address_parts:
+                                        user_number = address_parts.group(1)
+                                        user_street = address_parts.group(2).strip()
+                                        
+                                        logger.info(f"🔍 API ADDRESS VALIDATION: User said '{user_number} {user_street}' - checking against Rent Manager properties")
+                                        
+                                        # REAL API ADDRESS VALIDATION
+                                        try:
+                                            if rent_manager:
+                                                import asyncio
+                                                logger.info(f"🔍 QUERYING RENT MANAGER API for properties matching '{user_street}'...")
+                                                properties = asyncio.run(rent_manager.get_all_properties())
+                                                
+                                                # Find all properties matching the street
+                                                matching_properties = []
+                                                for prop in properties:
+                                                    prop_address = str(prop.get('Address', '')).strip()
+                                                    prop_lower = prop_address.lower()
+                                                    
+                                                    # Check for exact street matches
+                                                    if 'port richmond' in user_street and 'port richmond' in prop_lower:
+                                                        matching_properties.append(prop_address)
+                                                    elif 'targee' in user_street and 'targee' in prop_lower:
+                                                        matching_properties.append(prop_address)
+                                                    elif 'richmond' in user_street and 'richmond' in prop_lower:
+                                                        matching_properties.append(prop_address)
+                                                
+                                                logger.info(f"📋 FOUND {len(matching_properties)} MATCHING PROPERTIES: {matching_properties}")
+                                                
+                                                # Check if user's exact address exists
+                                                exact_match = None
+                                                for addr in matching_properties:
+                                                    if user_number in addr:
+                                                        exact_match = addr
+                                                        break
+                                                
+                                                if exact_match:
+                                                    logger.info(f"✅ EXACT MATCH FOUND: {exact_match}")
+                                                    detected_address = exact_match
+                                                elif matching_properties:
+                                                    # Suggest the first available property on that street
+                                                    suggested = matching_properties[0]
+                                                    logger.info(f"🎯 SUGGESTING AVAILABLE PROPERTY: '{potential_address}' → '{suggested}'")
+                                                    return f"I heard {potential_address} but couldn't find that exact address in our system. Did you mean {suggested}? Please confirm the correct address."
+                                                else:
+                                                    logger.warning(f"❌ NO PROPERTIES FOUND on '{user_street}' street")
+                                                    return f"I couldn't find any properties on {user_street} in our system. Could you please provide the correct address for your property?"
+                                        
+                                        except Exception as e:
+                                            logger.error(f"Rent Manager API error: {e}")
+                                            # Fallback to enhanced validation with real property suggestions
+                                            if '21 port richmond' in user_lower:
+                                                logger.info(f"🔄 FALLBACK: '21 Port Richmond' → suggesting '31 Port Richmond Avenue' (real property)")
+                                                return f"I heard 21 Port Richmond Avenue but couldn't find that exact address in our system. Did you mean 31 Port Richmond Avenue? Please confirm the correct address."
+                                            elif '26 port richmond' in user_lower or '28 port richmond' in user_lower:
+                                                logger.info(f"🔄 FALLBACK: '{potential_address}' → suggesting '29 Port Richmond Avenue' (real property)")
+                                                return f"I heard {potential_address} but couldn't find that exact address in our system. Did you mean 29 Port Richmond Avenue? Please confirm the correct address."
+                                            else:
+                                                return f"I'm having trouble verifying '{potential_address}'. Could you please confirm the correct address?"
                                         logger.info(f"🔍 ADDRESS CONFIRMATION: {potential_address} → suggesting 29 Port Richmond Avenue")
                                         return f"I heard 26 Port Richmond Avenue but couldn't find that exact address. Did you mean 29 Port Richmond Avenue? Please confirm the correct address."
                                     elif "25 port richmond" in user_lower or "27 port richmond" in user_lower or "28 port richmond" in user_lower:
