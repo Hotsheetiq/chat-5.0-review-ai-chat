@@ -1112,6 +1112,56 @@ PERSONALITY: Warm, empathetic, and intelligent. Show you're genuinely listening 
             
         except Exception as e:
             logger.error(f"AI response error: {e}")
+            
+            # Enhanced conversation memory: Check if we already have issue type and address from previous conversation
+            conversation_messages = conversation_history.get(call_sid, [])
+            detected_issue_from_memory = None
+            detected_address_from_memory = None
+            
+            # Scan conversation history for previously mentioned issues and addresses
+            for msg in conversation_messages:
+                content = msg.get('content', '').lower()
+                
+                # Check for maintenance issues in conversation memory
+                if any(issue in content for issue in ['electrical', 'plumbing', 'heating', 'appliance', 'maintenance', 'broken', 'not working', 'problem']):
+                    if 'electrical' in content or any(word in content for word in ['power', 'electricity', 'lights']):
+                        detected_issue_from_memory = "electrical"
+                    elif 'plumbing' in content or any(word in content for word in ['toilet', 'water', 'leak', 'bathroom']):
+                        detected_issue_from_memory = "plumbing"
+                    elif 'heating' in content or any(word in content for word in ['heat', 'cold']):
+                        detected_issue_from_memory = "heating"
+                    elif any(word in content for word in ['washing machine', 'dishwasher', 'appliance']):
+                        detected_issue_from_memory = "appliance"
+                
+                # Check for addresses in conversation memory using AI understanding
+                if ai_address_understanding and ai_address_understanding.get('confidence', 0) > 0.7:
+                    detected_address_from_memory = ai_address_understanding.get('understood_address')
+            
+            # If we have both issue and address from memory, create service ticket
+            if detected_issue_from_memory and detected_address_from_memory:
+                logger.info(f"🧠 CONVERSATION MEMORY: Found {detected_issue_from_memory} issue at {detected_address_from_memory}")
+                
+                # Create service ticket using conversation memory
+                current_service_issue = {
+                    'issue_type': detected_issue_from_memory,
+                    'address': detected_address_from_memory,
+                    'tenant_name': "Unknown Caller",
+                    'tenant_phone': caller_phone,
+                    'specific_unit': "",
+                    'issue_number': f"SV-{random.randint(10000, 99999)}"
+                }
+                
+                # Store service issue for SMS follow-up
+                conversation_history.setdefault(call_sid, []).append({
+                    'role': 'system',
+                    'content': f'service_issue_created_{current_service_issue["issue_number"]}',
+                    'service_issue': current_service_issue,
+                    'timestamp': datetime.now()
+                })
+                
+                completion_phrase = get_varied_response(call_sid, "completion")
+                return f"{completion_phrase} service ticket #{current_service_issue['issue_number']} for your {detected_issue_from_memory} issue at {detected_address_from_memory}. Someone from our maintenance team will contact you soon. Would you like me to text you the issue number?"
+            
             return "I'm here to help! What can I do for you today?"
     
     @app.route("/handle-input/<call_sid>", methods=["POST"])
@@ -1520,42 +1570,61 @@ PERSONALITY: Warm, empathetic, and intelligent. Show you're genuinely listening 
             
             logger.info(f"🔍 CALLER INFO STATE CHECK: waiting_for_name={waiting_for_name}, waiting_for_phone={waiting_for_phone_collection}, pending_data={pending_ticket_data}")
             
-            # Handle caller name collection
+            # Handle caller name collection - CHECK FOR MEMORY REQUESTS FIRST
             if waiting_for_name and pending_ticket_data:
-                raw_name = user_input.strip()
+                raw_name = user_input.strip().lower()
                 logger.info(f"👤 RAW NAME INPUT: {raw_name}")
                 
-                # Extract actual name from phrases like "My name is Dimitri" or "I'm John Smith"
-                import re
-                name_patterns = [
-                    r'my name is\s+(.+)',
-                    r'i\'m\s+(.+)',
-                    r'it\'s\s+(.+)',
-                    r'this is\s+(.+)',
-                    r'call me\s+(.+)'
+                # PRIORITY: Check if user is asking about their issue instead of providing name
+                memory_request_phrases = [
+                    'what was my issue', 'what was the problem', 'remind me', 'what did i say',
+                    'what was wrong', 'my issue', 'the problem', 'what issue'
                 ]
                 
-                caller_name = raw_name
-                for pattern in name_patterns:
-                    match = re.search(pattern, raw_name.lower())
-                    if match:
-                        caller_name = match.group(1).strip()
-                        break
-                
-                logger.info(f"👤 EXTRACTED CALLER NAME: {caller_name}")
-                
-                # Update pending ticket with caller name
-                pending_ticket_data['caller_name'] = caller_name
-                
-                # Ask for phone number
-                response_text = f"Thank you, {caller_name}. What's the best phone number to reach you at?"
-                
-                conversation_history[call_sid].append({
-                    'role': 'system',
-                    'content': 'waiting_for_phone_collection',
-                    'pending_ticket': pending_ticket_data,
-                    'timestamp': datetime.now()
-                })
+                if any(phrase in raw_name for phrase in memory_request_phrases):
+                    # User is asking for memory recall, not providing name
+                    logger.info(f"🧠 MEMORY REQUEST DETECTED: User asking about their issue")
+                    
+                    # Recall the issue from pending ticket data
+                    issue_type = pending_ticket_data.get('issue_type', 'maintenance issue')
+                    address = pending_ticket_data.get('address', 'your address')
+                    
+                    response_text = f"You reported a {issue_type} issue at {address}. I still need your name to create the service ticket. What's your name?"
+                    
+                    # Keep the waiting_for_name state - don't advance
+                    
+                else:
+                    # Actually collecting caller name
+                    import re
+                    name_patterns = [
+                        r'my name is\s+(.+)',
+                        r'i\'m\s+(.+)',
+                        r'it\'s\s+(.+)',
+                        r'this is\s+(.+)',
+                        r'call me\s+(.+)'
+                    ]
+                    
+                    caller_name = user_input.strip()  # Use original input for name
+                    for pattern in name_patterns:
+                        match = re.search(pattern, raw_name)
+                        if match:
+                            caller_name = match.group(1).strip()
+                            break
+                    
+                    logger.info(f"👤 EXTRACTED CALLER NAME: {caller_name}")
+                    
+                    # Update pending ticket with caller name
+                    pending_ticket_data['caller_name'] = caller_name
+                    
+                    # Ask for phone number
+                    response_text = f"Thank you, {caller_name}. What's the best phone number to reach you at?"
+                    
+                    conversation_history[call_sid].append({
+                        'role': 'system',
+                        'content': 'waiting_for_phone_collection',
+                        'pending_ticket': pending_ticket_data,
+                        'timestamp': datetime.now()
+                    })
                 
             # Handle phone number collection  
             elif waiting_for_phone_collection and pending_ticket_data:
