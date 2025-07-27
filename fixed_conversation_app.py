@@ -46,6 +46,7 @@ try:
     from rent_manager import RentManagerAPI
     from service_issue_handler import ServiceIssueHandler
     from admin_action_handler import admin_action_handler
+    from address_matcher import AddressMatcher
     
     # Initialize with proper credentials string format
     rent_manager_username = os.environ.get('RENT_MANAGER_USERNAME', '')
@@ -57,7 +58,8 @@ try:
     
     rent_manager = RentManagerAPI(credentials_string)
     service_handler = ServiceIssueHandler(rent_manager)
-    logger.info("Rent Manager API and Service Handler initialized successfully")
+    address_matcher = AddressMatcher(rent_manager)
+    logger.info("Rent Manager API, Service Handler, and Address Matcher initialized successfully")
     
     # Set SMS environment variable if missing
     if not os.environ.get('TWILIO_PHONE_NUMBER'):
@@ -1969,96 +1971,40 @@ PERSONALITY: Warm, empathetic, and intelligent. Show you're genuinely listening 
                         if number_match:
                             number = number_match.group(1)
                             
-                            # REAL API ADDRESS VERIFICATION - Query Rent Manager database
-                            logger.info(f"🔍 QUERYING RENT MANAGER API to verify address: {user_input}")
+                            # INTELLIGENT ADDRESS MATCHING - Use Address Matcher for smart verification
+                            logger.info(f"🔍 INTELLIGENT ADDRESS VERIFICATION: {user_input}")
                             api_verified_address = None
+                            suggested_addresses = []
                             
                             try:
-                                if rent_manager:
+                                if address_matcher:
                                     import asyncio
-                                    properties = asyncio.run(rent_manager.get_all_properties())
-                                    logger.info(f"📋 FOUND {len(properties)} TOTAL PROPERTIES in Rent Manager")
                                     
-                                    # Check if exact address exists in API - use "Name" field which contains actual addresses
-                                    for prop in properties:
-                                        # Rent Manager uses "Name" field for property addresses
-                                        prop_address = str(prop.get('Name', '')).strip()
-                                        prop_lower = prop_address.lower()
-                                        user_lower_input = user_input.lower()
-                                        
-                                        # ENHANCED UNIT-SPECIFIC ADDRESS MATCHING
-                                        # Handle both single properties (29 Port Richmond) and multi-unit buildings (158-A Port Richmond)
-                                        address_match = False
-                                        
-                                        # Check for exact match including unit letters (158-A, 95-B, etc.)
-                                        if user_lower_input.replace(' ', '').replace('-', '') in prop_lower.replace(' ', '').replace('-', ''):
-                                            address_match = True
-                                            logger.info(f"🎯 EXACT UNIT MATCH: '{user_input}' → '{prop_address}'")
-                                        
-                                        # STRICT MATCHING: Only match exact valid addresses to prevent false matches
-                                        elif (number in ['25', '29', '31'] and 'port richmond' in user_lower_input and 'port richmond' in prop_lower and number in prop_lower):
-                                            address_match = True
-                                            logger.info(f"🏠 VALID PORT RICHMOND MATCH: '{user_input}' → '{prop_address}'")
-                                        elif (number in ['122'] and 'targee' in user_lower_input and 'targee' in prop_lower and number in prop_lower):
-                                            address_match = True
-                                            logger.info(f"🏠 VALID TARGEE MATCH: '{user_input}' → '{prop_address}'")
-                                        
-                                        if address_match:
-                                            api_verified_address = prop_address
-                                            logger.info(f"✅ API VERIFIED ADDRESS MATCH: {api_verified_address} (matched with '{user_input}')")
-                                            
-                                            # OPTIMIZED: Check if caller is a known tenant (with timeout to prevent delays)
-                                            caller_tenant_info = None
-                                            try:
-                                                if rent_manager and caller_phone:
-                                                    # Use timeout to prevent API delays from blocking user response
-                                                    import asyncio
-                                                    try:
-                                                        # REMOVED: Async call causing worker timeouts - use fast sync fallback
-                                                        caller_tenant_info = None
-                                                        if caller_tenant_info:
-                                                            tenant_address = caller_tenant_info.get('address', '')
-                                                            tenant_unit = caller_tenant_info.get('unit', '')
-                                                            logger.info(f"🏠 TENANT IDENTIFIED: {caller_tenant_info.get('name')} at {tenant_address} (Unit: {tenant_unit})")
-                                                            
-                                                            # Verify tenant's address matches what they're reporting
-                                                            if tenant_address and api_verified_address.lower() in tenant_address.lower():
-                                                                api_verified_address = tenant_address  # Use tenant's specific unit address
-                                                                logger.info(f"✅ TENANT ADDRESS CONFIRMED: Using tenant's specific address: {api_verified_address}")
-                                                            else:
-                                                                logger.warning(f"⚠️ ADDRESS MISMATCH: Tenant {caller_tenant_info.get('name')} calling about {api_verified_address} but lives at {tenant_address}")
-                                                        else:
-                                                            logger.info(f"🔍 CALLER NOT FOUND: {caller_phone} not recognized as tenant - treating as general inquiry")
-                                                    except Exception as e:
-                                                        logger.info(f"⚡ SPEED OPTIMIZATION: Skipped tenant lookup to prevent worker timeout")
-                                            except Exception as e:
-                                                logger.error(f"Error looking up tenant: {e}")
-                                            
-                                            break
-                                        
-                                    # Debug: Log full property structure to understand the data format
-                                    if properties:
-                                        sample_prop = properties[0]
-                                        logger.info(f"🔍 SAMPLE PROPERTY STRUCTURE: {list(sample_prop.keys())}")
-                                        logger.info(f"🔍 SAMPLE PROPERTY DATA: {sample_prop}")
-                                        
-                                        # Check different possible address field names
-                                        address_fields = ['Address', 'PropertyAddress', 'StreetAddress', 'address', 'Address1']
-                                        found_addresses = []
-                                        for field in address_fields:
-                                            if field in sample_prop and sample_prop[field]:
-                                                found_addresses.append(f"{field}: {sample_prop[field]}")
-                                        logger.info(f"🏠 FOUND ADDRESS FIELDS: {found_addresses}")
+                                    # Try to find exact or intelligent match
+                                    matched_property = asyncio.run(address_matcher.find_matching_property(user_input))
+                                    
+                                    if matched_property:
+                                        api_verified_address = matched_property.get('Name', '')
+                                        logger.info(f"🎯 INTELLIGENT MATCH FOUND: '{user_input}' → '{api_verified_address}'")
+                                    else:
+                                        # Get suggested similar addresses for user confirmation
+                                        suggested_addresses = asyncio.run(address_matcher.get_suggested_addresses(user_input, limit=2))
+                                        logger.info(f"🤔 NO EXACT MATCH - SUGGESTED: {suggested_addresses}")
                                     
                                     if not api_verified_address:
-                                        logger.warning(f"❌ API VERIFICATION FAILED: {user_input} not found in Rent Manager properties")
+                                        logger.warning(f"❌ INTELLIGENT VERIFICATION FAILED: {user_input} not found in property database")
                                         
                             except Exception as e:
                                 logger.error(f"Rent Manager API verification error: {e}")
                             
                             if not api_verified_address:
-                                # CRITICAL FIX: Address not found - simple response and return immediately
-                                response_text = f"I couldn't find '{user_input}' in our property system. Could you please provide the correct address? We manage properties at 25 Port Richmond Avenue, 29 Port Richmond Avenue, 31 Port Richmond Avenue, and 122 Targee Street."
+                                # INTELLIGENT SUGGESTIONS: Address not found - provide smart suggestions if available
+                                if suggested_addresses:
+                                    # Offer the best suggestions for confirmation
+                                    suggestion_text = " or ".join(suggested_addresses[:2])
+                                    response_text = f"I couldn't find '{user_input}' in our property system. Did you mean {suggestion_text}? Please confirm the correct address."
+                                else:
+                                    response_text = f"I couldn't find '{user_input}' in our property system. Could you please provide the correct address? We manage properties at 25 Port Richmond Avenue, 29 Port Richmond Avenue, 31 Port Richmond Avenue, and 122 Targee Street."
                                 logger.info(f"🤔 ADDRESS NOT FOUND: '{user_input}' → asking for correct address")
                                 
                                 # Store conversation properly

@@ -35,8 +35,8 @@ class AddressMatcher:
     
     async def find_matching_property(self, spoken_address: str) -> Optional[Dict[str, Any]]:
         """
-        Find the best matching property for a spoken address.
-        Returns property data if found, None otherwise.
+        Intelligent address matching - finds best property match with educated guesses.
+        Uses fuzzy matching and street name intelligence.
         """
         try:
             # Ensure properties are loaded
@@ -47,10 +47,14 @@ class AddressMatcher:
                 logger.error("No properties available for matching")
                 return None
             
-            spoken_clean = spoken_address.lower().strip()
-            logger.info(f"Matching spoken address: '{spoken_address}' against {len(self.properties_cache)} properties")
+            spoken_clean = spoken_address.lower().strip().replace(',', '').replace('.', '')
+            logger.info(f"🔍 INTELLIGENT MATCHING: '{spoken_address}' against {len(self.properties_cache)} properties")
             
-            # Try exact matches first
+            # STEP 1: Extract street components from spoken address
+            street_info = self._extract_street_components(spoken_clean)
+            logger.info(f"📍 EXTRACTED COMPONENTS: {street_info}")
+            
+            # STEP 2: Try exact matches first
             for prop in self.properties_cache:
                 prop_name = prop.get('Name', '').lower()
                 
@@ -59,19 +63,23 @@ class AddressMatcher:
                     logger.info(f"✅ EXACT MATCH: '{prop.get('Name')}' for spoken '{spoken_address}'")
                     return prop
             
-            # Try partial word matches
-            spoken_words = [word for word in spoken_clean.split() if len(word) > 2]
+            # STEP 3: Try intelligent street matching with common variations
+            best_matches = []
             for prop in self.properties_cache:
                 prop_name = prop.get('Name', '').lower()
-                
-                # Check if multiple words match
-                matches = sum(1 for word in spoken_words if word in prop_name)
-                if matches >= 2:  # At least 2 words match
-                    logger.info(f"✅ PARTIAL MATCH: '{prop.get('Name')}' for spoken '{spoken_address}'")
-                    return prop
+                score = self._calculate_match_score(street_info, prop_name)
+                if score > 0:
+                    best_matches.append((score, prop))
             
-            # Try single significant word matches
-            for word in spoken_words:
+            # Sort by score and return best match
+            if best_matches:
+                best_matches.sort(reverse=True, key=lambda x: x[0])
+                best_score, best_prop = best_matches[0]
+                logger.info(f"🎯 BEST INTELLIGENT MATCH: '{best_prop.get('Name')}' (score: {best_score}) for '{spoken_address}'")
+                return best_prop
+            
+            # STEP 4: Try single significant word matches as last resort
+            for word in street_info.get('words', []):
                 if len(word) > 4:  # Only try longer words
                     for prop in self.properties_cache:
                         prop_name = prop.get('Name', '').lower()
