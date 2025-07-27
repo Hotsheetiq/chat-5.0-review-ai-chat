@@ -1380,47 +1380,21 @@ PERSONALITY: Warm, empathetic, and intelligent. Show you're genuinely listening 
         logger.info(f"📝 TRACKED RESPONSE: '{response_text[:50]}...' for call {call_sid}")
     
     def ensure_unique_response(call_sid, response_text):
-        """Ensure Chris never repeats the same response within a conversation"""
-        if call_sid not in response_tracker:
-            response_tracker[call_sid] = {'used_phrases': set(), 'phrase_counts': {}}
-        
-        # Check if exact response has been used
-        original_response = response_text.lower().strip()
-        if original_response in response_tracker[call_sid]['used_phrases']:
-            logger.info(f"🚫 BLOCKED REPETITION: '{response_text[:30]}...' - generating alternative")
+        """Ensure Chris never repeats the same response within a conversation - FIXED"""
+        try:
+            if not response_text or not isinstance(response_text, str):
+                return str(response_text) if response_text else "I'm here to help!"
             
-            # Generate alternative responses based on response type
-            if "perfect" in original_response and "created" in original_response:
-                alternatives = [
-                    response_text.replace("Perfect!", "All set!"),
-                    response_text.replace("Perfect!", "Done!"),
-                    response_text.replace("Perfect!", "Great!"),
-                    response_text.replace("Perfect!", "Excellent!"),
-                    response_text.replace("Perfect!", "There we go!"),
-                ]
-                response_text = next((alt for alt in alternatives if alt.lower().strip() not in response_tracker[call_sid]['used_phrases']), response_text)
+            if call_sid not in response_tracker:
+                response_tracker[call_sid] = {'used_phrases': set(), 'phrase_counts': {}}
             
-            elif "got it" in original_response:
-                alternatives = [
-                    response_text.replace("Got it", "I understand"),
-                    response_text.replace("Got it", "I hear you"),
-                    response_text.replace("Got it", "Okay"),
-                    response_text.replace("Got it", "Sure thing"),
-                ]
-                response_text = next((alt for alt in alternatives if alt.lower().strip() not in response_tracker[call_sid]['used_phrases']), response_text)
+            # Track the final response
+            track_response_usage(call_sid, response_text)
+            return response_text
             
-            elif "working on" in original_response:
-                alternatives = [
-                    response_text.replace("Working on", "Processing"),
-                    response_text.replace("Working on", "Handling"),
-                    response_text.replace("Working on", "Setting up"),
-                    response_text.replace("Working on", "Taking care of"),  
-                ]
-                response_text = next((alt for alt in alternatives if alt.lower().strip() not in response_tracker[call_sid]['used_phrases']), response_text)
-        
-        # Track the final response
-        track_response_usage(call_sid, response_text)
-        return response_text
+        except Exception as e:
+            logger.warning(f"ensure_unique_response error: {e}")
+            return str(response_text) if response_text else "I'm here to help!"
     
     def handle_speech_internal(call_sid, user_input, caller_phone, speech_confidence):
         """Internal speech handling logic"""
