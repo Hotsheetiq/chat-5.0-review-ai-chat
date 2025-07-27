@@ -105,9 +105,23 @@ class AddressMatcher:
             return []
     
     async def verify_address_exists(self, address: str) -> bool:
-        """Check if an address exists in the property database"""
-        matching_prop = await self.find_matching_property(address)
-        return matching_prop is not None
+        """Check if EXACT address exists in property database - not intelligent suggestions"""
+        if not self.cache_loaded:
+            await self.load_properties()
+        
+        if not self.properties_cache:
+            return False
+            
+        # Only return True for EXACT matches, not intelligent suggestions
+        address_clean = address.lower().strip().replace(',', '').replace('.', '')
+        
+        for prop in self.properties_cache:
+            prop_name = prop.get('Name', '').lower()
+            # Exact match: spoken address must match property name exactly or be contained within
+            if address_clean == prop_name or address_clean in prop_name or prop_name in address_clean:
+                return True
+        
+        return False
 
     def _extract_street_components(self, address: str) -> Dict:
         """Extract components from a spoken address for intelligent matching"""

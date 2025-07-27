@@ -1980,16 +1980,33 @@ PERSONALITY: Warm, empathetic, and intelligent. Show you're genuinely listening 
                                 if address_matcher:
                                     import asyncio
                                     
-                                    # Try to find exact or intelligent match
-                                    matched_property = asyncio.run(address_matcher.find_matching_property(user_input))
+                                    # Check for EXACT match first
+                                    exact_address_exists = asyncio.run(address_matcher.verify_address_exists(user_input))
+                                    exact_address = None
                                     
-                                    if matched_property:
-                                        api_verified_address = matched_property.get('Name', '')
-                                        logger.info(f"🎯 INTELLIGENT MATCH FOUND: '{user_input}' → '{api_verified_address}'")
+                                    if exact_address_exists:
+                                        # Find the exact property name for verified address
+                                        exact_property = asyncio.run(address_matcher.find_matching_property(user_input))
+                                        if exact_property:
+                                            exact_address = exact_property.get('Name', '')
+                                    
+                                    if exact_address:
+                                        # EXACT MATCH - proceed with confidence
+                                        api_verified_address = exact_address
+                                        logger.info(f"✅ EXACT MATCH FOUND: '{user_input}' → '{api_verified_address}'")
                                     else:
-                                        # Get suggested similar addresses for user confirmation
-                                        suggested_addresses = asyncio.run(address_matcher.get_suggested_addresses(user_input, limit=2))
-                                        logger.info(f"🤔 NO EXACT MATCH - SUGGESTED: {suggested_addresses}")
+                                        # NO EXACT MATCH - find intelligent suggestions for confirmation
+                                        matched_property = asyncio.run(address_matcher.find_matching_property(user_input))
+                                        
+                                        if matched_property:
+                                            # This is a SUGGESTION, not a verified address
+                                            intelligent_suggestion = matched_property.get('Name', '')
+                                            suggested_addresses = [intelligent_suggestion]
+                                            logger.info(f"🎯 INTELLIGENT SUGGESTION: '{user_input}' → '{intelligent_suggestion}' (needs confirmation)")
+                                        else:
+                                            # Get multiple suggestions for user confirmation
+                                            suggested_addresses = asyncio.run(address_matcher.get_suggested_addresses(user_input, limit=2))
+                                            logger.info(f"🤔 NO EXACT MATCH - SUGGESTED: {suggested_addresses}")
                                     
                                     if not api_verified_address:
                                         logger.warning(f"❌ INTELLIGENT VERIFICATION FAILED: {user_input} not found in property database")
