@@ -1911,9 +1911,7 @@ PERSONALITY: Warm, empathetic, and intelligent. Show you're genuinely listening 
                         elif any(word in user_lower for word in ['broken', 'not working', "doesn't work", "won't work"]):
                             response_text = "What's broken? I can help create a service ticket."
                             logger.info(f"⚡ INSTANT BROKEN DETECTION: {user_input}")
-                        elif any(word in user_lower for word in ['roaches', 'roach', 'bugs', 'insects', 'pest', 'cockroaches']):
-                            response_text = "I understand you're dealing with a pest control issue. Let me help you get this resolved right away. What's your property address?"
-                            logger.info(f"🚨 PEST CONTROL DETECTED: Roach/bug issue in narrative")
+
                         elif any(word in user_lower for word in ['toilet', 'bathroom', 'plumbing', 'water', 'leak', 'drain', 'sink', 'faucet']):
                             response_text = "That sounds like a plumbing issue. Let me help you get this resolved right away. What's your property address?"
                             logger.info(f"🚨 COMPLAINT DETECTED: Plumbing issue in narrative")
