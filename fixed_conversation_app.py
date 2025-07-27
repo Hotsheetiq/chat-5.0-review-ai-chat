@@ -2486,9 +2486,9 @@ PERSONALITY: Warm, empathetic, and intelligent. Show you're genuinely listening 
                 recent_service_issue = None
                 if call_sid in current_service_issue:
                     recent_service_issue = current_service_issue[call_sid]
-                elif call_sid in conversation_history:
+                elif call_sid in conversation_history and isinstance(conversation_history[call_sid], list):
                     for entry in reversed(conversation_history[call_sid]):
-                        if 'service_issue' in entry:
+                        if isinstance(entry, dict) and 'service_issue' in entry:
                             recent_service_issue = entry['service_issue']
                             break
                 
@@ -2504,13 +2504,26 @@ PERSONALITY: Warm, empathetic, and intelligent. Show you're genuinely listening 
                     else:
                         logger.info(f"🤖 AI RESPONSE: {response_text}")
             
-            # Store assistant response with enhanced tracking
-            conversation_history[call_sid].append({
-                'role': 'assistant',
-                'content': response_text,
-                'timestamp': datetime.now(),
-                'response_type': 'ai_generated' if 'ai response' in response_text.lower() else 'instant'
-            })
+            # Store assistant response with enhanced tracking - FIXED
+            try:
+                if call_sid not in conversation_history:
+                    conversation_history[call_sid] = []
+                
+                conversation_history[call_sid].append({
+                    'role': 'assistant',
+                    'content': str(response_text) if response_text else '',
+                    'timestamp': datetime.now(),
+                    'response_type': 'ai_generated' if response_text and 'ai response' in str(response_text).lower() else 'instant'
+                })
+            except Exception as history_error:
+                logger.warning(f"History storage error: {history_error}")
+                # Initialize fresh history if corrupted
+                conversation_history[call_sid] = [{
+                    'role': 'assistant', 
+                    'content': str(response_text) if response_text else 'I am here to help!',
+                    'timestamp': datetime.now(),
+                    'response_type': 'instant'
+                }]
             
             # Save admin conversation memory persistently (include blocked admin calls)
             if caller_phone and caller_phone in ADMIN_PHONE_NUMBERS and caller_phone != "unknown":
