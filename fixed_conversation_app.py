@@ -1321,6 +1321,7 @@ PERSONALITY: Warm, empathetic, and intelligent. Show you're genuinely listening 
 
             # Enhanced SMS trigger detection - SEPARATE WORKFLOW STEPS
             if recent_service_issue and not response_text:
+                user_lower = user_input.lower()
                 sms_yes_phrases = [
                     'yes text', 'yes please text', 'yes send', 'yes please', 'yes',
                     'text me', 'text please', 'send me text', 'text it', 'send sms',
