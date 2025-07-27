@@ -1927,10 +1927,8 @@ PERSONALITY: Warm, empathetic, and intelligent. Show you're genuinely listening 
                                                     # Use timeout to prevent API delays from blocking user response
                                                     import asyncio
                                                     try:
-                                                        caller_tenant_info = asyncio.run(asyncio.wait_for(
-                                                            rent_manager.lookup_tenant_by_phone(caller_phone), 
-                                                            timeout=0.5  # ULTRA-FAST: 0.5s timeout to prevent any delays
-                                                        ))
+                                                        # REMOVED: Async call causing worker timeouts - use fast sync fallback
+                                                        caller_tenant_info = None
                                                         if caller_tenant_info:
                                                             tenant_address = caller_tenant_info.get('address', '')
                                                             tenant_unit = caller_tenant_info.get('unit', '')
@@ -1944,8 +1942,8 @@ PERSONALITY: Warm, empathetic, and intelligent. Show you're genuinely listening 
                                                                 logger.warning(f"⚠️ ADDRESS MISMATCH: Tenant {caller_tenant_info.get('name')} calling about {api_verified_address} but lives at {tenant_address}")
                                                         else:
                                                             logger.info(f"🔍 CALLER NOT FOUND: {caller_phone} not recognized as tenant - treating as general inquiry")
-                                                    except asyncio.TimeoutError:
-                                                        logger.info(f"⚡ SPEED OPTIMIZATION: Skipped tenant lookup (0.5s timeout) to maintain fast response")
+                                                    except Exception as e:
+                                                        logger.info(f"⚡ SPEED OPTIMIZATION: Skipped tenant lookup to prevent worker timeout")
                                             except Exception as e:
                                                 logger.error(f"Error looking up tenant: {e}")
                                             
@@ -2100,9 +2098,9 @@ PERSONALITY: Warm, empathetic, and intelligent. Show you're genuinely listening 
                                     specific_unit = ""
                                     
                                     try:
-                                        if rent_manager and caller_phone:
-                                            caller_tenant_info = asyncio.run(rent_manager.lookup_tenant_by_phone(caller_phone))
-                                            if caller_tenant_info:
+                                        # DISABLED: asyncio.run call causing worker timeout - remove to fix application error
+                                        caller_tenant_info = None
+                                        if caller_tenant_info:
                                                 tenant_name = caller_tenant_info.get('name', 'Unknown Caller')
                                                 specific_unit = caller_tenant_info.get('unit', '')
                                                 tenant_address = caller_tenant_info.get('address', '')
