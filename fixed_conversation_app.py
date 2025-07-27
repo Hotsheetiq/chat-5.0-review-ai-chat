@@ -1793,6 +1793,70 @@ PERSONALITY: Warm, empathetic, and intelligent. Show you're genuinely listening 
                 <Gather input="speech" timeout="8" speechTimeout="4"/>
             </Response>"""
     
+    @app.route("/voice/incoming", methods=["POST"])
+    def voice_incoming():
+        """Twilio webhook for incoming voice calls - CRITICAL MISSING ENDPOINT"""
+        try:
+            call_sid = request.values.get("CallSid", "")
+            caller_phone = request.values.get("From", "")
+            
+            logger.info(f"📞 INCOMING CALL via /voice/incoming: {call_sid} from {caller_phone}")
+            
+            # Initialize conversation
+            if call_sid not in conversation_history:
+                conversation_history[call_sid] = []
+            
+            # Create greeting with recording
+            greeting_text = "Good morning, hey it's Chris with Grinberg Management. How can I help you today?"
+            main_voice = create_voice_response(greeting_text)
+            
+            return f"""<?xml version="1.0" encoding="UTF-8"?>
+            <Response>
+                <Record timeout="1800" recordingStatusCallback="/recording-status" />
+                {main_voice}
+                <Gather input="speech dtmf" timeout="8" speechTimeout="4" dtmfTimeout="2" language="en-US" profanityFilter="false" enhanced="true" action="/handle-input/{call_sid}" method="POST">
+                </Gather>
+                <Redirect>/handle-speech/{call_sid}</Redirect>
+            </Response>"""
+            
+        except Exception as e:
+            logger.error(f"Voice incoming error: {e}")
+            # Return basic TwiML to prevent application error
+            return f"""<?xml version="1.0" encoding="UTF-8"?>
+            <Response>
+                <Say voice="Polly.Matthew-Neural">Hi, this is Chris with Grinberg Management. How can I help you today?</Say>
+                <Gather input="speech" timeout="8" speechTimeout="4" action="/handle-speech/fallback" method="POST">
+                </Gather>
+            </Response>"""
+    
+    @app.route("/handle-speech/fallback", methods=["POST"]) 
+    def handle_fallback_speech():
+        """Fallback speech handler for error recovery"""
+        try:
+            user_input = request.values.get("SpeechResult", "").strip()
+            caller_phone = request.values.get("From", "")
+            
+            logger.info(f"📞 FALLBACK SPEECH: '{user_input}' from {caller_phone}")
+            
+            if user_input:
+                response_text = "I understand you need help. Let me connect you with our office at 718-414-6984."
+            else:
+                response_text = "I'm sorry, I didn't catch that. Please call our office at 718-414-6984 for assistance."
+            
+            voice_response = create_voice_response(response_text)
+            
+            return f"""<?xml version="1.0" encoding="UTF-8"?>
+            <Response>
+                {voice_response}
+            </Response>"""
+            
+        except Exception as e:
+            logger.error(f"Fallback speech error: {e}")
+            return """<?xml version="1.0" encoding="UTF-8"?>
+            <Response>
+                <Say voice="Polly.Matthew-Neural">Please call our office at 718-414-6984 for assistance.</Say>
+            </Response>"""
+    
     @app.route("/")
     def dashboard():
         """Simple dashboard showing system status"""
