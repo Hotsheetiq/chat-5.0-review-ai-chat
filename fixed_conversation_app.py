@@ -1720,6 +1720,29 @@ PERSONALITY: Warm, empathetic, and intelligent. Show you're genuinely listening 
                                         if address_match:
                                             api_verified_address = prop_address
                                             logger.info(f"✅ API VERIFIED ADDRESS MATCH: {api_verified_address} (matched with '{user_input}')")
+                                            
+                                            # CRITICAL: Check if caller is a known tenant at this address
+                                            caller_tenant_info = None
+                                            try:
+                                                if rent_manager and caller_phone:
+                                                    # Look up tenant by phone number to get their specific unit
+                                                    caller_tenant_info = asyncio.run(rent_manager.lookup_tenant_by_phone(caller_phone))
+                                                    if caller_tenant_info:
+                                                        tenant_address = caller_tenant_info.get('address', '')
+                                                        tenant_unit = caller_tenant_info.get('unit', '')
+                                                        logger.info(f"🏠 TENANT IDENTIFIED: {caller_tenant_info.get('name')} at {tenant_address} (Unit: {tenant_unit})")
+                                                        
+                                                        # Verify tenant's address matches what they're reporting
+                                                        if tenant_address and api_verified_address.lower() in tenant_address.lower():
+                                                            api_verified_address = tenant_address  # Use tenant's specific unit address
+                                                            logger.info(f"✅ TENANT ADDRESS CONFIRMED: Using tenant's specific address: {api_verified_address}")
+                                                        else:
+                                                            logger.warning(f"⚠️ ADDRESS MISMATCH: Tenant {caller_tenant_info.get('name')} calling about {api_verified_address} but lives at {tenant_address}")
+                                                    else:
+                                                        logger.info(f"🔍 CALLER NOT FOUND: {caller_phone} not recognized as tenant - treating as general inquiry")
+                                            except Exception as e:
+                                                logger.error(f"Error looking up tenant: {e}")
+                                            
                                             break
                                         
                                     # Debug: Log full property structure to understand the data format
@@ -1862,10 +1885,33 @@ PERSONALITY: Warm, empathetic, and intelligent. Show you're genuinely listening 
                                 verified_address = "29 Port Richmond Avenue" if number in ['29', '2940'] else "31 Port Richmond Avenue" if number in ['31', '3140'] else "122 Targee Street"
                                 
                                 if detected_issue_type:
-                                    # Create service ticket with detected issue - IMMEDIATE RETURN
+                                    # ENHANCED: Create service ticket with tenant-specific information
+                                    ticket_address = api_verified_address if api_verified_address else verified_address
+                                    
+                                    # Use tenant information if available for more accurate ticket assignment
+                                    tenant_name = "Unknown Caller"
+                                    tenant_phone = caller_phone
+                                    specific_unit = ""
+                                    
+                                    try:
+                                        if rent_manager and caller_phone:
+                                            caller_tenant_info = asyncio.run(rent_manager.lookup_tenant_by_phone(caller_phone))
+                                            if caller_tenant_info:
+                                                tenant_name = caller_tenant_info.get('name', 'Unknown Caller')
+                                                specific_unit = caller_tenant_info.get('unit', '')
+                                                tenant_address = caller_tenant_info.get('address', '')
+                                                if tenant_address:
+                                                    ticket_address = tenant_address  # Use tenant's exact unit address
+                                                logger.info(f"🎫 CREATING TICKET FOR TENANT: {tenant_name} at {ticket_address}")
+                                    except Exception as e:
+                                        logger.error(f"Error getting tenant info for ticket: {e}")
+                                    
                                     current_service_issue = {
                                         'issue_type': detected_issue_type,
-                                        'address': verified_address,
+                                        'address': ticket_address,
+                                        'tenant_name': tenant_name,
+                                        'tenant_phone': tenant_phone,
+                                        'specific_unit': specific_unit,
                                         'issue_number': f"SV-{random.randint(10000, 99999)}"
                                     }
                                     
@@ -1877,7 +1923,9 @@ PERSONALITY: Warm, empathetic, and intelligent. Show you're genuinely listening 
                                         'timestamp': datetime.now()
                                     })
                                     
-                                    response_text = f"Perfect! I've created service ticket #{current_service_issue['issue_number']} for your {detected_issue_type} issue at {verified_address}. Someone from our maintenance team will contact you soon. Would you like me to text you the issue number? What's the best phone number to reach you?"
+                                    # Enhanced response with tenant-specific information
+                                    unit_info = f" (Unit: {current_service_issue['specific_unit']})" if current_service_issue['specific_unit'] else ""
+                                    response_text = f"Perfect! I've created service ticket #{current_service_issue['issue_number']} for your {detected_issue_type} issue at {current_service_issue['address']}{unit_info}. Someone from our maintenance team will contact you soon. Would you like me to text you the issue number? What's the best phone number to reach you?"
                                     logger.info(f"✅ INSTANT TICKET CREATED: #{current_service_issue['issue_number']} for {detected_issue_type} at {verified_address}")
                                     return response_text  # CRITICAL: Return immediately to prevent repetitive questions
                                 else:
