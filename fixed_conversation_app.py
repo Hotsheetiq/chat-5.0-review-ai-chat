@@ -2179,7 +2179,8 @@ PERSONALITY: Warm, empathetic, and intelligent. Show you're genuinely listening 
                                         logger.info(f"🎫 FOUND HEATING ISSUE: content='{content}', issues={detected_issues}")
                                         break
                                 
-                                verified_address = "29 Port Richmond Avenue" if number in ['29', '2940'] else "31 Port Richmond Avenue" if number in ['31', '3140'] else "122 Targee Street"
+                                # Use the AI-verified address from address matcher, not hardcoded logic
+                                verified_address = api_verified_address
                                 
                                 if detected_issue_type:
                                     # ENHANCED: Create service ticket with tenant-specific information
