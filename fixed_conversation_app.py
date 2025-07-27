@@ -1383,10 +1383,56 @@ PERSONALITY: Warm, empathetic, and intelligent. Show you're genuinely listening 
 
             # PRIORITY 3: Check conversation memory for auto-ticket creation (ONLY if no caller info or SMS workflow active)
             if not response_text and not waiting_for_name and not waiting_for_phone_collection:
-                auto_ticket_response = check_conversation_memory(call_sid, user_input)
-                if auto_ticket_response:
-                    logger.info(f"🎫 AUTO-TICKET or MEMORY RESPONSE: {auto_ticket_response}")
-                    response_text = auto_ticket_response
+                # Check if we have an issue from current input and address from history, or vice versa
+                current_issue = None
+                current_address = None
+                
+                # Detect issue in current input
+                user_lower = user_input.lower()
+                if any(word in user_lower for word in ['electrical', 'power', 'electricity', 'no power']):
+                    current_issue = "electrical"
+                elif any(word in user_lower for word in ['heating', 'heat', 'no heat', 'cold']):
+                    current_issue = "heating"
+                elif any(word in user_lower for word in ['plumbing', 'toilet', 'water', 'leak']):
+                    current_issue = "plumbing"
+                elif any(word in user_lower for word in ['noise', 'loud', 'neighbors']):
+                    current_issue = "noise complaint"
+                
+                # If we detected an issue, check conversation history for addresses
+                if current_issue and call_sid in conversation_history:
+                    for entry in reversed(conversation_history[call_sid]):
+                        content = str(entry.get('content', '')).lower()
+                        # Look for specific addresses mentioned before
+                        if '29 port richmond' in content:
+                            current_address = "29 Port Richmond Avenue"
+                            break
+                        elif '122 targee' in content:
+                            current_address = "122 Targee Street"
+                            break
+                        elif '31 port richmond' in content:
+                            current_address = "31 Port Richmond Avenue"
+                            break
+                    
+                    # If we have both issue and address from memory, start caller info collection
+                    if current_address:
+                        logger.info(f"🧠 MEMORY MATCH: {current_issue} + {current_address} from conversation history")
+                        
+                        # Store pending ticket data for caller info collection
+                        conversation_history.setdefault(call_sid, []).append({
+                            'role': 'system',
+                            'content': 'waiting_for_caller_name',
+                            'pending_ticket': {
+                                'issue_type': current_issue,
+                                'address': current_address
+                            },
+                            'timestamp': datetime.now()
+                        })
+                        
+                        response_text = f"I've got your {current_issue} issue at {current_address}. To complete the service ticket, can you tell me your name please?"
+                    else:
+                        # We have an issue but no address - ask for address
+                        logger.info(f"🎫 ISSUE DETECTED, ASKING FOR ADDRESS: {current_issue}")
+                        response_text = f"I understand you have an {current_issue} issue. What's your property address so I can create the service ticket?"
 
             if not response_text:
                 # SKIP speech-based training activation - only use *1 keypad
