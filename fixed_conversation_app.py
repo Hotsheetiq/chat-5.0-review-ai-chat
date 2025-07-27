@@ -682,11 +682,19 @@ Questions? Call (718) 414-6984"""
                                     detected_address = verified_address
                                     logger.info(f"✅ VERIFIED ADDRESS: {verified_address}")
                                 else:
-                                    # Smart address clarification - detect partial matches
-                                    street_detected = None
+                                    # PRIORITY: Check for specific address confirmations FIRST
                                     user_lower = potential_address.lower()
+                                    if "26 port richmond" in user_lower:
+                                        logger.info(f"🔍 ADDRESS CONFIRMATION: {potential_address} → suggesting 29 Port Richmond Avenue")
+                                        return f"I heard 26 Port Richmond Avenue but couldn't find that exact address. Did you mean 29 Port Richmond Avenue? Please confirm the correct address."
+                                    elif "25 port richmond" in user_lower or "27 port richmond" in user_lower or "28 port richmond" in user_lower:
+                                        logger.info(f"🔍 ADDRESS CONFIRMATION: {potential_address} → suggesting 29 Port Richmond Avenue")
+                                        return f"I heard {potential_address} but couldn't find that exact address. Did you mean 29 Port Richmond Avenue? Please confirm the correct address."
                                     
-                                    if "richmond" in user_lower and "avenue" in user_lower:
+                                    # Smart address clarification - detect partial matches (secondary)
+                                    street_detected = None
+                                    
+                                    if "richmond" in user_lower and "avenue" in user_lower and "port" not in user_lower:
                                         street_detected = "Richmond Avenue"
                                         available_numbers = ["2940", "2944", "2938"]
                                     elif "richmond" in user_lower and "port" in user_lower:
@@ -1230,8 +1238,27 @@ PERSONALITY: Warm, empathetic, and intelligent. Show you're genuinely listening 
             
             # Handle caller name collection
             if waiting_for_name and pending_ticket_data:
-                caller_name = user_input.strip()
-                logger.info(f"👤 CALLER NAME RECEIVED: {caller_name}")
+                raw_name = user_input.strip()
+                logger.info(f"👤 RAW NAME INPUT: {raw_name}")
+                
+                # Extract actual name from phrases like "My name is Dimitri" or "I'm John Smith"
+                import re
+                name_patterns = [
+                    r'my name is\s+(.+)',
+                    r'i\'m\s+(.+)',
+                    r'it\'s\s+(.+)',
+                    r'this is\s+(.+)',
+                    r'call me\s+(.+)'
+                ]
+                
+                caller_name = raw_name
+                for pattern in name_patterns:
+                    match = re.search(pattern, raw_name.lower())
+                    if match:
+                        caller_name = match.group(1).strip()
+                        break
+                
+                logger.info(f"👤 EXTRACTED CALLER NAME: {caller_name}")
                 
                 # Update pending ticket with caller name
                 pending_ticket_data['caller_name'] = caller_name
@@ -1248,8 +1275,8 @@ PERSONALITY: Warm, empathetic, and intelligent. Show you're genuinely listening 
                 
             # Handle phone number collection  
             elif waiting_for_phone_collection and pending_ticket_data:
-                # Extract phone number
-                phone_match = re.search(r'(\d{3}[-.]?\d{3}[-.]?\d{4})', user_input)
+                # Extract phone number - improved pattern matching
+                phone_match = re.search(r'(\d{3}[-.\s]?\d{3}[-.\s]?\d{4})', user_input.replace('(', '').replace(')', ''))
                 if phone_match:
                     caller_phone = phone_match.group(1)
                     logger.info(f"📞 CALLER PHONE RECEIVED: {caller_phone}")
@@ -1268,9 +1295,14 @@ PERSONALITY: Warm, empathetic, and intelligent. Show you're genuinely listening 
                     current_service_issue[call_sid] = service_issue_data
                     logger.info(f"✅ COMPLETE TICKET CREATED: {service_issue_data}")
                     
+                    # Clear the waiting state to prevent loops
+                    for entry in conversation_history.get(call_sid, []):
+                        if entry.get('content') == 'waiting_for_phone_collection':
+                            entry['content'] = 'phone_collection_complete'
+                    
                     response_text = f"Perfect! I've created service ticket #{ticket_number} for your {pending_ticket_data['issue_type']} issue at {pending_ticket_data['address']}. Someone from our maintenance team will contact you soon. Would you like me to text you the ticket details?"
                 else:
-                    response_text = "I didn't catch that phone number clearly. Could you repeat it please?"
+                    response_text = "I didn't catch that phone number clearly. Could you repeat it please? Just the digits are fine."
 
             # PRIORITY 2: Check for SMS workflow - only after ticket is complete
             recent_service_issue = None
@@ -1297,17 +1329,31 @@ PERSONALITY: Warm, empathetic, and intelligent. Show you're genuinely listening 
                 
                 # Check if user confirmed SMS
                 if any(phrase in user_lower for phrase in sms_yes_phrases):
-                    # User wants SMS confirmation - ASK FOR PHONE NUMBER
-                    logger.info(f"📱 SMS CONFIRMED: '{user_input}' for issue #{recent_service_issue['issue_number']}")
-                    response_text = f"Great! What's the best phone number to text the issue details to?"
-                    
-                    # Mark this conversation as waiting for phone number
-                    conversation_history[call_sid].append({
-                        'role': 'system',
-                        'content': 'waiting_for_phone_number',
-                        'service_issue': recent_service_issue,
-                        'timestamp': datetime.now()
-                    })
+                    # Check if we already have caller phone from ticket creation
+                    if 'caller_phone' in recent_service_issue:
+                        # Use the phone number from ticket creation
+                        caller_phone = recent_service_issue['caller_phone']
+                        logger.info(f"📱 SMS CONFIRMED: Using existing phone {caller_phone} for issue #{recent_service_issue['issue_number']}")
+                        
+                        # Send SMS immediately
+                        if send_service_sms_to_number(recent_service_issue, caller_phone):
+                            response_text = f"Perfect! I've texted the details for service issue #{recent_service_issue['issue_number']} to {caller_phone}. You should receive it shortly!"
+                            logger.info(f"📱 SMS SENT: Issue #{recent_service_issue['issue_number']} to {caller_phone}")
+                        else:
+                            response_text = f"I had trouble sending the text to {caller_phone}, but your service issue #{recent_service_issue['issue_number']} is created and someone from our maintenance team will contact you soon."
+                            logger.warning(f"📱 SMS FAILED to {caller_phone}: Fallback message provided")
+                    else:
+                        # Legacy path - ask for phone number
+                        logger.info(f"📱 SMS CONFIRMED: '{user_input}' for issue #{recent_service_issue['issue_number']} - asking for phone")
+                        response_text = f"Great! What's the best phone number to text the issue details to?"
+                        
+                        # Mark this conversation as waiting for phone number
+                        conversation_history[call_sid].append({
+                            'role': 'system',
+                            'content': 'waiting_for_phone_number',
+                            'service_issue': recent_service_issue,
+                            'timestamp': datetime.now()
+                        })
                     
                 # Check if this looks like a phone number (after SMS confirmation)
                 elif re.match(r'.*\d{3}.*\d{3}.*\d{4}.*', user_input):
