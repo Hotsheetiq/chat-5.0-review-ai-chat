@@ -1054,10 +1054,21 @@ PERSONALITY: Warm, empathetic, and intelligent. Show you're genuinely listening 
             if call_sid not in response_tracker:
                 response_tracker[call_sid] = []
             
-            recent_responses = response_tracker[call_sid][-3:] if call_sid in response_tracker else []
-            if recent_responses:
-                anti_repeat_instruction = f"IMPORTANT: You've recently said: {', '.join(recent_responses)}. Do NOT repeat these exact phrases. Vary your response with different wording."
-                messages.append({"role": "system", "content": anti_repeat_instruction})
+            # FIXED: Handle response tracker properly to prevent slice errors
+            try:
+                recent_responses = []
+                if call_sid in response_tracker and isinstance(response_tracker[call_sid], list):
+                    recent_responses = response_tracker[call_sid][-3:] if len(response_tracker[call_sid]) > 0 else []
+                
+                if recent_responses:
+                    # Only include string responses that are valid
+                    valid_responses = [str(r) for r in recent_responses if r and isinstance(r, str)]
+                    if valid_responses:
+                        anti_repeat_instruction = f"IMPORTANT: You've recently said: {', '.join(valid_responses)}. Do NOT repeat these exact phrases. Vary your response with different wording."
+                        messages.append({"role": "system", "content": anti_repeat_instruction})
+            except Exception as tracker_error:
+                logger.warning(f"Response tracker error: {tracker_error}")
+                # Continue without anti-repeat functionality
             
             # Try Grok first for enhanced conversation memory, fallback to OpenAI
             result = None
@@ -1099,14 +1110,22 @@ PERSONALITY: Warm, empathetic, and intelligent. Show you're genuinely listening 
                     logger.error(f"Both AI systems failed: {openai_error}")
                     result = "I'm here to help! What can I do for you today?"
             
-            # Track response to prevent repetition
-            if call_sid not in response_tracker:
-                response_tracker[call_sid] = []
-            response_tracker[call_sid].append(result)
-            
-            # Keep only last 5 responses to prevent memory bloat
-            if len(response_tracker[call_sid]) > 5:
-                response_tracker[call_sid] = response_tracker[call_sid][-5:]
+            # FIXED: Track response safely to prevent slice errors
+            try:
+                if call_sid not in response_tracker:
+                    response_tracker[call_sid] = []
+                
+                # Only append valid string results
+                if result and isinstance(result, str):
+                    response_tracker[call_sid].append(result)
+                    
+                    # Keep only last 5 responses to prevent memory bloat
+                    if len(response_tracker[call_sid]) > 5:
+                        response_tracker[call_sid] = response_tracker[call_sid][-5:]
+            except Exception as tracker_error:
+                logger.warning(f"Response tracking error: {tracker_error}")
+                # Initialize fresh tracker for this call
+                response_tracker[call_sid] = [result] if result and isinstance(result, str) else []
             
             return result
             
@@ -1892,6 +1911,9 @@ PERSONALITY: Warm, empathetic, and intelligent. Show you're genuinely listening 
                         elif any(word in user_lower for word in ['broken', 'not working', "doesn't work", "won't work"]):
                             response_text = "What's broken? I can help create a service ticket."
                             logger.info(f"⚡ INSTANT BROKEN DETECTION: {user_input}")
+                        elif any(word in user_lower for word in ['roaches', 'roach', 'bugs', 'insects', 'pest', 'cockroaches']):
+                            response_text = "I understand you're dealing with a pest control issue. Let me help you get this resolved right away. What's your property address?"
+                            logger.info(f"🚨 PEST CONTROL DETECTED: Roach/bug issue in narrative")
                         elif any(word in user_lower for word in ['toilet', 'bathroom', 'plumbing', 'water', 'leak', 'drain', 'sink', 'faucet']):
                             response_text = "That sounds like a plumbing issue. Let me help you get this resolved right away. What's your property address?"
                             logger.info(f"🚨 COMPLAINT DETECTED: Plumbing issue in narrative")
