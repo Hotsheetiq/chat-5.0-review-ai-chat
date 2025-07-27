@@ -334,6 +334,12 @@ The application is designed for cloud deployment with the following consideratio
 - **NO MORE CUTOFFS**: Eliminated all response truncation issues - Chris speaks complete sentences and provides full information
 - **PRODUCTION READY**: All response generation working perfectly with adequate token limits for comprehensive conversations
 
+### July 27, 2025 - CRITICAL ISSUES IDENTIFIED: Address Override & SMS Not Sending (IN PROGRESS)
+- **ADDRESS OVERRIDE BUG**: Chris asks "Did you mean 29 Port Richmond Avenue?" for "21 Port Richmond Avenue", user says "no", but Chris still uses 29 instead of respecting user's correction
+- **SMS NOT SENDING**: Chris promises to send SMS but user doesn't receive texts - missing TWILIO_PHONE_NUMBER environment variable
+- **ROOT CAUSE**: AI fallback system overrides address confirmation logic and conversation memory
+- **FIX IN PROGRESS**: Restructuring priority logic to handle address rejections before AI fallback
+
 ### July 27, 2025 - ALL USER-REPORTED ISSUES COMPLETELY FIXED: Perfect Live Call Experience
 - **ADDRESS CONFIRMATION WORKING**: Chris correctly responds "I heard 26 Port Richmond Avenue but couldn't find that exact address. Did you mean 29 Port Richmond Avenue? Please confirm the correct address."
 - **NAME EXTRACTION FIXED**: "My name is Dimitri" now properly extracts "Dimitri" instead of storing the full phrase as caller name

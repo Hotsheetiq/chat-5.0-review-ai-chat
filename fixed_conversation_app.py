@@ -349,9 +349,13 @@ Questions? Call (718) 414-6984"""
                 os.environ.get('TWILIO_AUTH_TOKEN')
             )
             
+            # Use the correct Twilio phone number
+            twilio_phone = os.environ.get('TWILIO_PHONE_NUMBER') or '+18886411102'
+            logger.info(f"📱 SENDING SMS from {twilio_phone} to {formatted_phone}")
+            
             message = twilio_client.messages.create(
                 body=sms_message,
-                from_=os.environ.get('TWILIO_PHONE_NUMBER', '+18886411102'),
+                from_=twilio_phone,
                 to=formatted_phone
             )
             
@@ -684,7 +688,30 @@ Questions? Call (718) 414-6984"""
                                 else:
                                     # PRIORITY: Check for specific address confirmations FIRST
                                     user_lower = potential_address.lower()
-                                    if "26 port richmond" in user_lower:
+                                    
+                                    # Check for rejection of previous suggestion ("no" responses)
+                                    if user_lower in ['no', 'nope', 'not that', 'no that is not correct', 'that is not right']:
+                                        logger.info(f"🚫 ADDRESS CONFIRMATION REJECTED: User said '{potential_address}' - asking for correct address")
+                                        return f"I understand. Could you please tell me the correct address for your property?"
+                                    
+                                    # Check for specific problematic addresses that need confirmation
+                                    # BUT if user says "is correct" or "that's right", accept their address
+                                    if "is correct" in user_lower or "that's right" in user_lower or "that is correct" in user_lower:
+                                        # Extract the address they're confirming
+                                        import re
+                                        address_match = re.search(r'(\d{1,4})\s+(port richmond|targee|court)', user_lower)
+                                        if address_match:
+                                            confirmed_address = f"{address_match.group(1)} {address_match.group(2).title()}"
+                                            if "port richmond" in address_match.group(2):
+                                                confirmed_address += " Avenue"
+                                            elif "targee" in address_match.group(2):
+                                                confirmed_address += " Street"
+                                            logger.info(f"✅ USER CONFIRMED ADDRESS: {confirmed_address}")
+                                            detected_address = confirmed_address
+                                    elif "21 port richmond" in user_lower and "correct" not in user_lower:
+                                        logger.info(f"🔍 ADDRESS CONFIRMATION: {potential_address} → checking if meant 29 Port Richmond Avenue")
+                                        return f"I heard 21 Port Richmond Avenue but couldn't find that exact address in our system. Did you mean 29 Port Richmond Avenue? Please confirm the correct address."
+                                    elif "26 port richmond" in user_lower:
                                         logger.info(f"🔍 ADDRESS CONFIRMATION: {potential_address} → suggesting 29 Port Richmond Avenue")
                                         return f"I heard 26 Port Richmond Avenue but couldn't find that exact address. Did you mean 29 Port Richmond Avenue? Please confirm the correct address."
                                     elif "25 port richmond" in user_lower or "27 port richmond" in user_lower or "28 port richmond" in user_lower:
