@@ -1289,7 +1289,7 @@ PERSONALITY: Warm, empathetic, and intelligent. Show you're genuinely listening 
             if grok_ai:
                 try:
                     # Send a quick warm-up request
-                    grok_ai.get_quick_response("test", [])
+                    grok_ai.generate_response("test", [], max_tokens=50)
                     logger.info(f"✅ GROK AI PRE-WARMED for call {call_sid}")
                 except:
                     pass  # Silent fail - just optimization
@@ -2833,6 +2833,11 @@ PERSONALITY: Warm, empathetic, and intelligent. Show you're genuinely listening 
             data = request.json
             message = data.get('message', '')
             
+            # Initialize OpenAI client if not available
+            if 'openai_client' not in globals() or not openai_client:
+                from openai import OpenAI
+                openai_client = OpenAI(api_key=os.environ.get("OPENAI_API_KEY"))
+                
             if not openai_client:
                 return jsonify({'response': 'I need the OpenAI API key to use my reasoning capabilities.'})
             
