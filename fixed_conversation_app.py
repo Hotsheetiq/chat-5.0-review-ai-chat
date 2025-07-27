@@ -1052,13 +1052,14 @@ PERSONALITY: Warm, empathetic, and intelligent. Show you're genuinely listening 
             
             # Anti-repetition context
             if call_sid not in response_tracker:
-                response_tracker[call_sid] = []
+                response_tracker[call_sid] = {'used_phrases': set(), 'phrase_counts': {}}
             
             # FIXED: Handle response tracker properly to prevent slice errors
             try:
                 recent_responses = []
                 if call_sid in response_tracker and isinstance(response_tracker[call_sid], list):
-                    recent_responses = response_tracker[call_sid][-3:] if len(response_tracker[call_sid]) > 0 else []
+                    # FIXED: response_tracker is now a dict, not a list
+                    recent_responses = []
                 
                 if recent_responses:
                     # Only include string responses that are valid
@@ -1110,22 +1111,25 @@ PERSONALITY: Warm, empathetic, and intelligent. Show you're genuinely listening 
                     logger.error(f"Both AI systems failed: {openai_error}")
                     result = "I'm here to help! What can I do for you today?"
             
-            # FIXED: Track response safely to prevent slice errors
+            # FIXED: Track response safely using dict structure
             try:
                 if call_sid not in response_tracker:
-                    response_tracker[call_sid] = []
+                    response_tracker[call_sid] = {'used_phrases': set(), 'phrase_counts': {}}
                 
-                # Only append valid string results
+                # Track the response in the used_phrases set
                 if result and isinstance(result, str):
-                    response_tracker[call_sid].append(result)
+                    if 'used_phrases' not in response_tracker[call_sid]:
+                        response_tracker[call_sid]['used_phrases'] = set()
+                    response_tracker[call_sid]['used_phrases'].add(result.lower().strip())
                     
-                    # Keep only last 5 responses to prevent memory bloat
-                    if len(response_tracker[call_sid]) > 5:
-                        response_tracker[call_sid] = response_tracker[call_sid][-5:]
+                    # Prevent memory bloat by clearing old phrases periodically
+                    if len(response_tracker[call_sid]['used_phrases']) > 20:
+                        response_tracker[call_sid]['used_phrases'].clear()
+                        
             except Exception as tracker_error:
                 logger.warning(f"Response tracking error: {tracker_error}")
                 # Initialize fresh tracker for this call
-                response_tracker[call_sid] = [result] if result and isinstance(result, str) else []
+                response_tracker[call_sid] = {'used_phrases': set(), 'phrase_counts': {}}
             
             return result
             
@@ -1360,24 +1364,30 @@ PERSONALITY: Warm, empathetic, and intelligent. Show you're genuinely listening 
         return selected_phrase
     
     def track_response_usage(call_sid, response_text):
-        """Track any response to prevent future repetition"""
-        if call_sid not in response_tracker:
+        """Track any response to prevent future repetition - FIXED"""
+        try:
+            if not response_text or not isinstance(response_text, str):
+                return
+                
+            if call_sid not in response_tracker:
+                response_tracker[call_sid] = {'used_phrases': set(), 'phrase_counts': {}}
+            
+            # Ensure the response_tracker structure is correct
+            if not isinstance(response_tracker[call_sid], dict):
+                response_tracker[call_sid] = {'used_phrases': set(), 'phrase_counts': {}}
+            
+            if 'used_phrases' not in response_tracker[call_sid]:
+                response_tracker[call_sid]['used_phrases'] = set()
+            
+            # Track exact phrases and key phrases within longer responses
+            response_tracker[call_sid]['used_phrases'].add(str(response_text).lower().strip())
+            
+            logger.info(f"📝 TRACKED RESPONSE: '{response_text[:50]}...' for call {call_sid}")
+            
+        except Exception as e:
+            logger.warning(f"track_response_usage error: {e}")
+            # Initialize clean structure if corrupted
             response_tracker[call_sid] = {'used_phrases': set(), 'phrase_counts': {}}
-        
-        # Track exact phrases and key phrases within longer responses
-        response_tracker[call_sid]['used_phrases'].add(response_text.lower().strip())
-        
-        # Track key phrases within longer responses
-        key_phrases = [
-            "give me just a moment", "got it", "I understand", "working on", 
-            "let me help", "processing", "creating", "perfect", "all set", "done"
-        ]
-        
-        for phrase in key_phrases:
-            if phrase in response_text.lower():
-                response_tracker[call_sid]['used_phrases'].add(phrase)
-        
-        logger.info(f"📝 TRACKED RESPONSE: '{response_text[:50]}...' for call {call_sid}")
     
     def ensure_unique_response(call_sid, response_text):
         """Ensure Chris never repeats the same response within a conversation - FIXED"""
