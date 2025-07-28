@@ -2937,7 +2937,7 @@ PERSONALITY: Warm, empathetic, and intelligent. Show you're genuinely listening 
             </ul>
         </div>
         
-        <a href="/dashboard" class="btn btn-primary">← Back to Dashboard</a>
+        <a href="/?cache=false" class="btn btn-primary">← Back to Dashboard</a>
         <button onclick="location.reload()" class="btn btn-secondary">🔄 Refresh Status</button>
     </div>
 </body>

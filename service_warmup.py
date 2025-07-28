@@ -96,7 +96,7 @@ class ServiceWarmup:
         try:
             # Ping main webhook endpoint - this keeps the route active
             response = requests.get(
-                f"{self.base_url}/dashboard", 
+                f"{self.base_url}/", 
                 timeout=10,
                 headers={'User-Agent': 'ServiceWarmup/1.0'}
             )
@@ -119,7 +119,7 @@ class ServiceWarmup:
         try:
             # Ping key backend routes
             routes_to_ping = [
-                '/dashboard',
+                '/',
                 '/admin-training',
                 '/status'
             ]
