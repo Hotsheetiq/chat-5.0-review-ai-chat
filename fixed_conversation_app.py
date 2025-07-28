@@ -653,8 +653,7 @@ def create_app():
             "time": "4:21 PM ET",
             "request": "Change the greeting so that Chris sounds more human and doesn't announce himself as an AI attendant, he should speak more plainly and not so formal",
             "resolution": "HUMAN-LIKE GREETING IMPLEMENTED: Updated Chris's greeting from formal 'Hi, you've reached Grinberg Management. This is Chris, your AI assistant. How can I help you today?' to casual 'Hey there! This is Chris from Grinberg Management. What's going on?' Removed AI assistant references and formal language for more natural, conversational tone.",
-            "constraint_note": "Rule #2 followed as required (appended new entry). Rule #4 followed as required (mirrored to REQUEST_HISTORY.md).",
-            "flag": "important"
+            "constraint_note": "Rule #2 followed as required (appended new entry). Rule #4 followed as required (mirrored to REQUEST_HISTORY.md)."
         },
         {
             "id": 14,
@@ -662,8 +661,7 @@ def create_app():
             "time": "4:06 PM ET",
             "request": "Create an option to flag log entries for later reference or to show that they are important",
             "resolution": "LOG FLAGGING SYSTEM IMPLEMENTED: Added importance flags with visual indicators (🔥 Critical, ⭐ Important, 📌 Reference). Enhanced dashboard with flag filtering options and interactive flag selection dropdown. Implemented API endpoint for flag management with real-time updates and visual notifications.",
-            "constraint_note": "Rule #2 followed as required (appended new entry). Rule #4 followed as required (mirrored to REQUEST_HISTORY.md).",
-            "flag": "important"
+            "constraint_note": "Rule #2 followed as required (appended new entry). Rule #4 followed as required (mirrored to REQUEST_HISTORY.md)."
         },
         {
             "id": 13,
