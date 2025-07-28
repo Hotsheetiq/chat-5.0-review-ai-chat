@@ -64,7 +64,7 @@
                         <button class="btn btn-outline-primary btn-sm" onclick="refreshDashboard()">
                             🔄 Refresh
                         </button>
-                        <a href="/" class="btn btn-outline-secondary btn-sm">← Dashboard</a>
+                        <a href="/" class="btn btn-outline-secondary btn-sm" onclick="goToDashboard()">← Dashboard</a>
                     </div>
                 </div>
             </div>
@@ -252,6 +252,21 @@
         function clearSearch() {
             document.getElementById('search-input').value = '';
             refreshDashboard();
+        }
+        
+        function goToDashboard() {
+            // Enhanced dashboard navigation with multiple fallbacks
+            try {
+                window.location.href = '/';
+            } catch (e) {
+                try {
+                    window.location = '/';
+                } catch (e2) {
+                    console.error('Dashboard navigation failed:', e2);
+                    // Show user-friendly message
+                    alert('Having trouble navigating to dashboard. Please refresh the page.');
+                }
+            }
         }
         
         // Start live updates when page loads

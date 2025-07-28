@@ -189,5 +189,21 @@
         </div>
 
     </div>
+    
+    <script>
+        function goToDashboard() {
+            // Enhanced dashboard navigation with multiple fallbacks
+            try {
+                window.location.href = '/';
+            } catch (e) {
+                try {
+                    window.location = '/';
+                } catch (e2) {
+                    console.error('Dashboard navigation failed:', e2);
+                    alert('Having trouble navigating to dashboard. Please refresh the page.');
+                }
+            }
+        }
+    </script>
 </body>
 </html>
