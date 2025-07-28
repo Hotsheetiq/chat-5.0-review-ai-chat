@@ -3112,14 +3112,23 @@ PERSONALITY: Warm, empathetic, and intelligent. Show you're genuinely listening 
                 <div class="row">
                     <div class="col-md-6">
                         <div class="card">
-                            <div class="card-header">
-                                <h5>System Status</h5>
+                            <div class="card-header d-flex justify-content-between align-items-center">
+                                <h5>🔥 Service Health Monitor</h5>
+                                <small class="text-muted">Real-time Status</small>
                             </div>
                             <div class="card-body">
-                                <p><strong>Chris AI:</strong> <span class="text-success">✅ Active</span></p>
-                                <p><strong>Voice System:</strong> <span class="text-success">✅ Ready</span></p>
-                                <p><strong>Rent Manager:</strong> <span class="text-success">✅ Connected</span></p>
-                                <p><strong>Service Tickets:</strong> <span class="text-success">✅ Working</span></p>
+                                <div id="service-status-container">
+                                    <!-- Service statuses will be loaded here -->
+                                    <div class="text-center">
+                                        <div class="spinner-border spinner-border-sm" role="status">
+                                            <span class="visually-hidden">Loading...</span>
+                                        </div>
+                                        <small class="text-muted ms-2">Loading service status...</small>
+                                    </div>
+                                </div>
+                                <div class="mt-3">
+                                    <a href="/status" class="btn btn-sm btn-outline-secondary">📊 Full Status Details</a>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -3139,6 +3148,113 @@ PERSONALITY: Warm, empathetic, and intelligent. Show you're genuinely listening 
                         </div>
                     </div>
                 </div>
+                
+                <!-- JavaScript for Live Dashboard Updates -->
+                <script>
+                // Function to update time display
+                function updateTime() {
+                    const now = new Date();
+                    const eastern = new Date(now.toLocaleString("en-US", {timeZone: "America/New_York"}));
+                    const timeString = eastern.toLocaleString('en-US', {
+                        hour: 'numeric',
+                        minute: '2-digit',
+                        hour12: true
+                    });
+                    const timeElement = document.getElementById('current-time');
+                    if (timeElement) {
+                        timeElement.textContent = timeString + ' ET';
+                    }
+                }
+                
+                // Function to load service status
+                function loadServiceStatus() {
+                    fetch('/warmup-status')
+                        .then(response => response.json())
+                        .then(data => {
+                            const container = document.getElementById('service-status-container');
+                            if (!container) return;
+                            
+                            let html = '';
+                            let hasProblems = false;
+                            
+                            // Check each service status
+                            for (const [service, status] of Object.entries(data.services)) {
+                                const isHealthy = status.success_count > 0 && 
+                                                 (status.consecutive_failures === null || status.consecutive_failures < 3);
+                                
+                                if (!isHealthy) hasProblems = true;
+                                
+                                const statusBadge = isHealthy ? 
+                                    '<span class="badge bg-success">🟢 HEALTHY</span>' : 
+                                    '<span class="badge bg-danger">🔴 NEEDS ATTENTION</span>';
+                                
+                                const lastSuccess = status.last_success_time ? 
+                                    new Date(status.last_success_time).toLocaleString('en-US', {
+                                        timeZone: 'America/New_York',
+                                        month: 'numeric',
+                                        day: 'numeric',
+                                        hour: 'numeric',
+                                        minute: '2-digit',
+                                        hour12: true
+                                    }) + ' ET' : 'Never';
+                                
+                                html += `
+                                    <div class="d-flex justify-content-between align-items-center mb-2 ${!isHealthy ? 'p-2 bg-danger-subtle rounded' : ''}">
+                                        <div>
+                                            <strong>${service.toUpperCase().replace('_', ' ')}</strong>
+                                            <br><small class="text-muted">Last Success: ${lastSuccess}</small>
+                                            ${!isHealthy && status.consecutive_failures ? 
+                                                `<br><small class="text-danger">⚠️ ${status.consecutive_failures} consecutive failures</small>` : ''}
+                                        </div>
+                                        <div class="text-end">
+                                            ${statusBadge}
+                                        </div>
+                                    </div>
+                                `;
+                            }
+                            
+                            // Add overall system status
+                            if (hasProblems) {
+                                html = `
+                                    <div class="alert alert-warning mb-3">
+                                        <strong>⚠️ System Alert:</strong> Some services need attention. Check details below.
+                                    </div>
+                                ` + html;
+                            } else {
+                                html = `
+                                    <div class="alert alert-success mb-3">
+                                        <strong>✅ All Systems Operational</strong>
+                                    </div>
+                                ` + html;
+                            }
+                            
+                            container.innerHTML = html;
+                        })
+                        .catch(error => {
+                            console.error('Error loading service status:', error);
+                            const container = document.getElementById('service-status-container');
+                            if (container) {
+                                container.innerHTML = `
+                                    <div class="alert alert-warning">
+                                        <strong>⚠️ Status Unavailable</strong><br>
+                                        <small>Unable to load service status. <a href="/status">View full status page</a></small>
+                                    </div>
+                                `;
+                            }
+                        });
+                }
+                
+                // Initial load and periodic updates
+                document.addEventListener('DOMContentLoaded', function() {
+                    updateTime();
+                    loadServiceStatus();
+                    
+                    // Update time every second
+                    setInterval(updateTime, 1000);
+                    // Update service status every 30 seconds
+                    setInterval(loadServiceStatus, 30000);
+                });
+                </script>
                 
                 <div class="row mt-4">
                     <div class="col-12">
@@ -3165,7 +3281,7 @@ PERSONALITY: Warm, empathetic, and intelligent. Show you're genuinely listening 
                                 <p>Active calls: {{ call_count }}</p>
                                 <p>Total conversations: {{ total_conversations }}</p>
                                 <a href="/admin-training" class="btn btn-primary">🧠 Train Chris</a>
-                                <a href="/warmup-status" class="btn btn-secondary ms-2">🔥 Warm-up Status</a>
+                                <a href="/status" class="btn btn-secondary ms-2">🔥 Service Health</a>
                             </div>
                         </div>
                     </div>
