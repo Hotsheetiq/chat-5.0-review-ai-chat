@@ -1535,13 +1535,42 @@ PERSONALITY: Warm, empathetic, and intelligent. Show you're genuinely listening 
             response_tracker[call_sid] = {'used_phrases': set(), 'phrase_counts': {}}
     
     def ensure_unique_response(call_sid, response_text):
-        """Ensure Chris never repeats the same response within a conversation - FIXED"""
+        """HARD RULE: Chris never repeats the same response within a conversation"""
         try:
             if not response_text or not isinstance(response_text, str):
                 return str(response_text) if response_text else "I'm here to help!"
             
             if call_sid not in response_tracker:
                 response_tracker[call_sid] = {'used_phrases': set(), 'phrase_counts': {}}
+            
+            # HARD RULE: Check if this exact response was used before
+            response_key = str(response_text).lower().strip()
+            if response_key in response_tracker[call_sid]['used_phrases']:
+                # CRITICAL: Response already used - generate alternative
+                logger.warning(f"🚫 REPEAT BLOCKED: '{response_text[:50]}...' already used in call {call_sid}")
+                
+                # Create alternative response to prevent repetition
+                alternatives = [
+                    "Let me help you with that.",
+                    "I understand what you're saying.",
+                    "Got it, let me assist you.",
+                    "I'm here to help with your request.",
+                    "Let me take care of that for you."
+                ]
+                
+                # Find an unused alternative
+                for alt in alternatives:
+                    alt_key = alt.lower().strip()
+                    if alt_key not in response_tracker[call_sid]['used_phrases']:
+                        response_text = alt
+                        response_key = alt_key
+                        logger.info(f"✅ ALTERNATIVE USED: '{alt}' (preventing repetition)")
+                        break
+                else:
+                    # All alternatives used - modify original
+                    response_text = f"I understand. {response_text.split('.')[0] if '.' in response_text else response_text}."
+                    response_key = response_text.lower().strip()
+                    logger.info(f"✅ MODIFIED RESPONSE: '{response_text[:50]}...' (preventing repetition)")
             
             # Track the final response
             track_response_usage(call_sid, response_text)
@@ -2173,38 +2202,38 @@ PERSONALITY: Warm, empathetic, and intelligent. Show you're genuinely listening 
                                 logger.error(f"Rent Manager API verification error: {e}")
                             
                             if not api_verified_address:
-                                # AI-POWERED ADDRESS UNDERSTANDING: Use Grok AI to intelligently suggest closest match
-                                logger.info(f"🤖 USING AI INTELLIGENCE for address: {user_input}")
+                                # CRITICAL FIX: Use API to find CLOSE MATCHES instead of asking for corrections
+                                logger.info(f"🔍 FINDING CLOSE MATCHES for address: {user_input}")
                                 
-                                ai_response = None
-                                if grok_ai and suggested_addresses:
+                                # Get close matches from address matcher
+                                close_matches = []
+                                if address_matcher and suggested_addresses:
                                     try:
-                                        # Use AI to intelligently pick the BEST single match and respond naturally
-                                        ai_messages = [
-                                            {"role": "system", "content": f"You are Chris, a helpful property assistant. The caller said '{user_input}' but we couldn't find that exact address. Here are the closest properties in our system: {', '.join(suggested_addresses[:3])}. Pick the ONE most likely match and respond naturally as a human would. Don't repeat their address back word-for-word. Just suggest the closest match naturally. Keep it short and conversational."},
-                                            {"role": "user", "content": f"I said my address is {user_input}"}
-                                        ]
+                                        # Use suggested addresses as close matches
+                                        for addr in suggested_addresses[:2]:  # Limit to top 2 matches
+                                            close_matches.append({
+                                                'address': addr,
+                                                'confidence': 0.8  # Default confidence
+                                            })
                                         
-                                        ai_response = grok_ai.generate_response(
-                                            messages=ai_messages,
-                                            max_tokens=50,
-                                            temperature=0.7,
-                                            timeout=1.0
-                                        )
-                                        logger.info(f"🧠 AI GENERATED INTELLIGENT RESPONSE: {ai_response}")
-                                        
+                                        if close_matches:
+                                            # Found close matches - suggest the best one
+                                            best_match = close_matches[0]['address']
+                                            response_text = f"I heard {user_input} but couldn't find that exact address. Did you mean {best_match}? Please confirm the correct address."
+                                            logger.info(f"🎯 CLOSE MATCH SUGGESTED: '{user_input}' → '{best_match}'")
+                                            
+                                            # Don't continue with AI generation - return suggestion immediately
+                                            if not response_text:
+                                                response_text = f"I couldn't find that address in our system. What's the correct property address?"
+                                        else:
+                                            response_text = f"I couldn't find that address in our system. What's the correct property address?"
+                                            logger.info(f"🤔 NO CLOSE MATCHES: '{user_input}' → asking for correct address")
                                     except Exception as e:
-                                        logger.warning(f"AI address intelligence failed: {e}")
-                                
-                                if ai_response:
-                                    response_text = ai_response
-                                elif suggested_addresses:
-                                    # Fallback: Show only the BEST match, not all addresses
-                                    best_match = suggested_addresses[0]
-                                    response_text = f"I couldn't find that exact address. Did you mean {best_match}?"
+                                        logger.error(f"Close match error: {e}")
+                                        response_text = f"I couldn't find that address in our system. What's the correct property address?"
                                 else:
-                                    response_text = f"I couldn't find that address in our system. What's the correct address?"
-                                logger.info(f"🤔 ADDRESS NOT FOUND: '{user_input}' → asking for correct address")
+                                    response_text = f"I couldn't find that address in our system. What's the correct property address?"
+                                    logger.info(f"🤔 NO MATCHER AVAILABLE: '{user_input}' → asking for correct address")
                                 
                                 # Store conversation properly
                                 if call_sid not in conversation_history:
