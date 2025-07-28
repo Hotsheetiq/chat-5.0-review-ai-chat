@@ -3276,19 +3276,45 @@ PERSONALITY: Warm, empathetic, and intelligent. Show you're genuinely listening 
             # Add debug info if no calls found
             if not all_calls:
                 logger.info(f"No calls found. Conversation history length: {len(conversation_history) if conversation_history else 0}")
-                # Create test data if no real conversations exist
-                test_call = {
-                    'call_sid': 'TEST_CALL_001',
-                    'from_number': '+13477430880',
-                    'caller_name': 'Test Caller',
-                    'timestamp': datetime.now().isoformat(),
-                    'duration': 120,
-                    'status': 'completed',
-                    'issue_type': 'Test Issue',
-                    'recording_url': None,
-                    'transcription_preview': 'This is a test call to verify the dashboard is working.'
-                }
-                all_calls = [test_call]
+                # Create sample data for dashboard demonstration
+                from datetime import timedelta
+                sample_calls = [
+                    {
+                        'call_sid': 'SAMPLE_001',
+                        'from_number': '+13477430880',
+                        'caller_name': 'Sample Caller',
+                        'timestamp': datetime.now().isoformat(),
+                        'duration': 180,
+                        'status': 'completed',
+                        'issue_type': 'Electrical',
+                        'recording_url': None,
+                        'transcription_preview': 'Hello, I have an electrical problem in my apartment. The power went out in the kitchen.'
+                    },
+                    {
+                        'call_sid': 'SAMPLE_002', 
+                        'from_number': '+17185551234',
+                        'caller_name': 'Property Inquirer',
+                        'timestamp': (datetime.now() - timedelta(hours=2)).isoformat(),
+                        'duration': 90,
+                        'status': 'completed',
+                        'issue_type': 'General Inquiry',
+                        'recording_url': None,
+                        'transcription_preview': 'Hi, I was wondering about your office hours and if you have any available units.'
+                    },
+                    {
+                        'call_sid': 'SAMPLE_003',
+                        'from_number': '+15555678901', 
+                        'caller_name': 'Maintenance Request',
+                        'timestamp': (datetime.now() - timedelta(hours=4)).isoformat(),
+                        'duration': 150,
+                        'status': 'completed',
+                        'issue_type': 'Plumbing',
+                        'recording_url': None,
+                        'transcription_preview': 'The toilet in my bathroom is not flushing properly. It seems to be clogged.'
+                    }
+                ]
+                all_calls = sample_calls
+                logger.info(f"📞 Displaying {len(sample_calls)} sample calls for dashboard demonstration")
             
             return jsonify(all_calls)
             
