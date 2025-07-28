@@ -2737,6 +2737,76 @@ PERSONALITY: Warm, empathetic, and intelligent. Show you're genuinely listening 
         monitor = get_call_monitor()
         return jsonify(monitor.get_call_history())
     
+    @app.route("/call-history")
+    def call_history_page():
+        """Call history dashboard page"""
+        try:
+            from call_monitoring import get_call_monitor
+            monitor = get_call_monitor()
+            
+            # Get search parameters
+            search_query = request.args.get('search', '')
+            search_date = request.args.get('date', '')
+            
+            # Get call history
+            all_calls = monitor.get_call_history()
+            
+            # Filter calls based on search criteria
+            filtered_calls = []
+            for call in all_calls:
+                include_call = True
+                
+                # Search filter
+                if search_query:
+                    search_text = search_query.lower()
+                    searchable_content = [
+                        call.get('caller_name', ''),
+                        call.get('issue_type', ''),
+                        call.get('from_number', ''),
+                        str(call.get('call_sid', '')),
+                        ' '.join([seg.get('text', '') for seg in call.get('transcription', [])])
+                    ]
+                    if not any(search_text in content.lower() for content in searchable_content):
+                        include_call = False
+                
+                # Date filter
+                if search_date and call.get('timestamp'):
+                    call_date = call['timestamp'].split('T')[0] if 'T' in call['timestamp'] else call['timestamp'].split(' ')[0]
+                    if call_date != search_date:
+                        include_call = False
+                
+                if include_call:
+                    filtered_calls.append(call)
+            
+            # Sort by timestamp (newest first)
+            filtered_calls.sort(key=lambda x: x.get('timestamp', ''), reverse=True)
+            
+            return render_template('call_history.html', 
+                                 calls=filtered_calls,
+                                 search_query=search_query,
+                                 search_date=search_date,
+                                 total_calls=len(all_calls))
+        except Exception as e:
+            logger.error(f"Call history page error: {e}")
+            return render_template_string(f"""
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <title>Call History Error</title>
+                <link href="https://cdn.replit.com/agent/bootstrap-agent-dark-theme.min.css" rel="stylesheet">
+            </head>
+            <body data-bs-theme="dark">
+                <div class="container mt-4">
+                    <div class="alert alert-danger">
+                        <h4>Call History Error</h4>
+                        <p>Unable to load call history: {e}</p>
+                        <a href="/" class="btn btn-primary">← Back to Dashboard</a>
+                    </div>
+                </div>
+            </body>
+            </html>
+            """)
+    
     @app.route("/api/calls/search")
     def api_search_calls():
         """API endpoint for searching calls"""
