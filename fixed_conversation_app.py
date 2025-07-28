@@ -3719,7 +3719,7 @@ PERSONALITY: Warm, empathetic, and intelligent. Show you're genuinely listening 
                                 </div>
                                 
                                 <div style="max-height: 400px; overflow-y: auto;">
-                                    <div class="mb-3 p-3 border-start border-3 border-warning bg-warning-subtle fix-item" draggable="true" style="color: black; cursor: move;" data-fix-id="address-matching-repetition-fix">
+                                    <div class="mb-3 p-3 border-start border-3 border-success bg-success-subtle fix-item" draggable="true" style="color: black; cursor: move;" data-fix-id="address-matching-repetition-fix">
                                         <div class="d-flex justify-content-between align-items-start">
                                             <div>
                                                 <strong style="color: black;">July 28, 2025</strong>
