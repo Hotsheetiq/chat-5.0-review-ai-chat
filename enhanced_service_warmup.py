@@ -333,7 +333,7 @@ class EnhancedServiceWarmup:
         for service_name, status in self.service_status.items():
             service_summary = {
                 'is_healthy': status['is_healthy'],
-                'last_success': status['last_success'].isoformat() if status['last_success'] else None,
+                'last_success': status['last_success'] if status['last_success'] else None,  # Keep as datetime object for template
                 'last_error': status['last_error'],
                 'consecutive_failures': status['consecutive_failures'],
                 'success_rate': round((status['total_successes'] / max(status['total_attempts'], 1)) * 100, 1),
@@ -342,7 +342,7 @@ class EnhancedServiceWarmup:
             
             # Add special fields for rent manager
             if service_name == 'rent_manager' and status.get('token_refreshed'):
-                service_summary['token_refreshed'] = status['token_refreshed'].isoformat()
+                service_summary['token_refreshed'] = status['token_refreshed']  # Keep as datetime object for template
             
             summary['services'][service_name] = service_summary
         

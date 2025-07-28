@@ -109,7 +109,7 @@
                         <strong>Last Success:</strong><br>
                         <small>
                             {% if service_data.last_success %}
-                                {{ service_data.last_success[:16].replace('T', ' ') }}
+                                {{ service_data.last_success | strftime('%-m/%-d/%Y %-I:%M %p') }}
                             {% else %}
                                 Never
                             {% endif %}
@@ -140,7 +140,7 @@
                     {% if service_name == 'rent_manager' and service_data.token_refreshed %}
                     <div class="metric">
                         <strong>Token Refreshed:</strong><br>
-                        <small class="text-info">{{ service_data.token_refreshed[:16].replace('T', ' ') }}</small>
+                        <small class="text-info">{{ service_data.token_refreshed | strftime('%-m/%-d/%Y %-I:%M %p') }}</small>
                     </div>
                     {% endif %}
 
@@ -184,7 +184,7 @@
         <div class="text-center mt-4">
             <small class="text-muted">
                 Dashboard auto-refreshes every 30 seconds | 
-                Last updated: {{ status.last_updated.strftime('%Y-%m-%d %H:%M:%S') if status.last_updated else 'Unknown' }}
+                Last updated: {{ status.last_updated.strftime('%-m/%-d/%Y %-I:%M %p EST') if status.last_updated else 'Unknown' }}
             </small>
         </div>
 
