@@ -1707,9 +1707,23 @@ PERSONALITY: Warm, empathetic, and intelligent. Show you're genuinely listening 
                 'role': 'user',
                 'content': user_input,
                 'timestamp': datetime.now(),
-                'caller_phone': caller_phone
+                'caller_phone': caller_phone,
+                'caller_name': 'Unknown Caller',  # Will be updated when collected
+                'speech_confidence': speech_confidence
             })
             logger.info(f"💾 STORED INPUT IN MEMORY: '{user_input}' for call {call_sid}")
+            
+            # Also update call monitor with conversation data
+            try:
+                from call_monitoring import get_call_monitor
+                monitor = get_call_monitor()
+                monitor.update_call_data(call_sid, {
+                    'from_number': caller_phone,
+                    'status': 'in_progress',
+                    'last_message': user_input
+                })
+            except Exception as e:
+                logger.warning(f"Could not update call monitor: {e}")
             
             # CRITICAL FIX: Check for address confirmation BEFORE speech corrections
             # This ensures we ask "Did you mean 29 Port Richmond?" for "26 Port Richmond"
@@ -1757,8 +1771,20 @@ PERSONALITY: Warm, empathetic, and intelligent. Show you're genuinely listening 
                         conversation_history[call_sid].append({
                             'role': 'assistant',
                             'content': response_text,
-                            'timestamp': datetime.now()
+                            'timestamp': datetime.now(),
+                            'response_type': 'ai_generated'
                         })
+                        
+                        # Update call monitor with response
+                        try:
+                            from call_monitoring import get_call_monitor
+                            monitor = get_call_monitor()
+                            monitor.update_call_data(call_sid, {
+                                'status': 'active',
+                                'last_response': response_text
+                            })
+                        except Exception as e:
+                            logger.warning(f"Could not update call monitor: {e}")
                         
                         # Generate voice response and return immediately
                         main_voice = create_voice_response(response_text)
@@ -3281,6 +3307,55 @@ PERSONALITY: Warm, empathetic, and intelligent. Show you're genuinely listening 
                 'transcription_preview': f'Debug: {str(e)} | History length: {len(conversation_history) if conversation_history else 0}'
             }])
     
+    @app.route("/api/test-call-data")
+    def api_test_call_data():
+        """Create test conversation data for dashboard testing"""
+        try:
+            from datetime import timedelta
+            # Add test data to conversation_history for dashboard testing
+            test_call_id = "TEST_CONV_001"
+            
+            if test_call_id not in conversation_history:
+                conversation_history[test_call_id] = [
+                    {
+                        'role': 'user',
+                        'content': 'Hello, I have an electrical problem',
+                        'timestamp': datetime.now() - timedelta(minutes=5),
+                        'caller_phone': '+13477430880',
+                        'caller_name': 'Test User'
+                    },
+                    {
+                        'role': 'assistant', 
+                        'content': 'I understand you have an electrical issue. What is your property address?',
+                        'timestamp': datetime.now() - timedelta(minutes=4),
+                        'response_type': 'ai_generated'
+                    },
+                    {
+                        'role': 'user',
+                        'content': '29 Port Richmond Avenue',
+                        'timestamp': datetime.now() - timedelta(minutes=3),
+                        'caller_phone': '+13477430880',
+                        'caller_name': 'Test User'
+                    },
+                    {
+                        'role': 'assistant',
+                        'content': 'Perfect! I have created service ticket #SV-12345 for your electrical issue at 29 Port Richmond Avenue.',
+                        'timestamp': datetime.now() - timedelta(minutes=2),
+                        'response_type': 'ai_generated'
+                    }
+                ]
+                logger.info(f"✅ Test conversation data created for {test_call_id}")
+            
+            return jsonify({
+                'message': 'Test data created successfully',
+                'conversation_count': len(conversation_history),
+                'test_call_id': test_call_id
+            })
+            
+        except Exception as e:
+            logger.error(f"Error creating test data: {e}")
+            return jsonify({'error': str(e)}), 500
+
     @app.route("/api/call-stats")
     def api_call_stats():
         """API endpoint for live call statistics"""
