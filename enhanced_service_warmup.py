@@ -246,33 +246,40 @@ class EnhancedServiceWarmup:
             credentials_string = f"{rent_manager_username}:{rent_manager_password}:{rent_manager_location}"
             rent_manager = RentManagerAPI(credentials_string)
             
-            # Check if current token is valid
-            if hasattr(rent_manager, 'auth_token') and rent_manager.auth_token:
-                # Test current token with a lightweight API call
-                try:
-                    # Try to get user info (lightweight call)
-                    import asyncio
-                    loop = asyncio.new_event_loop()
-                    asyncio.set_event_loop(loop)
-                    
-                    result = loop.run_until_complete(asyncio.wait_for(
-                        rent_manager._make_authenticated_request('GET', '/Users/GetUserInfo'),
+            # Test authentication directly since it's the most reliable check
+            try:
+                import asyncio
+                loop = asyncio.new_event_loop()
+                asyncio.set_event_loop(loop)
+                
+                # Simple authentication test
+                result = loop.run_until_complete(asyncio.wait_for(
+                    rent_manager.authenticate(),
+                    timeout=10.0
+                ))
+                
+                if result and rent_manager.session_token:
+                    # Test with a simple API call to verify token works
+                    properties = loop.run_until_complete(asyncio.wait_for(
+                        rent_manager.get_all_properties(),
                         timeout=10.0
                     ))
                     loop.close()
                     
-                    if result:
-                        logger.info("🚀 Rent Manager API token validated successfully")
+                    if properties is not None:  # Even empty list is success
+                        logger.info("🚀 Rent Manager API authenticated and tested successfully")
                         return True
                     else:
-                        # Token might be expired, try to refresh
-                        logger.info("🔄 Rent Manager token validation failed, attempting refresh...")
-                        return self._refresh_rent_manager_token(rent_manager)
-                        
-                except Exception as token_error:
-                    logger.warning(f"⚠️ Rent Manager token validation error: {token_error}")
-                    return self._refresh_rent_manager_token(rent_manager)
-            else:
+                        logger.warning("⚠️ Rent Manager authentication succeeded but API test failed")
+                        return False
+                else:
+                    loop.close()
+                    logger.error("❌ Rent Manager authentication failed")
+                    return False
+                    
+            except Exception as auth_error:
+                logger.error(f"❌ Rent Manager authentication error: {auth_error}")
+                return False
                 # No token, authenticate fresh
                 logger.info("🔄 Rent Manager authenticating fresh token...")
                 import asyncio
