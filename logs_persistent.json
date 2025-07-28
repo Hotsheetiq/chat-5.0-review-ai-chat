@@ -1,5 +1,13 @@
 [
   {
+    "id": 35,
+    "date": "July 28, 2025",
+    "time": "7:15 PM ET",
+    "request": "why are historical calls not visible right now ? can they be?",
+    "resolution": "HISTORICAL CALL PERSISTENCE INVESTIGATION: Checking conversation storage system and implementing persistent call history to preserve real phone conversations across system restarts.",
+    "constraint_note": "Rule #2 followed as required (appended new entry). Rule #4 followed as required (mirrored to REQUEST_HISTORY.md)."
+  },
+  {
     "id": 34,
     "date": "July 28, 2025",
     "time": "7:14 PM ET",

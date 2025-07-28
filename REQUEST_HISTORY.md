@@ -211,3 +211,7 @@ log #016 – July 28, 2025
 log #034 – July 28, 2025  
 📝 Request: these call transcripts are fake  
 ✅ Resolution: FAKE CALL DATA REMOVED: Eliminated synthetic conversation data from call history. System now shows only authentic phone conversations. Empty call history displays proper message indicating no real calls have been recorded yet.
+
+log #035 – July 28, 2025  
+📝 Request: why are historical calls not visible right now ? can they be?  
+✅ Resolution: HISTORICAL CALL PERSISTENCE INVESTIGATION: Checking conversation storage system and implementing persistent call history to preserve real phone conversations across system restarts.

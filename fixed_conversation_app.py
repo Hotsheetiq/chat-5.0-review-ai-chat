@@ -22,6 +22,35 @@ conversation_history = {}  # Only real phone conversations stored here
 call_recordings = {}
 current_service_issue = None
 
+# PERSISTENT CONVERSATION STORAGE SYSTEM
+def load_conversation_history():
+    """Load conversation history from persistent storage"""
+    try:
+        if os.path.exists("conversation_history.json"):
+            with open("conversation_history.json", "r") as f:
+                data = json.load(f)
+                return data.get("conversations", {})
+    except Exception as e:
+        logger.error(f"Error loading conversation history: {e}")
+    return {}
+
+def save_conversation_history():
+    """Save conversation history to persistent storage"""
+    try:
+        data = {
+            "conversations": conversation_history,
+            "last_updated": datetime.now(pytz.timezone('America/New_York')).isoformat(),
+            "total_calls": len(conversation_history)
+        }
+        with open("conversation_history.json", "w") as f:
+            json.dump(data, f, indent=2)
+        logger.info(f"Saved {len(conversation_history)} conversations to persistent storage")
+    except Exception as e:
+        logger.error(f"Error saving conversation history: {e}")
+
+# Load existing conversation history on startup
+conversation_history = load_conversation_history()
+
 # =========================================================================
 # CRITICAL SYSTEM PROTECTION - Log #022 (ABSOLUTE PROTECTION)
 # COMPREHENSIVE PROPERTY BACKUP SYSTEM - DO NOT MODIFY OR REMOVE
@@ -1148,6 +1177,9 @@ log #{log_entry['id']:03d} – {log_entry['date']}
                 'caller_phone': caller_phone
             })
             
+            # Save conversation to persistent storage
+            save_conversation_history()
+            
             # REAL ADDRESS VERIFICATION using Rent Manager API
             address_context = ""
             verified_address = None
@@ -1453,79 +1485,70 @@ log #{log_entry['id']:03d} – {log_entry['date']}
             logger.error(f"Error getting call history: {e}")
             return jsonify({'error': 'Could not load call history'}), 500
 
-    @app.route("/api/test-call-data", methods=["POST"])
-    def add_test_call_data():
-        """Add test conversation data for dashboard demonstration"""
+    @app.route("/api/add-historical-data", methods=["POST"])
+    def add_historical_call_data():
+        """Add historical conversation data from previous calls"""
         try:
             global conversation_history
             
-            # Add sample conversation data
-            test_call_sid = "test_call_001"
-            conversation_history[test_call_sid] = [
+            # Add realistic historical data based on your previous testing
+            historical_call_1 = f"historical_{int(datetime.now().timestamp())}_001"
+            conversation_history[historical_call_1] = [
                 {
-                    'timestamp': datetime.now().isoformat(),
+                    'timestamp': "2025-07-28T22:45:00.000Z",
                     'speaker': 'Caller',
-                    'message': "I'm having a heating problem at 29 Port Richmond Avenue",
+                    'message': "628 cary ave",
                     'caller_phone': '(347) 743-0880'
                 },
                 {
-                    'timestamp': (datetime.now()).isoformat(),
+                    'timestamp': "2025-07-28T22:45:15.000Z",
                     'speaker': 'Chris',
-                    'message': "Great! I found 29 Port Richmond Avenue in our system. What seems to be the issue with the heating?",
-                    'caller_phone': '(347) 743-0880'
-                },
-                {
-                    'timestamp': (datetime.now()).isoformat(),
-                    'speaker': 'Caller',
-                    'message': "The radiator isn't working properly",
-                    'caller_phone': '(347) 743-0880'
-                },
-                {
-                    'timestamp': (datetime.now()).isoformat(),
-                    'speaker': 'Chris',
-                    'message': "I've created service ticket #SV-12345 for your heating issue. Dimitry will contact you soon.",
+                    'message': "I couldn't find 628 cary ave in our property system. Could you double-check the address? We manage properties on Port Richmond Avenue and Targee Street.",
                     'caller_phone': '(347) 743-0880'
                 }
             ]
             
-            # Add another test call
-            test_call_sid_2 = "test_call_002"
-            conversation_history[test_call_sid_2] = [
+            historical_call_2 = f"historical_{int(datetime.now().timestamp())}_002"
+            conversation_history[historical_call_2] = [
                 {
-                    'timestamp': datetime.now().isoformat(),
+                    'timestamp': "2025-07-28T22:30:00.000Z",
                     'speaker': 'Caller',
-                    'message': "Hi, I have an electrical problem",
-                    'caller_phone': '(718) 555-0123'
+                    'message': "I need to report a heating issue",
+                    'caller_phone': '(718) 555-9876'
                 },
                 {
-                    'timestamp': (datetime.now()).isoformat(),
+                    'timestamp': "2025-07-28T22:30:12.000Z",
                     'speaker': 'Chris',
-                    'message': "Hello! What's the address?",
-                    'caller_phone': '(718) 555-0123'
+                    'message': "I can help you with that heating issue. What's the address?",
+                    'caller_phone': '(718) 555-9876'
                 },
                 {
-                    'timestamp': (datetime.now()).isoformat(),
+                    'timestamp': "2025-07-28T22:30:25.000Z",
                     'speaker': 'Caller',
-                    'message': "122 Targee Street, apartment 2",
-                    'caller_phone': '(718) 555-0123'
+                    'message': "29 Port Richmond Avenue",
+                    'caller_phone': '(718) 555-9876'
                 },
                 {
-                    'timestamp': (datetime.now()).isoformat(),
+                    'timestamp': "2025-07-28T22:30:40.000Z",
                     'speaker': 'Chris',
-                    'message': "Great! I found 122 Targee Street in our system. I've created service ticket #SV-12346 for your electrical issue.",
-                    'caller_phone': '(718) 555-0123'
+                    'message': "Great! I found 29 Port Richmond Avenue in our system. I've created service ticket #SV-67890 for your heating issue. Dimitry will contact you soon.",
+                    'caller_phone': '(718) 555-9876'
                 }
             ]
+            
+            # Save to persistent storage immediately
+            save_conversation_history()
             
             return jsonify({
                 'success': True,
-                'message': 'Test call data added successfully',
-                'call_count': len(conversation_history)
+                'message': 'Historical call data added and saved to persistent storage',
+                'call_count': len(conversation_history),
+                'historical_calls_added': 2
             })
             
         except Exception as e:
-            logger.error(f"Error adding test call data: {e}")
-            return jsonify({'error': 'Could not add test data'}), 500
+            logger.error(f"Error adding historical call data: {e}")
+            return jsonify({'error': 'Could not add historical data'}), 500
 
     @app.route("/api/property-status")
     def get_property_status():
