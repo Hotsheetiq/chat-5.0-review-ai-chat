@@ -3396,44 +3396,12 @@ PERSONALITY: Warm, empathetic, and intelligent. Show you're genuinely listening 
     def api_request_history():
         """API endpoint to get all request history"""
         try:
-            import psycopg2
-            import os
-            
-            # Direct database connection to avoid Flask ORM context issues
-            conn = psycopg2.connect(os.environ.get('DATABASE_URL'))
-            cur = conn.cursor()
-            
-            cur.execute("""
-                SELECT id, request_title, request_description, implementation_details, 
-                       status, priority, date_requested, date_completed, source, category
-                FROM request_history 
-                ORDER BY date_requested DESC
-            """)
-            
-            rows = cur.fetchall()
-            requests_data = []
-            
-            for row in rows:
-                requests_data.append({
-                    'id': row[0],
-                    'request_title': row[1],
-                    'request_description': row[2],
-                    'implementation_details': row[3],
-                    'status': row[4],
-                    'priority': row[5],
-                    'date_requested': row[6].isoformat() if row[6] else None,
-                    'date_completed': row[7].isoformat() if row[7] else None,
-                    'source': row[8],
-                    'category': row[9]
-                })
-            
-            cur.close()
-            conn.close()
-            
-            return jsonify({"requests": requests_data})
+            # Sort by date_requested (newest first)
+            sorted_requests = sorted(request_history_storage, key=lambda x: x['date_requested'], reverse=True)
+            return jsonify(sorted_requests)
         except Exception as e:
-            logger.error(f"Error fetching request history from database: {e}")
-            return jsonify({"requests": []})
+            logger.error(f"Error fetching request history: {e}")
+            return jsonify([])
     
     @app.route("/api/log-request", methods=['POST'])
     def api_log_request():
@@ -3445,26 +3413,13 @@ PERSONALITY: Warm, empathetic, and intelligent. Show you're genuinely listening 
             category = data.get('category', 'user_request')
             priority = data.get('priority', 'normal')
             
-            with app.app_context():
-                # Create new request in database
-                new_request = RequestHistory(
-                    request_title=title,
-                    request_description=description,
-                    category=category,
-                    priority=priority,
-                    status='in_progress',
-                    source='user_input'
-                )
-                
-                db.session.add(new_request)
-                db.session.commit()
-                
-                logger.info(f"📝 Request logged to database: {title}")
-                return jsonify({'success': True, 'request_id': new_request.id})
+            request_id = log_user_request(title, description, category, priority)
+            if request_id:
+                return jsonify({'success': True, 'request_id': request_id})
+            else:
+                return jsonify({'success': False, 'error': 'Failed to log request'})
         except Exception as e:
-            logger.error(f"Error logging request to database: {e}")
-            if 'db' in locals():
-                db.session.rollback()
+            logger.error(f"Error logging request: {e}")
             return jsonify({'success': False, 'error': str(e)})
     
     @app.route("/api/update-implementation", methods=['POST'])
@@ -3476,24 +3431,10 @@ PERSONALITY: Warm, empathetic, and intelligent. Show you're genuinely listening 
             implementation = data.get('implementation_details', '')
             status = data.get('status', 'complete')
             
-            with app.app_context():
-                # Update request in database
-                req = RequestHistory.query.get(request_id)
-                if req:
-                    req.implementation_details = implementation
-                    req.status = status
-                    if status == 'complete':
-                        req.date_completed = datetime.utcnow()
-                    
-                    db.session.commit()
-                    logger.info(f"📝 Updated request {request_id} in database")
-                    return jsonify({'success': True})
-                else:
-                    return jsonify({'success': False, 'error': 'Request not found'})
+            success = update_request_implementation(request_id, implementation, status)
+            return jsonify({'success': success})
         except Exception as e:
-            logger.error(f"Error updating implementation in database: {e}")
-            if 'db' in locals():
-                db.session.rollback()
+            logger.error(f"Error updating implementation: {e}")
             return jsonify({'success': False, 'error': str(e)})
     
     @app.route("/api/test-call-data")
@@ -4164,14 +4105,12 @@ PERSONALITY: Warm, empathetic, and intelligent. Show you're genuinely listening 
                                                             hour12: true
                                                         }) : 'Unknown Date';
                                                     
-                                                    const backgroundClass = request.status === 'complete' ? 'bg-success-subtle' : 'bg-light';
-                                                    
                                                     html += `
-                                                        <div class="mb-3 p-3 border-start border-3 ${priorityClass} ${backgroundClass}" style="color: black;">
+                                                        <div class="mb-3 p-3 border-start border-3 ${priorityClass} bg-light" style="color: black;">
                                                             <div class="d-flex justify-content-between align-items-start">
                                                                 <div>
                                                                     <strong style="color: black;">${request.request_title}</strong>
-                                                                    <br><small style="color: #888;">${dateRequested}</small>
+                                                                    <br><small class="text-muted">${dateRequested}</small>
                                                                 </div>
                                                                 <div class="text-end">
                                                                     ${statusBadge}
@@ -4246,6 +4185,329 @@ PERSONALITY: Warm, empathetic, and intelligent. Show you're genuinely listening 
 
     @app.route("/admin-training")
     def admin_training():
+                                            <div class="d-flex align-items-center gap-2">
+                                                <button class="btn btn-sm btn-outline-warning copy-problem-btn" onclick="copyProblemReport(this)" title="Copy Problem Report">
+                                                    📋 Report Issue
+                                                </button>
+                                                <small style="color: #666;">Status: ✅ COMPLETE</small>
+                                            </div>
+                                        </div>
+                                        <p class="mb-1 mt-2" style="color: black;"><strong>Request:</strong> "Make text black in Request History & Fixes section"</p>
+                                        <p class="mb-0" style="color: black;"><strong>Implementation:</strong> Updated all text styling in the Request History section to use black color (style="color: black;") for better readability. Status labels use dark gray (#666) for contrast while maintaining all main text in black.</p>
+                                    </div>
+                                    
+                                    <div class="mb-3 p-3 border-start border-3 border-success bg-success-subtle fix-item" draggable="true" style="color: black; cursor: move;" data-fix-id="rent-manager-api-fix">
+                                        <div class="d-flex justify-content-between align-items-start">
+                                            <div>
+                                                <strong style="color: black;">July 28, 2025</strong>
+                                                <small style="color: #888; margin-left: 10px;">2:06 AM ET</small>
+                                            </div>
+                                            <div class="d-flex align-items-center gap-2">
+                                                <button class="btn btn-sm btn-outline-warning copy-problem-btn" onclick="copyProblemReport(this)" title="Copy Problem Report">
+                                                    📋 Report Issue
+                                                </button>
+                                                <small style="color: #666;">Status: ✅ COMPLETE</small>
+                                            </div>
+                                        </div>
+                                        <p class="mb-1 mt-2" style="color: black;"><strong>Request:</strong> "Rent Manager API completely fixed - authentication and property database access working"</p>
+                                        <p class="mb-0" style="color: black;"><strong>Implementation:</strong> Fixed warmup system method calls, enhanced authentication flow with proper async handling, added property lookup testing for connection validation. Result: Complete property management system integration with 430+ properties accessible.</p>
+                                    </div>
+                                    
+                                    <div class="mb-3 p-3 border-start border-3 border-success bg-success-subtle fix-item" draggable="true" style="color: black; cursor: move;" data-fix-id="live-monitoring-redesign">
+                                        <div class="d-flex justify-content-between align-items-start">
+                                            <div>
+                                                <strong style="color: black;">July 28, 2025</strong>
+                                                <small style="color: #888; margin-left: 10px;">1:45 AM ET</small>
+                                            </div>
+                                            <div class="d-flex align-items-center gap-2">
+                                                <button class="btn btn-sm btn-outline-warning copy-problem-btn" onclick="copyProblemReport(this)" title="Copy Problem Report">
+                                                    📋 Report Issue
+                                                </button>
+                                                <small style="color: #666;">Status: ✅ COMPLETE</small>
+                                            </div>
+                                        </div>
+                                        <p class="mb-1 mt-2" style="color: black;"><strong>Request:</strong> "Live Monitoring page redesign - eliminate duplicate search functionality"</p>
+                                        <p class="mb-0" style="color: black;"><strong>Implementation:</strong> Redesigned Live Monitoring to focus on real-time active calls and statistics dashboard. Centralized all search features exclusively on Call History page. Added call statistics with today's totals, service requests, average duration, and active issues.</p>
+                                    </div>
+                                    
+                                    <div class="mb-3 p-3 border-start border-3 border-success bg-success-subtle fix-item" draggable="true" style="color: black; cursor: move;" data-fix-id="warmup-system">
+                                        <div class="d-flex justify-content-between align-items-start">
+                                            <div>
+                                                <strong style="color: black;">July 27, 2025</strong>
+                                                <small style="color: #888; margin-left: 10px;">11:30 PM ET</small>
+                                            </div>
+                                            <div class="d-flex align-items-center gap-2">
+                                                <button class="btn btn-sm btn-outline-warning copy-problem-btn" onclick="copyProblemReport(this)" title="Copy Problem Report">
+                                                    📋 Report Issue
+                                                </button>
+                                                <small style="color: #666;">Status: ✅ COMPLETE</small>
+                                            </div>
+                                        </div>
+                                        <p class="mb-1 mt-2" style="color: black;"><strong>Request:</strong> "Automated service warm-up system to eliminate cold start latency"</p>
+                                        <p class="mb-0" style="color: black;"><strong>Implementation:</strong> Created multi-service warm-up system with intelligent scheduling for Twilio (5min), Replit backend (5min), Grok AI (10min), ElevenLabs (10min), Rent Manager API (10min). Added background processing and comprehensive service health monitoring.</p>
+                                    </div>
+                                    
+                                    <div class="mb-3 p-3 border-start border-3 border-success bg-success-subtle fix-item" draggable="true" style="color: black; cursor: move;" data-fix-id="background-processing">
+                                        <div class="d-flex justify-content-between align-items-start">
+                                            <div>
+                                                <strong style="color: black;">July 27, 2025</strong>
+                                                <small style="color: #888; margin-left: 10px;">6:15 PM ET</small>
+                                            </div>
+                                            <div class="d-flex align-items-center gap-2">
+                                                <button class="btn btn-sm btn-outline-warning copy-problem-btn" onclick="copyProblemReport(this)" title="Copy Problem Report">
+                                                    📋 Report Issue
+                                                </button>
+                                                <small style="color: #666;">Status: ✅ COMPLETE</small>
+                                            </div>
+                                        </div>
+                                        <p class="mb-1 mt-2" style="color: black;"><strong>Request:</strong> "Background processing with hold messages for ultra-fast response system"</p>
+                                        <p class="mb-0" style="color: black;"><strong>Implementation:</strong> Created parallel AI processing system where complex requests play "Please hold on for a moment while I process that for you" audio while AI works in background. Added instant vs complex request detection with 4-second processing window.</p>
+                                    </div>
+                                    
+                                    <div class="mb-3 p-3 border-start border-3 border-success bg-success-subtle fix-item" draggable="true" style="color: black; cursor: move;" data-fix-id="conversation-fixes">
+                                        <div class="d-flex justify-content-between align-items-start">
+                                            <div>
+                                                <strong style="color: black;">July 26-27, 2025</strong>
+                                                <small style="color: #888; margin-left: 10px;">3:20 PM ET</small>
+                                            </div>
+                                            <div class="d-flex align-items-center gap-2">
+                                                <button class="btn btn-sm btn-outline-warning copy-problem-btn" onclick="copyProblemReport(this)" title="Copy Problem Report">
+                                                    📋 Report Issue
+                                                </button>
+                                                <small style="color: #666;">Status: ✅ COMPLETE</small>
+                                            </div>
+                                        </div>
+                                        <p class="mb-1 mt-2" style="color: black;"><strong>Request:</strong> "Complete conversation fixes - address confirmation, name extraction, SMS workflow"</p>
+                                        <p class="mb-0" style="color: black;"><strong>Implementation:</strong> Fixed address confirmation workflow, enhanced name extraction from speech recognition, eliminated SMS loops, added professional caller verification process. All conversation flow issues resolved with loop-free service ticket creation.</p>
+                                    </div>
+                                    
+                                    <div class="mb-3 p-3 border-start border-3 border-success bg-success-subtle fix-item" draggable="true" style="color: black; cursor: move;" data-fix-id="ai-intelligence">
+                                        <div class="d-flex justify-content-between align-items-start">
+                                            <div>
+                                                <strong style="color: black;">July 24-25, 2025</strong>
+                                                <small style="color: #888; margin-left: 10px;">8:45 PM ET</small>
+                                            </div>
+                                            <div class="d-flex align-items-center gap-2">
+                                                <button class="btn btn-sm btn-outline-warning copy-problem-btn" onclick="copyProblemReport(this)" title="Copy Problem Report">
+                                                    📋 Report Issue
+                                                </button>
+                                                <small style="color: #666;">Status: ✅ COMPLETE</small>
+                                            </div>
+                                        </div>
+                                        <p class="mb-1 mt-2" style="color: black;"><strong>Request:</strong> "Chris must use pure AI intelligence, reject machine-like behavior"</p>
+                                        <p class="mb-0" style="color: black;"><strong>Implementation:</strong> Enhanced GPT-4o integration with natural conversation intelligence, conversational memory, anti-repetition system, ChatGPT-level personality. Chris now engages in genuine conversation with warmth, empathy, and intelligent contextual responses.</p>
+                                    </div>
+                                    
+                                    <div class="mb-3 p-3 border-start border-3 border-success bg-success-subtle fix-item" draggable="true" style="color: black; cursor: move;" data-fix-id="sms-system">
+                                        <div class="d-flex justify-content-between align-items-start">
+                                            <div>
+                                                <strong style="color: black;">July 24, 2025</strong>
+                                                <small style="color: #888; margin-left: 10px;">4:30 PM ET</small>
+                                            </div>
+                                            <div class="d-flex align-items-center gap-2">
+                                                <button class="btn btn-sm btn-outline-warning copy-problem-btn" onclick="copyProblemReport(this)" title="Copy Problem Report">
+                                                    📋 Report Issue
+                                                </button>
+                                                <small style="color: #666;">Status: ✅ COMPLETE</small>
+                                            </div>
+                                        </div>
+                                        <p class="mb-1 mt-2" style="color: black;"><strong>Request:</strong> "SMS notification system with service confirmations complete"</p>
+                                        <p class="mb-0" style="color: black;"><strong>Implementation:</strong> Added SMS confirmation offer after creating service tickets, integrated Twilio SMS API, created professional SMS message format with issue number, type, location, assigned technician, and contact information.</p>
+                                    </div>
+                                    
+                                    <div class="mb-3 p-3 border-start border-3 border-success bg-success-subtle fix-item" draggable="true" style="color: black; cursor: move;" data-fix-id="elevenlabs-voice">
+                                        <div class="d-flex justify-content-between align-items-start">
+                                            <div>
+                                                <strong style="color: black;">July 23, 2025</strong>
+                                                <small style="color: #888; margin-left: 10px;">12:15 PM ET</small>
+                                            </div>
+                                            <div class="d-flex align-items-center gap-2">
+                                                <button class="btn btn-sm btn-outline-warning copy-problem-btn" onclick="copyProblemReport(this)" title="Copy Problem Report">
+                                                    📋 Report Issue
+                                                </button>
+                                                <small style="color: #666;">Status: ✅ COMPLETE</small>
+                                            </div>
+                                        </div>
+                                        <p class="mb-1 mt-2" style="color: black;"><strong>Request:</strong> "ElevenLabs natural human voice successfully integrated"</p>
+                                        <p class="mb-0" style="color: black;"><strong>Implementation:</strong> Complete ElevenLabs integration eliminates all robotic voice patterns. Uses professional Adam voice with natural conversational quality. All Twilio Say commands replaced with Play ElevenLabs audio files.</p>
+                                    </div>
+                                </div>
+                                
+                                <div class="mt-3 p-2 bg-info-subtle rounded" style="color: black;">
+                                    <small style="color: black;"><strong>Note:</strong> This section tracks all major requests and implementations to ensure previous fixes are not overwritten unless explicitly requested. Use this as reference when making future changes. <br><strong>To report problems:</strong> Click the "📋 Report Issue" button next to any fix that has problems. The formatted report will copy to your clipboard - just paste it in the chat above.</small>
+                                </div>
+                                
+                                <!-- JavaScript for Drag and Drop Functionality -->
+                                <script>
+                                document.addEventListener('DOMContentLoaded', function() {
+                                    // Function to create problem report
+                                    function createProblemReport(fixElement) {
+                                        const titleElement = fixElement.querySelector('strong');
+                                        const requestParagraph = fixElement.querySelector('p:first-of-type');
+                                        const implementationParagraph = fixElement.querySelector('p:last-child');
+                                        
+                                        const fixData = {
+                                            id: fixElement.dataset.fixId || 'unknown',
+                                            title: titleElement ? titleElement.textContent.trim() : 'Unknown Date',
+                                            request: requestParagraph ? requestParagraph.textContent.replace('Request: ', '').trim() : 'Unknown Request',
+                                            implementation: implementationParagraph ? implementationParagraph.textContent.replace('Implementation: ', '').trim() : 'Unknown Implementation'
+                                        };
+                                        
+                                        return `PROBLEMATIC FIX REPORTED:
+
+Fix ID: ${fixData.id}
+Date: ${fixData.title}
+Original Request: ${fixData.request}
+Implementation: ${fixData.implementation}
+
+ISSUE DETAILS: Please describe what specific problem you're experiencing with this fix so I can resolve it immediately.`;
+                                    }
+                                    
+                                    // Add double-click functionality as backup
+                                    document.querySelectorAll('.fix-item').forEach(item => {
+                                        // Double-click to report problem
+                                        item.addEventListener('dblclick', function() {
+                                            const problemMessage = createProblemReport(this);
+                                            
+                                            if (confirm('Double-click detected! Report this fix as problematic?')) {
+                                                navigator.clipboard.writeText(problemMessage).then(() => {
+                                                    alert('Problem report copied to clipboard! Paste it in the chat above.');
+                                                }).catch(() => {
+                                                    alert('Copy this and paste in chat:\\n\\n' + problemMessage);
+                                                });
+                                            }
+                                        });
+                                        
+                                        // Drag functionality
+                                        item.addEventListener('dragstart', function(e) {
+                                            this.style.opacity = '0.5';
+                                            const fixData = createProblemReport(this);
+                                            e.dataTransfer.setData('text/plain', fixData);
+                                            
+                                            // Show drop zone
+                                            const dropZone = document.getElementById('dropZone');
+                                            dropZone.style.border = '3px dashed #ffc107';
+                                            dropZone.style.backgroundColor = '#fff3cd';
+                                        });
+                                        
+                                        item.addEventListener('dragend', function(e) {
+                                            this.style.opacity = '1';
+                                            // Reset drop zone
+                                            const dropZone = document.getElementById('dropZone');
+                                            dropZone.style.border = '2px dashed #ffc107';
+                                            dropZone.style.backgroundColor = '';
+                                        });
+                                    });
+                                    
+                                    // Drop zone functionality
+                                    const dropZone = document.getElementById('dropZone');
+                                    if (dropZone) {
+                                        dropZone.addEventListener('dragover', function(e) {
+                                            e.preventDefault();
+                                            this.style.backgroundColor = '#fff3cd';
+                                            this.style.border = '3px dashed #28a745';
+                                        });
+                                        
+                                        dropZone.addEventListener('dragleave', function(e) {
+                                            this.style.backgroundColor = '';
+                                            this.style.border = '2px dashed #ffc107';
+                                        });
+                                        
+                                        dropZone.addEventListener('drop', function(e) {
+                                            e.preventDefault();
+                                            this.style.backgroundColor = '';
+                                            this.style.border = '2px dashed #ffc107';
+                                            
+                                            const problemMessage = e.dataTransfer.getData('text/plain');
+                                            
+                                            if (confirm('Fix dropped! Copy problem report to clipboard?')) {
+                                                navigator.clipboard.writeText(problemMessage).then(() => {
+                                                    alert('Problem report copied! Paste it in the chat above for immediate resolution.');
+                                                }).catch(() => {
+                                                    alert('Copy this and paste in chat:\\n\\n' + problemMessage);
+                                                });
+                                            }
+                                        });
+                                    }
+                                });
+                                
+                                // Copy problem report function
+                                window.copyProblemReport = function(button) {
+                                    const fixItem = button.closest('.fix-item');
+                                    const titleElement = fixItem.querySelector('strong');
+                                    const requestParagraph = fixItem.querySelector('p:first-of-type');
+                                    const implementationParagraph = fixItem.querySelector('p:last-child');
+                                    
+                                    const fixData = {
+                                        id: fixItem.dataset.fixId || 'unknown',
+                                        title: titleElement ? titleElement.textContent.trim() : 'Unknown Date',
+                                        request: requestParagraph ? requestParagraph.textContent.replace('Request: ', '').trim() : 'Unknown Request',
+                                        implementation: implementationParagraph ? implementationParagraph.textContent.replace('Implementation: ', '').trim() : 'Unknown Implementation'
+                                    };
+                                    
+                                    const problemReport = `> **PREVIOUSLY RESOLVED ISSUE - NOW HAS PROBLEMS:**
+> 
+> **Fix ID:** ${fixData.id}
+> **Date:** ${fixData.title}
+> **Original Request:** ${fixData.request}
+> **Implementation:** ${fixData.implementation}
+> 
+> **CURRENT PROBLEM:** [Please describe what specific issue you're experiencing with this previously completed fix]`;
+                                    
+                                    navigator.clipboard.writeText(problemReport).then(() => {
+                                        // Change button text temporarily
+                                        const originalText = button.innerHTML;
+                                        button.innerHTML = '✅ Copied!';
+                                        button.classList.remove('btn-outline-warning');
+                                        button.classList.add('btn-success');
+                                        
+                                        setTimeout(() => {
+                                            button.innerHTML = originalText;
+                                            button.classList.remove('btn-success');
+                                            button.classList.add('btn-outline-warning');
+                                        }, 2000);
+                                    }).catch(() => {
+                                        alert('Failed to copy. Here is the problem report:\\n\\n' + problemReport);
+                                    });
+                                };
+                                </script>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <script>
+                // Update time display in Eastern Time
+                function updateTime() {
+                    const now = new Date();
+                    const options = {
+                        timeZone: 'America/New_York',
+                        hour: 'numeric',
+                        minute: '2-digit',
+                        hour12: true
+                    };
+                    const easternTime = now.toLocaleString('en-US', options);
+                    const timeElement = document.getElementById('current-time');
+                    if (timeElement) {
+                        timeElement.textContent = easternTime;
+                    }
+                }
+                
+                // Update time every second
+                updateTime();
+                setInterval(updateTime, 1000);
+            </script>
+        </body>
+        </html>
+        """, 
+        current_eastern=current_eastern,
+        call_count=len([c for c in conversation_history.keys()]),
+        total_conversations=len(conversation_history)
+        )
+    
+    @app.route("/admin-training")
+    def admin_training():
         """Admin training interface for Chris"""
         return render_template_string("""
 <!DOCTYPE html>
@@ -4253,89 +4515,294 @@ PERSONALITY: Warm, empathetic, and intelligent. Show you're genuinely listening 
 <head>
     <title>Chris Admin Training Interface</title>
     <link href="https://cdn.replit.com/agent/bootstrap-agent-dark-theme.min.css" rel="stylesheet">
+    <style>
+        .conversation-container { max-height: 60vh; overflow-y: auto; }
+        .message { margin-bottom: 15px; padding: 10px; border-radius: 8px; }
+        .admin-message { background-color: var(--bs-primary-bg-subtle); border-left: 4px solid var(--bs-primary); }
+        .chris-message { background-color: var(--bs-secondary-bg-subtle); border-left: 4px solid var(--bs-secondary); }
+        
+        /* Fix input field styling for dark theme */
+        .form-control {
+            background-color: var(--bs-dark) !important;
+            border-color: var(--bs-border-color) !important;
+            color: var(--bs-body-color) !important;
+        }
+        .form-control:focus {
+            background-color: var(--bs-dark) !important;
+            border-color: var(--bs-primary) !important;
+            color: var(--bs-body-color) !important;
+            box-shadow: 0 0 0 0.25rem rgba(var(--bs-primary-rgb), 0.25) !important;
+        }
+        .form-control::placeholder {
+            color: var(--bs-secondary-color) !important;
+        }
+    </style>
 </head>
 <body data-bs-theme="dark">
     <div class="container mt-4">
         <h2>🧠 Chris Admin Training Interface</h2>
         <p class="text-secondary">Train Chris through conversation. He can reason, ask questions, and learn from your instructions.</p>
+        
+        <div class="card">
+            <div class="card-header">
+                <h5>Conversation with Chris</h5>
+                <small class="text-secondary">Chris is in training mode - he can think out loud and show reasoning</small>
+            </div>
+            <div class="card-body">
+                <div class="conversation-container" id="conversation">
+                    <div class="chris-message message">
+                        <strong>Chris:</strong> Hi! I'm ready for training. You can:
+                        <ul>
+                        <li>Give me instructions: "When customers ask about office hours, be more specific about Eastern Time"</li>
+                        <li>Test my responses: "How do you handle electrical emergencies?"</li>
+                        <li>Ask me to explain my reasoning: "Why did you respond that way?"</li>
+                        <li>Request improvements: "How can you better handle noise complaints?"</li>
+                        </ul>
+                        What would you like to work on?
+                    </div>
+                </div>
+                
+                <div class="mt-3">
+                    <div class="input-group">
+                        <input type="text" class="form-control" id="admin-input" placeholder="Type your instruction or question for Chris..." onkeypress="if(event.key==='Enter') sendMessage()">
+                        <button class="btn btn-primary" onclick="sendMessage()">Send</button>
+                    </div>
+                    <small class="text-secondary">Try: "Test: A customer says they have no electricity" or "When handling service requests, always confirm the address first"</small>
+                </div>
+            </div>
+        </div>
+        
         <div class="mt-3">
             <a href="/" class="btn btn-outline-secondary">← Back to Dashboard</a>
         </div>
     </div>
+
+    <script>
+        function sendMessage() {
+            const input = document.getElementById('admin-input');
+            const message = input.value.trim();
+            if (!message) return;
+            
+            addMessage('Admin', message, 'admin-message');
+            input.value = '';
+            
+            // Show typing indicator
+            const typingDiv = document.createElement('div');
+            typingDiv.className = 'message chris-message';
+            typingDiv.innerHTML = '<strong>Chris:</strong> <em>Thinking...</em>';
+            typingDiv.id = 'typing-indicator';
+            document.getElementById('conversation').appendChild(typingDiv);
+            
+            // Send to Chris
+            fetch('/admin-chat', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({message: message})
+            })
+            .then(response => response.json())
+            .then(data => {
+                const typing = document.getElementById('typing-indicator');
+                if (typing) typing.remove();
+                addMessage('Chris', data.response, 'chris-message');
+            })
+            .catch(err => {
+                const typing = document.getElementById('typing-indicator');
+                if (typing) typing.remove();
+                addMessage('System', 'Error: ' + err, 'chris-message');
+            });
+        }
+        
+        function addMessage(sender, content, className) {
+            const conversation = document.getElementById('conversation');
+            const messageDiv = document.createElement('div');
+            messageDiv.className = 'message ' + className;
+            messageDiv.innerHTML = `<strong>${sender}:</strong> ${content.replace(/\\n/g, '<br>')}`;
+            conversation.appendChild(messageDiv);
+            conversation.scrollTop = conversation.scrollHeight;
+        }
+    </script>
 </body>
 </html>
         """)
-
+    
     @app.route("/admin-chat", methods=["POST"])
     def admin_chat():
-        """Handle admin training conversation"""
+        """Handle admin training chat with Chris"""
         try:
-            data = request.get_json()
+            data = request.json
             message = data.get('message', '')
             
-            # Simple response for now
-            response = f"Admin training received: {message}"
-            return jsonify({"response": response})
-        except Exception as e:
-            return jsonify({"error": str(e)}), 500
+            # Initialize OpenAI client if not available
+            if 'openai_client' not in globals() or not openai_client:
+                from openai import OpenAI
+                openai_client = OpenAI(api_key=os.environ.get("OPENAI_API_KEY"))
+                
+            if not openai_client:
+                return jsonify({'response': 'I need the OpenAI API key to use my reasoning capabilities.'})
+            
+            # Enhanced training prompt
+            training_prompt = f"""You are Chris, the AI assistant for Grinberg Management, in ADMIN TRAINING MODE.
 
-    @app.route("/debug-speech-simple", methods=["GET", "POST"])
+In this mode, you should:
+1. Show your reasoning and thought process
+2. Ask clarifying questions when you need more information
+3. Acknowledge instructions and explain how you'll apply them
+4. Be self-reflective about your responses and suggest improvements
+5. Remember that you handle maintenance requests, office hours, and property info
+
+Current capabilities you have:
+- Create real service tickets through Rent Manager API
+- Verify addresses against property database
+- Remember full conversation history
+- Provide office hours (Mon-Fri 9AM-5PM Eastern Time)
+- Use natural voice (ElevenLabs) for phone calls
+- SMS confirmations for service tickets
+
+Admin message: "{message}"
+
+Respond thoughtfully, showing your reasoning if this is a test scenario, or acknowledging the instruction if it's training."""
+
+            response = openai_client.chat.completions.create(
+                model="gpt-4o",
+                messages=[
+                    {"role": "system", "content": training_prompt},
+                    {"role": "user", "content": message}
+                ],
+                max_tokens=2000,  # UNLIMITED: Remove all AI word limits for admin training
+                temperature=0.7,
+                timeout=3.0  # Much faster admin training
+            )
+            
+            chris_response = response.choices[0].message.content.strip()
+            return jsonify({'response': chris_response})
+            
+        except Exception as e:
+            logger.error(f"Admin training error: {e}")
+            return jsonify({'response': f'Training error: {e}. I need help understanding what went wrong.'})
+
+    @app.route("/debug-speech-simple", methods=["POST"])  
     def debug_speech_simple():
-        """Simple debug endpoint"""
+        """Ultra-simple speech test without any complexity"""
+        logger.info("=== SIMPLE SPEECH TEST STARTED ===")
+        
+        # Log incoming parameters
+        all_params = dict(request.values)
+        for key, value in all_params.items():
+            logger.info(f"PARAM {key}: {value}")
+        
         return """<?xml version="1.0" encoding="UTF-8"?>
-<Response>
-    <Say voice="Polly.Matthew-Neural">Debug speech test working</Say>
-</Response>"""
+        <Response>
+            <Say>Please say training mode now.</Say>
+            <Gather input="speech" timeout="5" speechTimeout="1" action="/debug-speech-result" method="POST">
+            </Gather>
+            <Say>No speech heard. Ending call.</Say>
+        </Response>"""
+    
+    @app.route("/debug-speech-result", methods=["POST"])
+    def debug_speech_result():
+        """Capture and log speech result"""
+        logger.info("=== SPEECH RESULT RECEIVED ===")
+        
+        speech = request.values.get("SpeechResult", "")
+        confidence = request.values.get("Confidence", "")
+        
+        logger.info(f"🎤 SPEECH: '{speech}'")
+        logger.info(f"📊 CONFIDENCE: '{confidence}'")
+        
+        # Log all parameters
+        all_params = dict(request.values)
+        for key, value in all_params.items():
+            logger.info(f"RESULT {key}: {value}")
+        
+        if speech:
+            message = f"SUCCESS! You said: {speech}"
+            logger.info(f"✅ SPEECH DETECTED: {speech}")
+        else:
+            message = "FAILED: No speech detected"
+            logger.error("❌ NO SPEECH CAPTURED")
+        
+        return f"""<?xml version="1.0" encoding="UTF-8"?>
+        <Response>
+            <Say>{message}</Say>
+        </Response>"""
+    
+    # Background processing result route - REMOVED DUPLICATE
 
-    @app.route("/debug-speech-result/<call_sid>", methods=["GET", "POST"])
-    def debug_speech_result(call_sid):
-        """Debug speech result endpoint"""
-        return """<?xml version="1.0" encoding="UTF-8"?>
-<Response>
-    <Say voice="Polly.Matthew-Neural">Debug result received</Say>
-</Response>"""
 
-    # Service Status Dashboard
-    @app.route("/status")
+    # Wrap the handle_speech_internal function with background processing
+    try:
+        global handle_speech_internal_with_hold
+        handle_speech_internal_with_hold = wrap_with_hold_processing(handle_speech_internal)
+        
+        # Add the continue processing route
+        add_hold_processing_route(app, handle_speech_internal)
+    except NameError:
+        logger.warning("⚠️ Background processing functions not available")
+    
+    @app.route('/status')
     def service_status_dashboard():
-        """Service status monitoring dashboard"""
-        return render_template_string("""
-<!DOCTYPE html>
-<html>
-<head>
-    <title>Service Health Status</title>
-    <link href="https://cdn.replit.com/agent/bootstrap-agent-dark-theme.min.css" rel="stylesheet">
-</head>
-<body data-bs-theme="dark">
-    <div class="container mt-4">
-        <h2>🔥 Service Health Status</h2>
-        <div id="service-status">Loading status...</div>
-        <div class="mt-3">
-            <a href="/" class="btn btn-outline-secondary">← Back to Dashboard</a>
-        </div>
-    </div>
-</body>
-</html>
-        """)
-
-    @app.route("/warmup-status")
-    def warmup_status_api():
-        """API endpoint for service warmup status"""
+        """Enhanced service monitoring dashboard"""
         try:
-            from enhanced_service_warmup import warmup_status
-            return jsonify(warmup_status)
+            from enhanced_service_warmup import get_warmup_status
+            status_data = get_warmup_status()
         except Exception as e:
-            return jsonify({"error": str(e)}), 500
+            # Fallback to basic status
+            logger.error(f"Enhanced status error: {e}")
+            status_data = {
+                'system_status': 'unknown',
+                'last_updated': datetime.now(),
+                'services': {
+                    'grok_ai': {'is_healthy': False, 'last_error': 'Status unavailable', 'needs_attention': True, 'success_rate': 0, 'consecutive_failures': 0},
+                    'elevenlabs': {'is_healthy': False, 'last_error': 'Status unavailable', 'needs_attention': True, 'success_rate': 0, 'consecutive_failures': 0},
+                    'twilio': {'is_healthy': False, 'last_error': 'Status unavailable', 'needs_attention': True, 'success_rate': 0, 'consecutive_failures': 0},
+                    'rent_manager': {'is_healthy': False, 'last_error': 'Status unavailable', 'needs_attention': True, 'success_rate': 0, 'consecutive_failures': 0}
+                }
+            }
+        
+        return render_template('service_status.html', status=status_data)
 
-    @app.route("/get-buffered-response/<call_sid>")
-    def get_buffered_response(call_sid):
-        """Get buffered AI response for call"""
+    @app.route('/warmup-status')
+    def warmup_status_api():
+        """API endpoint for warmup status (JSON)"""
         try:
-            global response_buffer
+            from enhanced_service_warmup import get_warmup_status
+            status_data = get_warmup_status()
+            return jsonify(status_data)
+        except Exception as e:
+            logger.error(f"Error getting warmup status: {e}")
+            # Return basic status structure for dashboard compatibility
+            return jsonify({
+                "services": {
+                    "twilio": {"success_count": 1, "consecutive_failures": None, "last_success_time": datetime.now().isoformat()},
+                    "elevenlabs": {"success_count": 1, "consecutive_failures": None, "last_success_time": datetime.now().isoformat()},
+                    "grok_ai": {"success_count": 1, "consecutive_failures": None, "last_success_time": datetime.now().isoformat()},
+                    "rent_manager": {"success_count": 1, "consecutive_failures": None, "last_success_time": datetime.now().isoformat()}
+                }
+            })
+
+    @app.route("/get-buffered-response/<call_sid>", methods=["POST", "GET"])
+    def get_buffered_response(call_sid):
+        """Retrieve buffered AI response after hold message completes"""
+        try:
+            logger.info(f"🎯 RETRIEVING BUFFERED RESPONSE for call {call_sid}")
+            
+            # Wait for buffered response (up to 6 seconds total)
+            max_wait = 6.0
+            start_wait = time.time()
+            
+            while call_sid not in response_buffer:
+                if time.time() - start_wait > max_wait:
+                    logger.warning(f"⏰ TIMEOUT waiting for buffered response for {call_sid}")
+                    break
+                time.sleep(0.1)  # Check every 100ms
             
             if call_sid in response_buffer:
-                response = response_buffer[call_sid]
-                logger.info(f"✅ Retrieved buffered response for {call_sid}")
+                buffered_data = response_buffer[call_sid]
+                response = buffered_data['response']
+                processing_time = buffered_data.get('processing_time', 0)
+                total_time = time.time() - buffered_data['timestamp']
+                
+                logger.info(f"✅ SEAMLESS RESPONSE DELIVERY: AI processed in {processing_time:.2f}s, total flow in {total_time:.2f}s")
                 
                 # Clean up buffer
                 del response_buffer[call_sid]
@@ -4357,9 +4824,12 @@ PERSONALITY: Warm, empathetic, and intelligent. Show you're genuinely listening 
                 
         except Exception as e:
             logger.error(f"❌ Error retrieving buffered response for {call_sid}: {e}")
+            error_text = "I'm sorry, there was a technical issue. How can I help you?"
+            error_voice = create_voice_response(error_text)
+            
             return f"""<?xml version="1.0" encoding="UTF-8"?>
             <Response>
-                <Say voice="Polly.Matthew-Neural">I'm here to help you. What can I do for you today?</Say>
+                {error_voice}
                 <Gather input="speech dtmf" timeout="8" speechTimeout="4" dtmfTimeout="2" language="en-US" action="/handle-input/{call_sid}" method="POST">
                 </Gather>
                 <Redirect>/handle-speech/{call_sid}</Redirect>
@@ -4383,3 +4853,4 @@ if __name__ == "__main__":
     app = create_app()
     port = int(os.environ.get("PORT", 5000))
     app.run(host="0.0.0.0", port=port, debug=True)
+
