@@ -558,6 +558,16 @@ Questions? Call (718) 414-6984"""
         "toilet broken": lambda: "Plumbing emergency! What's your address?",
         "toilet not working": lambda: "Plumbing emergency! What's your address?",
         
+        # Pest control issues - INSTANT ROACH RECOGNITION
+        "roach": lambda: "Pest control issue! What's your address?",
+        "roaches": lambda: "Pest control issue! What's your address?",
+        "cockroach": lambda: "Pest control issue! What's your address?",
+        "cockroaches": lambda: "Pest control issue! What's your address?",
+        "pest": lambda: "Pest control issue! What's your address?",
+        "bug": lambda: "Pest control issue! What's your address?",
+        "insect": lambda: "Pest control issue! What's your address?",
+        "exterminator": lambda: "Pest control issue! What's your address?",
+        
         # Generic broken/not working - CRITICAL ADDITION
         "broken": lambda: "What's broken? I can help create a service ticket.",
         "not working": lambda: "What's not working? I can help create a service ticket.",
@@ -643,6 +653,9 @@ Questions? Call (718) 414-6984"""
             elif any(word in content for word in ['noise', 'loud', 'neighbors']):
                 detected_issue = "noise complaint"
                 break
+            elif any(word in content for word in ['roach', 'roaches', 'cockroach', 'cockroaches', 'pest', 'bug', 'insect']):
+                detected_issue = "pest control"
+                break
             elif any(word in content for word in ['broken', 'not working', "doesn't work"]):
                 detected_issue = "maintenance"
                 break
@@ -702,6 +715,8 @@ Questions? Call (718) 414-6984"""
                     detected_issue = "plumbing"
                 elif any(word in content for word in ['noise', 'loud', 'neighbors']):
                     detected_issue = "noise complaint"
+                elif any(word in content for word in ['roach', 'roaches', 'cockroach', 'cockroaches', 'pest', 'bug', 'insect']):
+                    detected_issue = "pest control"
             
             # Address detection with verification - ONLY for maintenance contexts
             if not detected_address and any(word in content for word in ['electrical', 'power', 'heat', 'water', 'leak', 'plumbing', 'noise', 'maintenance', 'issue', 'problem']):
@@ -1172,7 +1187,7 @@ PERSONALITY: Warm, empathetic, and intelligent. Show you're genuinely listening 
                 content = msg.get('content', '').lower()
                 
                 # Check for maintenance issues in conversation memory
-                if any(issue in content for issue in ['electrical', 'plumbing', 'heating', 'appliance', 'maintenance', 'broken', 'not working', 'problem']):
+                if any(issue in content for issue in ['electrical', 'plumbing', 'heating', 'appliance', 'maintenance', 'broken', 'not working', 'problem', 'roach', 'pest', 'bug', 'insect']):
                     if 'electrical' in content or any(word in content for word in ['power', 'electricity', 'lights']):
                         detected_issue_from_memory = "electrical"
                     elif 'plumbing' in content or any(word in content for word in ['toilet', 'water', 'leak', 'bathroom']):
@@ -1181,6 +1196,8 @@ PERSONALITY: Warm, empathetic, and intelligent. Show you're genuinely listening 
                         detected_issue_from_memory = "heating"
                     elif any(word in content for word in ['washing machine', 'dishwasher', 'appliance']):
                         detected_issue_from_memory = "appliance"
+                    elif any(word in content for word in ['roach', 'roaches', 'cockroach', 'cockroaches', 'pest', 'bug', 'insect']):
+                        detected_issue_from_memory = "pest control"
                 
                 # Check for addresses in conversation memory
                 for msg in conversation_messages:
@@ -1904,6 +1921,8 @@ PERSONALITY: Warm, empathetic, and intelligent. Show you're genuinely listening 
                     current_issue = "plumbing"
                 elif any(word in user_lower for word in ['noise', 'loud', 'neighbors']):
                     current_issue = "noise complaint"
+                elif any(word in user_lower for word in ['roach', 'roaches', 'cockroach', 'cockroaches', 'pest', 'bug', 'insect']):
+                    current_issue = "pest control"
                 
                 # If we detected an issue, check conversation history for addresses
                 if current_issue and call_sid in conversation_history:
@@ -3389,6 +3408,23 @@ PERSONALITY: Warm, empathetic, and intelligent. Show you're genuinely listening 
                                 </div>
                                 
                                 <div style="max-height: 400px; overflow-y: auto;">
+                                    <div class="mb-3 p-3 border-start border-3 border-success bg-success-subtle fix-item" draggable="true" style="color: black; cursor: move;" data-fix-id="roach-conversation-memory-fix">
+                                        <div class="d-flex justify-content-between align-items-start">
+                                            <div>
+                                                <strong style="color: black;">July 28, 2025</strong>
+                                                <small style="color: #888; margin-left: 10px;">10:45 PM ET</small>
+                                            </div>
+                                            <div class="d-flex align-items-center gap-2">
+                                                <button class="btn btn-sm btn-outline-warning copy-problem-btn" onclick="copyProblemReport(this)" title="Copy Problem Report">
+                                                    📋 Report Issue
+                                                </button>
+                                                <small style="color: #666;">Status: ✅ COMPLETE</small>
+                                            </div>
+                                        </div>
+                                        <p class="mb-1 mt-2" style="color: black;"><strong>Request:</strong> "Chris doesn't remember roach issue after address confirmation - conversation memory bug"</p>
+                                        <p class="mb-0" style="color: black;"><strong>Implementation:</strong> Added comprehensive pest control detection (roach, cockroach, pest, bug, insect) to all conversation memory systems. Enhanced issue tracking across address verification workflow so Chris remembers original roach/pest issues throughout entire conversation. Added instant recognition patterns for immediate pest control responses.</p>
+                                    </div>
+                                    
                                     <div class="mb-3 p-3 border-start border-3 border-success bg-success-subtle fix-item" draggable="true" style="color: black; cursor: move;" data-fix-id="immediate-hold-message-system">
                                         <div class="d-flex justify-content-between align-items-start">
                                             <div>
