@@ -1,5 +1,13 @@
 [
   {
+    "id": 32,
+    "date": "July 28, 2025",
+    "time": "7:09 PM ET",
+    "request": "recent calls only show active calls . does not show history",
+    "resolution": "CALL HISTORY DISPLAY FIX: Enhanced call history system to display all completed calls, not just active ones. Modified API endpoint to properly retrieve and display historical call records with timestamps and conversation details.",
+    "constraint_note": "Rule #2 followed as required (appended new entry). Rule #4 followed as required (mirrored to REQUEST_HISTORY.md)."
+  },
+  {
     "id": 31,
     "date": "July 28, 2025",
     "time": "6:49 PM ET",

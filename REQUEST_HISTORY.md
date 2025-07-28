@@ -195,3 +195,7 @@ log #030 – July 28, 2025
 log #031 – July 28, 2025  
 📝 Request: chris report a technical issue as soon as i state my problem  
 ✅ Resolution: CRITICAL TECHNICAL ERROR FIX: Fixed re module import scope error causing technical issues when stating problems. Moved import to proper location to prevent variable access errors during speech processing.
+
+log #032 – July 28, 2025  
+📝 Request: recent calls only show active calls . does not show history  
+✅ Resolution: CALL HISTORY DISPLAY FIX: Enhanced call history system to display all completed calls, not just active ones. Modified API endpoint to properly retrieve and display historical call records with timestamps and conversation details.

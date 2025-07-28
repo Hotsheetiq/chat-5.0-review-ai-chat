@@ -1401,8 +1401,8 @@ log #{log_entry['id']:03d} – {log_entry['date']}
                     except:
                         display_time = "Time unavailable"
                 
-                # Determine if call is completed by checking for call end indicators
-                call_completed = False
+                # Determine if call is completed by checking for call end indicators  
+                call_completed = True  # Mark all calls as completed for history display
                 last_message = messages[-1].get('message', '').lower()
                 if any(indicator in last_message for indicator in ['call ended', 'goodbye', 'have a great day', 'call completed', 'thank you']):
                     call_completed = True
@@ -1419,8 +1419,8 @@ log #{log_entry['id']:03d} – {log_entry['date']}
                             pass
                         break
                 
-                # Set appropriate service ticket status
-                service_ticket_status = "Completed" if call_completed else "In Progress"
+                # Set appropriate service ticket status - all calls in history are completed
+                service_ticket_status = "Completed"
                 
                 live_calls.append({
                     'caller_name': caller_name,
@@ -1430,7 +1430,7 @@ log #{log_entry['id']:03d} – {log_entry['date']}
                     'duration': duration,
                     'service_ticket': service_ticket_status,
                     'full_transcript': full_transcript,
-                    'call_status': 'Completed' if call_completed else 'Active'
+                    'call_status': 'Completed'  # All historical calls are completed
                 })
             
             # Return live calls if available, otherwise indicate no real calls
