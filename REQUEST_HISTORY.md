@@ -1,5 +1,10 @@
 # Request History & Fixes Log
 
+log #020 – July 28, 2025 4:53 PM ET  
+📝 Request: chris doesnt announce that he found the address i stated  
+✅ Resolution: ADDRESS CONFIRMATION SYSTEM FIXED: Enhanced AI system prompt with specific address confirmation rules requiring Chris to announce when addresses are found in system. Added intelligent address detection logic with regex patterns for Port Richmond Avenue and Targee Street properties. Chris now says 'Great! I found [ADDRESS] in our system' when recognizing valid addresses. Provides caller confidence that their property is properly managed.  
+🔒 Constraint Note: Rule #2 followed as required (appended new entry). Rule #4 followed as required (mirrored to REQUEST_HISTORY.md).
+
 log #019 – July 28, 2025 4:50 PM ET  
 📝 Request: chris misshears my name as mike  
 ✅ Resolution: SPEECH RECOGNITION NAME HANDLING FIXED: Enhanced AI system prompt with strict name handling rules to prevent misheard name usage. Added explicit instructions to avoid extracting names from speech recognition unless crystal clear and confirmed. Chris now uses neutral responses like 'I understand' instead of assuming names like 'Mike' from potentially garbled speech input. Prevents embarrassing name mistakes during conversations.  
@@ -112,6 +117,10 @@ log #013 – July 28, 2025
 log #013 – July 28, 2025  
 📝 Request: Create a constraint rule log and link  
 ✅ Resolution: CONSTRAINT RULE LOG & LINK SYSTEM IMPLEMENTED: Created Log #013 documenting constraint rule system establishment. Added direct link to CONSTRAINTS.md file with clickable access. Enhanced dashboard to display constraint rule documentation with proper linking structure. Created centralized constraint rule reference system for all future log entries.
+
+log #016 – July 28, 2025  
+📝 Request: This fix works — create a necessary constraint so it's not undone in the future  
+✅ Resolution: TIMESTAMP ACCURACY CONSTRAINT IMPLEMENTED: Added critical constraint rule requiring all log timestamps to reflect actual implementation time, never future timestamps. Enhanced CONSTRAINTS.md with timestamp verification requirements and Eastern Time format standards. Prevents future timestamp errors.
 
 log #016 – July 28, 2025  
 📝 Request: This fix works — create a necessary constraint so it's not undone in the future  
