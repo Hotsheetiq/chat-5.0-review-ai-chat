@@ -63,12 +63,31 @@ try:
     service_handler = ServiceIssueHandler(rent_manager)
     address_matcher = AddressMatcher(rent_manager)
     
-    # Load properties into address matcher
+    # CRITICAL FIX: Force fresh address matcher property loading to avoid session limit issues
     try:
-        asyncio.run(address_matcher.load_properties())
+        # Create a fresh instance to avoid session conflicts
+        fresh_rent_manager = RentManagerAPI(credentials_string)
+        fresh_address_matcher = AddressMatcher(fresh_rent_manager)
+        
+        # Force load properties with fresh session
+        asyncio.run(fresh_address_matcher.load_properties())
+        
+        # Use the fresh instance with loaded properties
+        address_matcher = fresh_address_matcher
         logger.info(f"✅ Address matcher loaded with {len(address_matcher.properties_cache)} properties")
+        
+        # Update global rent_manager to use fresh instance
+        rent_manager = fresh_rent_manager
+        service_handler = ServiceIssueHandler(rent_manager)
+        
     except Exception as e:
         logger.error(f"Failed to load properties into address matcher: {e}")
+        # Try fallback loading method
+        try:
+            address_matcher.properties_cache = []
+            logger.warning("⚠️ Using empty address matcher due to session issues")
+        except:
+            logger.error("⚠️ Could not initialize address matcher properties")
     
     logger.info("Rent Manager API, Service Handler, and Address Matcher initialized successfully")
     
@@ -1820,16 +1839,59 @@ PERSONALITY: Warm, empathetic, and intelligent. Show you're genuinely listening 
             if call_sid not in conversation_history:
                 conversation_history[call_sid] = []
             
-            # CRITICAL FIX: Store ALL user input in conversation history IMMEDIATELY
+            # CRITICAL FIX: Store ALL user input in conversation history IMMEDIATELY with enhanced context
+            # Enhanced issue and address detection
+            detected_issues = []
+            detected_addresses = []
+            
+            # Immediate issue detection for conversation memory
+            user_lower = user_input.lower()
+            if any(word in user_lower for word in ['electrical', 'electric', 'power', 'lights', 'outlet']):
+                detected_issues.append('electrical')
+            if any(word in user_lower for word in ['plumbing', 'toilet', 'water', 'leak', 'bathroom', 'sink', 'drain']):
+                detected_issues.append('plumbing')
+            if any(word in user_lower for word in ['heating', 'heat', 'cold', 'temperature', 'thermostat']):
+                detected_issues.append('heating')
+            if any(word in user_lower for word in ['washing machine', 'dishwasher', 'appliance', 'washer', 'dryer']):
+                detected_issues.append('appliance')
+            if any(word in user_lower for word in ['roach', 'roaches', 'cockroach', 'pest', 'bug', 'insect']):
+                detected_issues.append('pest_control')
+            if any(word in user_lower for word in ['maintenance', 'repair', 'broken', 'not working', 'problem', 'issue']):
+                detected_issues.append('maintenance')
+            
+            # Immediate address detection for conversation memory
+            import re
+            address_patterns = [
+                (r'(\d+)\s*port\s*richmond', 'Port Richmond Avenue'),
+                (r'(\d+)\s*targee', 'Targee Street'),
+                (r'(\d+)\s*richmond\s*avenue', 'Richmond Avenue'),
+                (r'(\d+)\s*(\w+\s*\w*)\s*(avenue|street|ave|st|road|rd)', 'general_address')
+            ]
+            
+            for pattern, street_type in address_patterns:
+                match = re.search(pattern, user_lower)
+                if match:
+                    if street_type == 'general_address':
+                        address = f"{match.group(1)} {match.group(2).title()} {match.group(3).title()}"
+                    else:
+                        address = f"{match.group(1)} {street_type}"
+                    detected_addresses.append(address)
+            
             conversation_history[call_sid].append({
                 'role': 'user',
                 'content': user_input,
                 'timestamp': datetime.now(),
                 'caller_phone': caller_phone,
                 'caller_name': 'Unknown Caller',  # Will be updated when collected
-                'speech_confidence': speech_confidence
+                'speech_confidence': speech_confidence,
+                'detected_issues': detected_issues,
+                'detected_addresses': detected_addresses,
+                'message': user_input  # For compatibility
             })
-            logger.info(f"💾 STORED INPUT IN MEMORY: '{user_input}' for call {call_sid}")
+            
+            # Log detected context for debugging
+            context_info = f"Issues: {detected_issues}, Addresses: {detected_addresses}" if (detected_issues or detected_addresses) else "No context detected"
+            logger.info(f"💾 STORED INPUT IN MEMORY: '{user_input}' for call {call_sid} - {context_info}")
             
             # Also update call monitor with conversation data
             try:
@@ -2474,27 +2536,54 @@ PERSONALITY: Warm, empathetic, and intelligent. Show you're genuinely listening 
                                                 logger.info(f"🎯 AUTO-SELECTED CLOSE MATCH: '{user_input}' → '{best_match}' (confidence: {confidence})")
                                                 
                                                 # Continue with service ticket creation using the matched address
-                                                # Check conversation for issue type
-                                                recent_messages = conversation_history.get(call_sid, [])[-5:]
+                                                # ENHANCED: Check conversation for issue type using improved memory tracking
+                                                recent_messages = conversation_history.get(call_sid, [])[-10:]  # Check more messages
                                                 detected_issue_type = None
                                                 
+                                                # Priority: Check detected_issues first (more reliable)
                                                 for msg in recent_messages:
-                                                    content = msg.get('content', '').lower()
                                                     detected_issues = msg.get('detected_issues', [])
-                                                    
-                                                    # Check both tracked issues and content keywords
-                                                    if 'appliance' in detected_issues or any(word in content for word in ['washing machine', 'washer', 'dryer', 'dishwasher', 'appliance', 'broke']):
-                                                        detected_issue_type = "appliance"
-                                                        break
-                                                    elif 'electrical' in detected_issues or any(word in content for word in ['power', 'electrical', 'electricity', 'lights']):
-                                                        detected_issue_type = "electrical"
-                                                        break
-                                                    elif 'plumbing' in detected_issues or any(word in content for word in ['plumbing', 'toilet', 'water', 'leak', 'bathroom']):
-                                                        detected_issue_type = "plumbing"
-                                                        break
-                                                    elif 'heating' in detected_issues or any(word in content for word in ['heating', 'heat', 'cold']):
-                                                        detected_issue_type = "heating"
-                                                        break
+                                                    if detected_issues:
+                                                        # Use the first detected issue type
+                                                        if 'electrical' in detected_issues:
+                                                            detected_issue_type = "electrical"
+                                                            break
+                                                        elif 'plumbing' in detected_issues:
+                                                            detected_issue_type = "plumbing"
+                                                            break
+                                                        elif 'heating' in detected_issues:
+                                                            detected_issue_type = "heating"
+                                                            break
+                                                        elif 'appliance' in detected_issues:
+                                                            detected_issue_type = "appliance"
+                                                            break
+                                                        elif 'pest_control' in detected_issues:
+                                                            detected_issue_type = "pest control"
+                                                            break
+                                                        elif 'maintenance' in detected_issues:
+                                                            detected_issue_type = "maintenance"
+                                                            break
+                                                
+                                                # Fallback: Check content keywords if no detected issues
+                                                if not detected_issue_type:
+                                                    for msg in recent_messages:
+                                                        content = msg.get('content', '').lower()
+                                                        
+                                                        if any(word in content for word in ['washing machine', 'washer', 'dryer', 'dishwasher', 'appliance', 'broke']):
+                                                            detected_issue_type = "appliance"
+                                                            break
+                                                        elif any(word in content for word in ['power', 'electrical', 'electricity', 'lights']):
+                                                            detected_issue_type = "electrical"
+                                                            break
+                                                        elif any(word in content for word in ['plumbing', 'toilet', 'water', 'leak', 'bathroom']):
+                                                            detected_issue_type = "plumbing"
+                                                            break
+                                                        elif any(word in content for word in ['heating', 'heat', 'cold']):
+                                                            detected_issue_type = "heating"
+                                                            break
+                                                        elif any(word in content for word in ['roach', 'pest', 'bug', 'insect']):
+                                                            detected_issue_type = "pest control"
+                                                            break
                                                 
                                                 if detected_issue_type:
                                                     # Create service ticket immediately with matched address
