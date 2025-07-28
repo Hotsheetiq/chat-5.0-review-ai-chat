@@ -84,6 +84,31 @@ complaint_tracker = {
     ]
 }
 
+def get_dynamic_happy_greeting():
+    """Generate dynamic, happy greetings that vary for each caller"""
+    import random
+    
+    # Happy, enthusiastic greeting variations
+    greetings = [
+        "Hey there! This is Chris from Grinberg Management, and I'm having a great day! What's going on?",
+        "Hi! Chris here from Grinberg Management, hope you're doing awesome today! How can I help?",
+        "Hello! This is Chris with Grinberg Management, and I'm excited to help you out! What's up?",
+        "Hey! Chris from Grinberg Management here, ready to make your day better! What do you need?",
+        "Hi there! This is Chris at Grinberg Management, and I'm in a fantastic mood! What can I do for you?",
+        "Hello! Chris here from Grinberg Management, hope your day is going wonderfully! How can I assist?",
+        "Hey! This is Chris with Grinberg Management, and I'm thrilled to talk with you! What's happening?",
+        "Hi! Chris from Grinberg Management here, and I'm feeling great today! What brings you to call?",
+        "Hello there! This is Chris at Grinberg Management, super happy to help! What's going on?",
+        "Hey! Chris here from Grinberg Management, hope you're having an amazing day! How can I help you out?",
+        "Hi! This is Chris with Grinberg Management, and I'm pumped to assist you today! What do you need?",
+        "Hello! Chris from Grinberg Management here, and I'm absolutely ready to help! What's up?",
+        "Hey there! This is Chris at Grinberg Management, feeling fantastic and ready to help! What can I do?",
+        "Hi! Chris here from Grinberg Management, and I'm super excited to talk with you! How can I help?",
+        "Hello! This is Chris with Grinberg Management, having an amazing day and ready to assist! What's going on?"
+    ]
+    
+    return random.choice(greetings)
+
 def create_app():
     app = Flask(__name__)
     app.secret_key = os.environ.get("SESSION_SECRET", "dev-secret-key")
@@ -991,10 +1016,11 @@ log #{log_entry['id']:03d} – {log_entry['date']}
             if call_sid not in conversation_history:
                 conversation_history[call_sid] = []
             
-            # Create TwiML response for initial greeting
+            # Create TwiML response with dynamic happy greeting
+            dynamic_greeting = get_dynamic_happy_greeting()
             response = f"""<?xml version="1.0" encoding="UTF-8"?>
             <Response>
-                <Say voice="Polly.Matthew-Neural">Hey there! This is Chris from Grinberg Management. What's going on?</Say>
+                <Say voice="Polly.Matthew-Neural">{dynamic_greeting}</Say>
                 <Gather input="speech" timeout="8" speechTimeout="4" action="/handle-speech/{call_sid}" method="POST">
                 </Gather>
                 <Redirect>/handle-speech/{call_sid}</Redirect>
