@@ -1586,28 +1586,21 @@ PERSONALITY: Warm, empathetic, and intelligent. Show you're genuinely listening 
                         <Redirect>/handle-speech/{call_sid}</Redirect>
                     </Response>"""
             
-            # CRITICAL FIX: Determine immediately if this needs hold message
-            if should_use_immediate_hold_message(user_input):
-                logger.info(f"🔄 IMMEDIATE HOLD: Playing hold message while processing '{user_input[:50]}...'")
+            # ENHANCED CALL FLOW: Determine if we need immediate hold message + parallel AI processing
+            from enhanced_call_flow import should_use_enhanced_flow, start_parallel_ai_processing, create_instant_hold_twiml
+            
+            if should_use_enhanced_flow(user_input):
+                logger.info(f"🚀 ENHANCED FLOW: Instant hold + parallel AI for '{user_input[:50]}...'")
                 
-                # Start AI processing IMMEDIATELY in background thread
-                import threading
-                processing_thread = threading.Thread(
-                    target=start_ai_processing_with_buffer,
-                    args=(call_sid, user_input, caller_phone, speech_confidence)
-                )
-                processing_thread.daemon = True
-                processing_thread.start()
+                # Step 1: Start AI processing IMMEDIATELY in parallel (no waiting)
+                ai_function = lambda input_text: handle_speech_internal(call_sid, input_text, caller_phone, speech_confidence)
+                processing_id = start_parallel_ai_processing(call_sid, user_input, ai_function)
                 
-                # Return hold message TwiML IMMEDIATELY - no waiting
-                hold_audio_url = "https://3442ef02-e255-4239-86b6-df0f7a6e4975-00-1w63nn4pu7btq.picard.replit.dev/static/please_hold.mp3"
-                return f"""<?xml version="1.0" encoding="UTF-8"?>
-                <Response>
-                    <Play>{hold_audio_url}</Play>
-                    <Redirect>/get-buffered-response/{call_sid}</Redirect>
-                </Response>"""
+                # Step 2: Return instant hold message TwiML (plays immediately while AI processes)
+                return create_instant_hold_twiml(call_sid)
             else:
                 # Simple requests get immediate processing without hold message
+                logger.info(f"⚡ INSTANT PROCESSING: Direct response for '{user_input[:30]}...'")
                 return handle_speech_internal(call_sid, user_input, caller_phone, speech_confidence)
             
         except Exception as e:
@@ -5211,7 +5204,16 @@ Respond thoughtfully, showing your reasoning if this is a test scenario, or ackn
     # Background processing result route - REMOVED DUPLICATE
 
 
-    # Wrap the handle_speech_internal function with background processing
+    # Initialize Enhanced Call Flow System
+    try:
+        from enhanced_call_flow import add_enhanced_call_flow_routes, initialize_hold_audio_cache
+        add_enhanced_call_flow_routes(app)
+        initialize_hold_audio_cache()
+        logger.info("✅ ENHANCED CALL FLOW SYSTEM INITIALIZED")
+    except ImportError as e:
+        logger.warning(f"⚠️ Enhanced call flow not available: {e}")
+        
+    # Legacy background processing fallback
     try:
         global handle_speech_internal_with_hold
         handle_speech_internal_with_hold = wrap_with_hold_processing(handle_speech_internal)
