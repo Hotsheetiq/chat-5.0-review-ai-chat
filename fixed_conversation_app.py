@@ -4285,107 +4285,11 @@ PERSONALITY: Warm, empathetic, and intelligent. Show you're genuinely listening 
                                 
                                 <!-- Unified Request History & Fixes - All entries in one scrollable section -->
                                 <div id="unified-log-section" style="max-height: 500px; overflow-y: auto;">
-                                    <div class="mb-3 p-3 border-start border-3 border-success bg-success-subtle fix-item" style="color: black;" data-fix-id="address-matching-repetition-fix">
-                                        <div class="d-flex justify-content-between align-items-start">
-                                            <div>
-                                                <strong style="color: black;">July 28, 2025</strong>
-                                                <small style="color: #888; margin-left: 10px;">12:05 AM ET → 12:16 AM ET</small>
-                                            </div>
-                                            <div class="d-flex align-items-center gap-2">
-                                                <button class="btn btn-sm btn-outline-warning copy-problem-btn" onclick="copyProblemReport(this)" title="Copy Problem Report">
-                                                    📋 Report Issue
-                                                </button>
-                                                <small style="color: #666;">Status: ✅ COMPLETE</small>
-                                            </div>
-                                        </div>
-                                        <p class="mb-1 mt-2" style="color: black;"><strong>Request:</strong> "Chris isn't able to find the address and ask for the correct address instead of finding a close match. The address does exist in the system is he not using API? He also repeats himself. Make it a rule the repeating exact speech is not allowed!"</p>
-                                        <p class="mb-0" style="color: black;"><strong>Implementation:</strong> CRITICAL ADDRESS MATCHING FIX - Enhanced address matcher to use API-based intelligent proximity matching instead of asking for corrections when addresses exist in system. Implemented HARD anti-repetition rule preventing identical speech responses within same call. <span style="color: #0066cc;">[AMENDMENT 12:16 AM ET: Adding numerical proximity algorithm for closest street number matching + mandatory alternative response generation system]</span></p>
+                                    <!-- JavaScript will populate this section with all request logs -->
+                                    <div style="text-align: center; padding: 20px; color: #666;">
+                                        <p>Loading request history...</p>
                                     </div>
-                                    
-                                    <div class="mb-3 p-3 border-start border-3 border-success bg-success-subtle fix-item" style="color: black;" data-fix-id="roach-conversation-memory-fix">
-                                        <div class="d-flex justify-content-between align-items-start">
-                                            <div>
-                                                <strong style="color: black;">July 28, 2025</strong>
-                                                <small style="color: #888; margin-left: 10px;">10:45 PM ET → 11:02 PM ET → 11:47 PM ET → 11:56 PM ET</small>
-                                            </div>
-                                            <div class="d-flex align-items-center gap-2">
-                                                <button class="btn btn-sm btn-outline-warning copy-problem-btn" onclick="copyProblemReport(this)" title="Copy Problem Report">
-                                                    📋 Report Issue
-                                                </button>
-                                                <small style="color: #666;">Status: ✅ COMPLETE</small>
-                                            </div>
-                                        </div>
-                                        <p class="mb-1 mt-2" style="color: black;"><strong>Request:</strong> "Chris doesn't remember roach issue after address confirmation - conversation memory bug"</p>
-                                        <p class="mb-0" style="color: black;"><strong>Implementation:</strong> CRITICAL FIX COMPLETE - Added conversation memory checking immediately after successful address verification (lines 2432-2472). Instead of asking "What's the issue there?", Chris now scans conversation history for previously mentioned issues (roach, pest, electrical, plumbing, heating) and creates service tickets immediately. Fixed the root cause where address verification logic bypassed conversation memory check. <span style="color: #0066cc;">[AMENDED 11:02 PM: Enhanced with priority conversation memory scanning and tested working perfectly - live testing confirms roach issues remembered and tickets created immediately]</span> <span style="color: #0066cc;">[AMENDED 11:47 PM: FIXED INITIAL PROBLEM STORAGE - Now stores ALL user input immediately in conversation memory (line 1572) so initial problem statements are never lost. Enhanced memory scanning works across entire call history including first user message.]</span> <span style="color: #0066cc;">[AMENDED 11:56 PM: Fixed address matching to find close matches using API instead of asking for corrections when addresses exist in system]</span></p>
-                                    </div>
-                                    
-                                    <div class="mb-3 p-3 border-start border-3 border-success bg-success-subtle fix-item" style="color: black;" data-fix-id="immediate-hold-message-system">
-                                        <div class="d-flex justify-content-between align-items-start">
-                                            <div>
-                                                <strong style="color: black;">July 28, 2025</strong>
-                                                <small style="color: #888; margin-left: 10px;">10:34 PM ET</small>
-                                            </div>
-                                            <div class="d-flex align-items-center gap-2">
-                                                <button class="btn btn-sm btn-outline-warning copy-problem-btn" onclick="copyProblemReport(this)" title="Copy Problem Report">
-                                                    📋 Report Issue
-                                                </button>
-                                                <small style="color: #666;">Status: ✅ COMPLETE</small>
-                                            </div>
-                                        </div>
-                                        <p class="mb-1 mt-2" style="color: black;"><strong>Request:</strong> "Fix hold message timing - should play immediately after user stops speaking, not after AI processing delay"</p>
-                                        <p class="mb-0" style="color: black;"><strong>Implementation:</strong> Completely restructured conversation flow so hold message plays instantly when user finishes speaking. AI processing now runs in parallel background threads while hold message plays. Added response buffering system for seamless transition from hold to AI response, eliminating all awkward silence and processing delays.</p>
-                                    </div>
-                                    
-                                    <div class="mb-3 p-3 border-start border-3 border-success bg-success-subtle fix-item" style="color: black;" data-fix-id="enhanced-drag-drop-system">
-                                        <div class="d-flex justify-content-between align-items-start">
-                                            <div>
-                                                <strong style="color: black;">July 28, 2025</strong>
-                                                <small style="color: #888; margin-left: 10px;">9:17 PM ET</small>
-                                            </div>
-                                            <div class="d-flex align-items-center gap-2">
-                                                <button class="btn btn-sm btn-outline-warning copy-problem-btn" onclick="copyProblemReport(this)" title="Copy Problem Report">
-                                                    📋 Report Issue
-                                                </button>
-                                                <small style="color: #666;">Status: ✅ COMPLETE</small>
-                                            </div>
-                                        </div>
-                                        <p class="mb-1 mt-2" style="color: black;"><strong>Request:</strong> "Enhanced drag-and-drop system with multiple problem reporting methods"</p>
-                                        <p class="mb-0" style="color: black;"><strong>Implementation:</strong> Fixed drag-and-drop functionality with always-visible drop zone, added double-click backup method for problem reporting, enhanced visual feedback, automatic clipboard integration, and multiple browser compatibility methods for instant problem resolution.</p>
-                                    </div>
-                                    
-                                    <div class="mb-3 p-3 border-start border-3 border-success bg-success-subtle fix-item" style="color: black;" data-fix-id="drag-drop-system">
-                                        <div class="d-flex justify-content-between align-items-start">
-                                            <div>
-                                                <strong style="color: black;">July 28, 2025</strong>
-                                                <small style="color: #888; margin-left: 10px;">9:12 PM ET</small>
-                                            </div>
-                                            <div class="d-flex align-items-center gap-2">
-                                                <button class="btn btn-sm btn-outline-warning copy-problem-btn" onclick="copyProblemReport(this)" title="Copy Problem Report">
-                                                    📋 Report Issue
-                                                </button>
-                                                <small style="color: #666;">Status: ✅ COMPLETE</small>
-                                            </div>
-                                        </div>
-                                        <p class="mb-1 mt-2" style="color: black;"><strong>Request:</strong> "Add timestamps to completed fixes and allow drag-and-drop for problematic fixes"</p>
-                                        <p class="mb-0" style="color: black;"><strong>Implementation:</strong> Added precise Eastern Time timestamps to all fixes, created interactive drag-and-drop interface with visual drop zone, implemented automatic problem report generation with clipboard integration for instant agent assistance.</p>
-                                    </div>
-                                    
-                                    <div class="mb-3 p-3 border-start border-3 border-success bg-success-subtle fix-item" style="color: black;" data-fix-id="text-styling-fix">
-                                        <div class="d-flex justify-content-between align-items-start">
-                                            <div>
-                                                <strong style="color: black;">July 28, 2025</strong>
-                                                <small style="color: #888; margin-left: 10px;">9:08 PM ET</small>
-                                            </div>
-                                            <div class="d-flex align-items-center gap-2">
-                                                <button class="btn btn-sm btn-outline-warning copy-problem-btn" onclick="copyProblemReport(this)" title="Copy Problem Report">
-                                                    📋 Report Issue
-                                                </button>
-                                                <small style="color: #666;">Status: ✅ COMPLETE</small>
-                                            </div>
-                                        </div>
-                                        <p class="mb-1 mt-2" style="color: black;"><strong>Request:</strong> "Make text black in Request History & Fixes section"</p>
-                                        <p class="mb-0" style="color: black;"><strong>Implementation:</strong> Updated all text styling in the Request History section to use black color (style="color: black;") for better readability. Status labels use dark gray (#666) for contrast while maintaining all main text in black.</p>
-                                    </div>
+                                </div>
                                     
                                     <div class="mb-3 p-3 border-start border-3 border-success bg-success-subtle fix-item" style="color: black;" data-fix-id="rent-manager-api-fix">
                                         <div class="d-flex justify-content-between align-items-start">
