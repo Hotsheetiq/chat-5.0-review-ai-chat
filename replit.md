@@ -93,6 +93,15 @@ The application is designed for cloud deployment with the following consideratio
 
 ## Recent Changes
 
+### July 28, 2025 - REQUEST LOG SORTING FIXED: Most Recent Entries Now Display First
+- **USER REQUEST**: "sort the logs appropriately with the most recent being on top" - Dashboard request logs were not displaying in proper chronological order
+- **SORTING ORDER CORRECTED**: Reordered manual fix data array to show most recent timestamps first in descending order
+- **CHRONOLOGICAL DISPLAY**: Request logs now properly display with Enhanced Call Flow System (10:45 AM ET) at top, followed by Property Backup System (9:30 AM ET), Drop Zone Removal (8:05 AM ET), etc.
+- **JAVASCRIPT LOGIC VERIFIED**: Confirmed sorting function `sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))` correctly orders by newest first
+- **STATIC HTML CONFLICTS RESOLVED**: Removed conflicting static HTML entries that were interfering with dynamic JavaScript population
+- **USER EXPERIENCE IMPROVED**: Dashboard request history now shows logical timeline progression with most recent fixes prominently displayed at top
+- **PRODUCTION READY**: Proper chronological sorting ensures users see latest system improvements first
+
 ### July 28, 2025 - MISSING REQUEST LOGS ADDED: Complete Historical Request Timeline Restored
 - **COMPREHENSIVE MISSING LOGS ADDED**: Added all major missing request logs including chat transcript system (4:30 AM ET), dashboard data structure fix (3:30 AM ET), SendGrid API update (3:00 AM ET), critical address/conversation memory (2:30 AM ET), and application error TwiML fix (2:00 AM ET)
 - **COMPLETE HISTORICAL TIMELINE**: Request history now shows complete chronological order of all major implementations from 2:00 AM through 10:45 AM ET
