@@ -1,5 +1,10 @@
 # Request History & Fixes Log
 
+log #019 – July 28, 2025 4:50 PM ET  
+📝 Request: chris misshears my name as mike  
+✅ Resolution: SPEECH RECOGNITION NAME HANDLING FIXED: Enhanced AI system prompt with strict name handling rules to prevent misheard name usage. Added explicit instructions to avoid extracting names from speech recognition unless crystal clear and confirmed. Chris now uses neutral responses like 'I understand' instead of assuming names like 'Mike' from potentially garbled speech input. Prevents embarrassing name mistakes during conversations.  
+🔒 Constraint Note: Rule #2 followed as required (appended new entry). Rule #4 followed as required (mirrored to REQUEST_HISTORY.md).
+
 log #018 – July 28, 2025 4:47 PM ET  
 📝 Request: call are not reflected in the recent calls list  
 ✅ Resolution: LIVE CALL HISTORY DISPLAY FIXED: Fixed critical issue where dashboard showed only static sample data instead of actual live call conversations. Updated /api/calls/history endpoint to process real conversation_history data from live calls. System now converts live conversation transcripts into proper call records with timestamps, issue detection, duration calculation, and full transcripts. Dashboard displays actual conversations instead of placeholder data.  

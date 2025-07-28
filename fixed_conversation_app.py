@@ -648,6 +648,14 @@ def create_app():
     # Hardened logging system - follows CONSTRAINTS.md rules
     request_history_logs = [
         {
+            "id": 19,
+            "date": "July 28, 2025",
+            "time": "4:50 PM ET",
+            "request": "chris misshears my name as mike",
+            "resolution": "SPEECH RECOGNITION NAME HANDLING FIXED: Enhanced AI system prompt with strict name handling rules to prevent misheard name usage. Added explicit instructions to avoid extracting names from speech recognition unless crystal clear and confirmed. Chris now uses neutral responses like 'I understand' instead of assuming names like 'Mike' from potentially garbled speech input. Prevents embarrassing name mistakes during conversations.",
+            "constraint_note": "Rule #2 followed as required (appended new entry). Rule #4 followed as required (mirrored to REQUEST_HISTORY.md)."
+        },
+        {
             "id": 18,
             "date": "July 28, 2025",
             "time": "4:47 PM ET",
@@ -951,6 +959,12 @@ log #{log_entry['id']:03d} – {log_entry['date']}
                         
                         Handle maintenance requests, office hours questions, and property inquiries naturally. 
                         Be conversational but professional. Don't repeat what the caller said verbatim - respond naturally like a real person would.
+                        
+                        IMPORTANT NAME HANDLING RULES:
+                        - NEVER extract or use names from speech unless crystal clear and confirmed by caller
+                        - Speech recognition often mishears names - avoid saying "Hi Mike" or any name assumptions
+                        - Instead use "I understand" or "Got it" or "Thanks for calling"
+                        - Only use a name if caller explicitly says "My name is [NAME]" and you need to confirm spelling
                         
                         For maintenance issues, ask for their address and create service tickets.
                         Keep responses under 30 words and sound natural."""
