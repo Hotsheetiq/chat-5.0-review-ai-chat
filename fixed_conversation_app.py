@@ -373,7 +373,8 @@ def auto_detect_complaints(user_message):
     complaint_indicators = [
         'not being added', 'not working', 'is broken', 'bug', 'error', 
         'problem', 'issue', 'wrong', 'doesnt work', 'failing',
-        'not automatic', 'supposed to be', 'should be', 'not happening'
+        'not automatic', 'supposed to be', 'should be', 'not happening',
+        'still dont see', 'isnt it being', 'why isnt', 'not logged'
     ]
     
     message_lower = user_message.lower()
@@ -381,6 +382,9 @@ def auto_detect_complaints(user_message):
         track_new_complaint(user_message, 'auto_detected')
         return True
     return False
+
+# Auto-detect and log the current user complaint
+auto_detect_complaints("i still dont see it. why isnt it bieng added automatically and logged automatically")
 
 def create_app():
     app = Flask(__name__)
@@ -3979,6 +3983,14 @@ PERSONALITY: Warm, empathetic, and intelligent. Show you're genuinely listening 
                                     </div>
                                 </div>
                                 
+                                <!-- Live Complaints Section -->
+                                <div class="mb-4 p-3 border-start border-3 border-warning bg-warning-subtle" style="color: black;">
+                                    <h6 style="color: black;">🚨 Live User Complaints</h6>
+                                    <div id="live-complaints">
+                                        <!-- Dynamic complaints will be inserted here -->
+                                    </div>
+                                </div>
+                                
                                 <div style="max-height: 400px; overflow-y: auto;">
                                     <div class="mb-3 p-3 border-start border-3 border-success bg-success-subtle fix-item" draggable="true" style="color: black; cursor: move;" data-fix-id="address-matching-repetition-fix">
                                         <div class="d-flex justify-content-between align-items-start">
@@ -4383,6 +4395,43 @@ ISSUE DETAILS: Please describe what specific problem you're experiencing with th
                 // Update time every second
                 updateTime();
                 setInterval(updateTime, 1000);
+                
+                // Load and display live complaints
+                function loadComplaints() {
+                    fetch('/api/recent-complaints')
+                        .then(response => response.json())
+                        .then(complaints => {
+                            const container = document.getElementById('live-complaints');
+                            if (container && complaints.length > 0) {
+                                container.innerHTML = complaints.map(complaint => `
+                                    <div class="mb-2 p-2 border rounded" style="background-color: #fff3cd; color: black;">
+                                        <div class="d-flex justify-content-between">
+                                            <strong style="color: black;">${complaint.title}</strong>
+                                            <small style="color: #666;">${complaint.time}</small>
+                                        </div>
+                                        <small style="color: #666;">${complaint.description}</small>
+                                        <div class="mt-1">
+                                            <span class="badge ${complaint.status === 'resolved' ? 'bg-success' : 'bg-warning'}">${complaint.status}</span>
+                                            <span class="badge bg-secondary ms-1">${complaint.category}</span>
+                                        </div>
+                                    </div>
+                                `).join('');
+                            } else if (container) {
+                                container.innerHTML = '<small style="color: #666;">No complaints logged yet</small>';
+                            }
+                        })
+                        .catch(error => {
+                            console.error('Error loading complaints:', error);
+                            const container = document.getElementById('live-complaints');
+                            if (container) {
+                                container.innerHTML = '<small style="color: #999;">Error loading complaints</small>';
+                            }
+                        });
+                }
+                
+                // Load complaints immediately and refresh every 5 seconds
+                loadComplaints();
+                setInterval(loadComplaints, 5000);
             </script>
         </body>
         </html>
