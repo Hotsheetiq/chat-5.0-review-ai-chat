@@ -53,6 +53,7 @@ def create_app():
             <meta name="viewport" content="width=device-width, initial-scale=1.0">
             <title>Chris Voice Assistant Dashboard - Grinberg Management</title>
             <link href="https://cdn.replit.com/agent/bootstrap-agent-dark-theme.min.css" rel="stylesheet">
+            <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
             <style>
                 .status-healthy { color: #28a745; }
                 .status-unhealthy { color: #dc3545; }
@@ -192,15 +193,15 @@ def create_app():
                                             </div>
                                             <div class="d-flex align-items-center gap-2">
                                                 <div class="dropdown flag-selector" style="display: none;">
-                                                    <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown" title="Select Flag">
+                                                    <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" id="flagDropdown${entry.id}" data-bs-toggle="dropdown" aria-expanded="false" title="Select Flag">
                                                         🏳️
                                                     </button>
-                                                    <ul class="dropdown-menu">
-                                                        <li><a class="dropdown-item" href="#" onclick="setFlag('${entry.id}', 'critical')">🔥 Critical</a></li>
-                                                        <li><a class="dropdown-item" href="#" onclick="setFlag('${entry.id}', 'important')">⭐ Important</a></li>
-                                                        <li><a class="dropdown-item" href="#" onclick="setFlag('${entry.id}', 'reference')">📌 Reference</a></li>
+                                                    <ul class="dropdown-menu" aria-labelledby="flagDropdown${entry.id}">
+                                                        <li><a class="dropdown-item" href="#" onclick="event.preventDefault(); setFlag('${entry.id}', 'critical');">🔥 Critical</a></li>
+                                                        <li><a class="dropdown-item" href="#" onclick="event.preventDefault(); setFlag('${entry.id}', 'important');">⭐ Important</a></li>
+                                                        <li><a class="dropdown-item" href="#" onclick="event.preventDefault(); setFlag('${entry.id}', 'reference');">📌 Reference</a></li>
                                                         <li><hr class="dropdown-divider"></li>
-                                                        <li><a class="dropdown-item" href="#" onclick="setFlag('${entry.id}', '')">❌ Remove Flag</a></li>
+                                                        <li><a class="dropdown-item" href="#" onclick="event.preventDefault(); setFlag('${entry.id}', '');">❌ Remove Flag</a></li>
                                                     </ul>
                                                 </div>
                                                 <button class="btn btn-sm btn-outline-warning copy-problem-btn" onclick="copyProblemReport(this)" title="Copy Problem Report">
@@ -481,6 +482,8 @@ def create_app():
                 }
                 
                 function setFlag(logId, flagType) {
+                    console.log('Setting flag:', logId, flagType);
+                    
                     // Send API request to update flag
                     fetch(`/api/set-flag`, {
                         method: 'POST',
@@ -492,8 +495,12 @@ def create_app():
                             flag: flagType
                         })
                     })
-                    .then(response => response.json())
+                    .then(response => {
+                        console.log('Response status:', response.status);
+                        return response.json();
+                    })
                     .then(data => {
+                        console.log('Response data:', data);
                         if (data.success) {
                             // Reload logs to show updated flag
                             loadUnifiedLogs();
@@ -502,12 +509,12 @@ def create_app():
                             const flagName = flagType ? getFlagName(flagType) : 'removed';
                             showNotification(`Flag ${flagName} applied to ${logId}`, 'success');
                         } else {
-                            showNotification('Failed to update flag', 'error');
+                            showNotification('Failed to update flag: ' + (data.message || 'Unknown error'), 'error');
                         }
                     })
                     .catch(error => {
                         console.error('Error updating flag:', error);
-                        showNotification('Error updating flag', 'error');
+                        showNotification('Error updating flag: ' + error.message, 'error');
                     });
                 }
                 
