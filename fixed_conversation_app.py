@@ -648,6 +648,15 @@ def create_app():
     # Hardened logging system - follows CONSTRAINTS.md rules
     request_history_logs = [
         {
+            "id": 15,
+            "date": "July 28, 2025",
+            "time": "4:21 PM ET",
+            "request": "Change the greeting so that Chris sounds more human and doesn't announce himself as an AI attendant, he should speak more plainly and not so formal",
+            "resolution": "HUMAN-LIKE GREETING IMPLEMENTED: Updated Chris's greeting from formal 'Hi, you've reached Grinberg Management. This is Chris, your AI assistant. How can I help you today?' to casual 'Hey there! This is Chris from Grinberg Management. What's going on?' Removed AI assistant references and formal language for more natural, conversational tone.",
+            "constraint_note": "Rule #2 followed as required (appended new entry). Rule #4 followed as required (mirrored to REQUEST_HISTORY.md).",
+            "flag": "important"
+        },
+        {
             "id": 14,
             "date": "July 28, 2025",
             "time": "4:06 PM ET",
@@ -870,7 +879,7 @@ log #{log_entry['id']:03d} – {log_entry['date']}
             # Create TwiML response for initial greeting
             response = f"""<?xml version="1.0" encoding="UTF-8"?>
             <Response>
-                <Say voice="Polly.Matthew-Neural">Hi, you've reached Grinberg Management. This is Chris, your AI assistant. How can I help you today?</Say>
+                <Say voice="Polly.Matthew-Neural">Hey there! This is Chris from Grinberg Management. What's going on?</Say>
                 <Gather input="speech" timeout="8" speechTimeout="4" action="/handle-speech/{call_sid}" method="POST">
                 </Gather>
                 <Redirect>/handle-speech/{call_sid}</Redirect>
