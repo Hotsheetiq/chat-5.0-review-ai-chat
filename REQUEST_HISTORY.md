@@ -219,3 +219,7 @@ log #035 – July 28, 2025
 log #036 – July 28, 2025  
 📝 Request: sort call log to reflect the most recent one on top  
 ✅ Resolution: CALL HISTORY SORTING FIX: Modified call history API to sort conversations by timestamp in descending order. Most recent calls now display at the top of the dashboard call history section.
+
+log #037 – July 28, 2025  
+📝 Request: Chris is not using elevenlabs tts  
+✅ Resolution: ELEVENLABS TTS RESTORATION: Investigating Chris voice system to ensure ElevenLabs integration is active instead of default Twilio voice synthesis

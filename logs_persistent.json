@@ -1,5 +1,13 @@
 [
   {
+    "id": 37,
+    "date": "July 28, 2025",
+    "time": "7:21 PM ET",
+    "request": "Chris is not using elevenlabs tts",
+    "resolution": "ELEVENLABS TTS RESTORATION: Investigating Chris voice system to ensure ElevenLabs integration is active instead of default Twilio voice synthesis",
+    "constraint_note": "Rule #2 followed as required (appended new entry). Rule #4 followed as required (mirrored to REQUEST_HISTORY.md)."
+  },
+  {
     "id": 36,
     "date": "July 28, 2025",
     "time": "7:20 PM ET",

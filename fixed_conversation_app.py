@@ -1137,15 +1137,43 @@ log #{log_entry['id']:03d} – {log_entry['date']}
             if call_sid not in conversation_history:
                 conversation_history[call_sid] = []
             
-            # Create TwiML response with dynamic happy greeting
+            # Create TwiML response with dynamic happy greeting using ElevenLabs
             dynamic_greeting = get_dynamic_happy_greeting()
-            response = f"""<?xml version="1.0" encoding="UTF-8"?>
-            <Response>
-                <Say voice="Polly.Matthew-Neural">{dynamic_greeting}</Say>
-                <Gather input="speech" timeout="8" speechTimeout="4" action="/handle-speech/{call_sid}" method="POST">
-                </Gather>
-                <Redirect>/handle-speech/{call_sid}</Redirect>
-            </Response>"""
+            
+            # Generate ElevenLabs audio for greeting
+            try:
+                from elevenlabs_integration import generate_elevenlabs_audio
+                audio_file = generate_elevenlabs_audio(dynamic_greeting, voice_name="adam")
+                
+                if audio_file:
+                    # Serve the audio file through Flask
+                    audio_url = f"http://0.0.0.0:5000/audio/{os.path.basename(audio_file)}"
+                    response = f"""<?xml version="1.0" encoding="UTF-8"?>
+                    <Response>
+                        <Play>{audio_url}</Play>
+                        <Gather input="speech" timeout="8" speechTimeout="4" action="/handle-speech/{call_sid}" method="POST">
+                        </Gather>
+                        <Redirect>/handle-speech/{call_sid}</Redirect>
+                    </Response>"""
+                else:
+                    # Fallback to Polly if ElevenLabs fails
+                    response = f"""<?xml version="1.0" encoding="UTF-8"?>
+                    <Response>
+                        <Say voice="Polly.Matthew-Neural">{dynamic_greeting}</Say>
+                        <Gather input="speech" timeout="8" speechTimeout="4" action="/handle-speech/{call_sid}" method="POST">
+                        </Gather>
+                        <Redirect>/handle-speech/{call_sid}</Redirect>
+                    </Response>"""
+            except Exception as e:
+                logger.error(f"ElevenLabs error: {e}")
+                # Fallback to Polly
+                response = f"""<?xml version="1.0" encoding="UTF-8"?>
+                <Response>
+                    <Say voice="Polly.Matthew-Neural">{dynamic_greeting}</Say>
+                    <Gather input="speech" timeout="8" speechTimeout="4" action="/handle-speech/{call_sid}" method="POST">
+                    </Gather>
+                    <Redirect>/handle-speech/{call_sid}</Redirect>
+                </Response>"""
             
             return response
             
@@ -1153,7 +1181,7 @@ log #{log_entry['id']:03d} – {log_entry['date']}
             logger.error(f"Incoming call error: {e}")
             return """<?xml version="1.0" encoding="UTF-8"?>
             <Response>
-                <Say voice="Polly.Matthew-Neural">Hi, you've reached Grinberg Management. How can I help you?</Say>
+                <Play>https://elevenlabs-backup-greeting.mp3</Play>
                 <Gather input="speech" timeout="8" speechTimeout="4"/>
             </Response>"""
 
@@ -1272,7 +1300,7 @@ log #{log_entry['id']:03d} – {log_entry['date']}
                     # Return TwiML immediately - no AI processing
                     return f"""<?xml version="1.0" encoding="UTF-8"?>
                     <Response>
-                        <Say voice="Polly.Matthew-Neural">{response_text}</Say>
+                        <Play>/generate-audio/{call_sid}?text={response_text}</Play>
                         <Gather input="speech" timeout="8" speechTimeout="4" action="/handle-speech/{call_sid}" method="POST">
                         </Gather>
                         <Redirect>/handle-speech/{call_sid}</Redirect>
@@ -1341,7 +1369,7 @@ log #{log_entry['id']:03d} – {log_entry['date']}
             # Return TwiML response
             return f"""<?xml version="1.0" encoding="UTF-8"?>
             <Response>
-                <Say voice="Polly.Matthew-Neural">{response_text}</Say>
+                <Play>/generate-audio/{call_sid}?text={response_text}</Play>
                 <Gather input="speech" timeout="8" speechTimeout="4" action="/handle-speech/{call_sid}" method="POST">
                 </Gather>
                 <Redirect>/handle-speech/{call_sid}</Redirect>
@@ -1552,6 +1580,47 @@ log #{log_entry['id']:03d} – {log_entry['date']}
         except Exception as e:
             logger.error(f"Error adding historical call data: {e}")
             return jsonify({'error': 'Could not add historical data'}), 500
+
+    @app.route("/generate-audio/<call_sid>")
+    def generate_audio(call_sid):
+        """Generate ElevenLabs audio for Chris responses"""
+        try:
+            text = request.args.get('text', '')
+            if not text:
+                return "No text provided", 400
+            
+            # Import ElevenLabs integration
+            from elevenlabs_integration import generate_elevenlabs_audio
+            
+            # Generate audio using ElevenLabs
+            audio_file = generate_elevenlabs_audio(text, voice_name="adam")
+            
+            if audio_file:
+                # Return the audio file directly
+                from flask import send_file
+                return send_file(audio_file, mimetype='audio/mpeg')
+            else:
+                # Fallback - generate fallback audio or return error
+                return "Audio generation failed", 500
+                
+        except Exception as e:
+            logger.error(f"Error generating audio: {e}")
+            return "Internal server error", 500
+
+    @app.route("/audio/<filename>")
+    def serve_audio(filename):
+        """Serve generated audio files"""
+        try:
+            import tempfile
+            audio_path = os.path.join(tempfile.gettempdir(), filename)
+            if os.path.exists(audio_path):
+                from flask import send_file
+                return send_file(audio_path, mimetype='audio/mpeg')
+            else:
+                return "Audio file not found", 404
+        except Exception as e:
+            logger.error(f"Error serving audio: {e}")
+            return "Error serving audio", 500
 
     @app.route("/api/property-status")
     def get_property_status():
