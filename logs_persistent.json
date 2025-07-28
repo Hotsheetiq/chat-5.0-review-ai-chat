@@ -1,5 +1,13 @@
 [
   {
+    "id": 38,
+    "date": "July 28, 2025",
+    "time": "7:23 PM ET",
+    "request": "call disconnects",
+    "resolution": "CALL DISCONNECTION FIX: Investigating TwiML response structure and ElevenLabs audio serving that causes calls to drop after greeting",
+    "constraint_note": "Rule #2 followed as required (appended new entry). Rule #4 followed as required (mirrored to REQUEST_HISTORY.md)."
+  },
+  {
     "id": 37,
     "date": "July 28, 2025",
     "time": "7:21 PM ET",

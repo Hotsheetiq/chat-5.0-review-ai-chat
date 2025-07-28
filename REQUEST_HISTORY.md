@@ -223,3 +223,7 @@ log #036 – July 28, 2025
 log #037 – July 28, 2025  
 📝 Request: Chris is not using elevenlabs tts  
 ✅ Resolution: ELEVENLABS TTS RESTORATION: Investigating Chris voice system to ensure ElevenLabs integration is active instead of default Twilio voice synthesis
+
+log #038 – July 28, 2025  
+📝 Request: call disconnects  
+✅ Resolution: CALL DISCONNECTION FIX: Investigating TwiML response structure and ElevenLabs audio serving that causes calls to drop after greeting
