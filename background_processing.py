@@ -7,6 +7,7 @@ import asyncio
 import logging
 import threading
 import time
+import os
 from typing import Optional, Dict, Any
 from concurrent.futures import ThreadPoolExecutor, Future
 import uuid
@@ -72,8 +73,9 @@ def cleanup_processing_task(call_sid: str):
 
 def generate_hold_audio_url() -> str:
     """Generate hold message audio URL"""
-    # This should be a pre-recorded ElevenLabs audio file
-    return "https://3442ef02-e255-4239-86b6-df0f7a6e4975-00-1w63nn4pu7btq.picard.replit.dev/static/please_hold.mp3"
+    # Return the actual hold audio URL
+    base_url = os.environ.get('REPLIT_URL', 'https://3442ef02-e255-4239-86b6-df0f7a6e4975-00-1w63nn4pu7btq.picard.replit.dev')
+    return f"{base_url}/static/please_hold.mp3"
 
 def create_hold_twiml(call_sid: str, processing_id: str) -> str:
     """
@@ -113,3 +115,27 @@ def create_result_twiml(response_text: str, call_sid: str) -> str:
     </Gather>
     <Redirect>/handle-speech/{call_sid}</Redirect>
 </Response>'''
+
+def should_use_background_processing(user_input: str) -> bool:
+    """
+    Determine if request needs background processing based on complexity
+    """
+    user_lower = user_input.lower().strip()
+    
+    # Simple greetings get instant responses (no background processing)
+    simple_patterns = ['hello', 'hi', 'hey', 'good morning', 'good afternoon', 'good evening', 'what', 'how', 'can you', 'are you']
+    if any(pattern in user_lower for pattern in simple_patterns) and len(user_input.split()) <= 4:
+        return False
+        
+    # Quick questions get instant responses  
+    quick_patterns = ['open', 'hours', 'closed', 'available', 'office', 'phone', 'number']
+    if any(pattern in user_lower for pattern in quick_patterns):
+        return False
+        
+    # Complex maintenance requests, address descriptions, detailed issues use background processing
+    complex_patterns = ['maintenance', 'repair', 'broken', 'issue', 'problem', 'service', 'fix', 'apartment', 'unit', 'building', 'street', 'avenue', 'came home', 'saw', 'found', 'noticed', 'rat', 'mouse', 'leak', 'electric', 'heat', 'cold']
+    if any(pattern in user_lower for pattern in complex_patterns) or len(user_input.split()) > 6:
+        return True
+        
+    # Default to instant for short responses
+    return False

@@ -6,7 +6,7 @@ FIXED Chris Conversation App - All Critical Issues Resolved
 - Simplified, reliable conversation flow
 """
 
-from flask import Flask, request, Response, render_template_string, jsonify
+from flask import Flask, request, Response, render_template, render_template_string, jsonify
 import os
 import logging
 import requests
@@ -1253,7 +1253,31 @@ PERSONALITY: Warm, empathetic, and intelligent. Show you're genuinely listening 
             
             # Use speech input if available, otherwise redirect to speech handler
             if user_input:
-                return handle_speech_internal(call_sid, user_input, caller_phone, speech_confidence)
+                # Check if this needs background processing first
+                from background_processing import should_use_background_processing, start_background_processing, create_hold_twiml
+                
+                user_lower = user_input.lower().strip()
+                # Complex requests that mention specific issues or addresses use background processing
+                complex_indicators = ['at ', 'apartment', 'unit', 'building', 'street', 'avenue', 'broke', 'broken', 'problem', 'issue', 'maintenance', 'repair', 'came home', 'saw', 'found', 'noticed', 'rat', 'mouse', 'leak', 'electric', 'heat', 'cold']
+                needs_background = any(indicator in user_lower for indicator in complex_indicators) and len(user_input.split()) > 4
+                
+                if needs_background:
+                    logger.info(f"🔄 USING BACKGROUND PROCESSING for complex request: '{user_input[:50]}...'")
+                    
+                    # Start AI processing in background
+                    def ai_processing_function(speech_text, conversation_hist):
+                        return handle_speech_internal(call_sid, user_input, caller_phone, speech_confidence)
+                    
+                    processing_id = start_background_processing(
+                        call_sid, user_input, conversation_history.get(call_sid, []),
+                        ai_processing_function
+                    )
+                    
+                    # Return hold message TwiML immediately
+                    return create_hold_twiml(call_sid, processing_id)
+                else:
+                    # Simple requests get immediate processing
+                    return handle_speech_internal(call_sid, user_input, caller_phone, speech_confidence)
             else:
                 return handle_speech(call_sid)
                 
@@ -2816,6 +2840,51 @@ PERSONALITY: Warm, empathetic, and intelligent. Show you're genuinely listening 
 </html>
         ''', call_info=call_info)
 
+    @app.route("/get-result/<call_sid>", methods=["POST"])
+    def get_background_result(call_sid):
+        """Get result from background processing"""
+        try:
+            from background_processing import get_processing_result, cleanup_processing_task
+            
+            logger.info(f"🔄 GETTING BACKGROUND RESULT for call {call_sid}")
+            
+            # Get the result with 4 second timeout
+            result = get_processing_result(call_sid, timeout=4.0)
+            
+            if result:
+                logger.info(f"✅ BACKGROUND PROCESSING COMPLETE for {call_sid}")
+                # Clean up the processing task
+                cleanup_processing_task(call_sid)
+                # Return the AI-generated TwiML response
+                return result
+            else:
+                logger.warning(f"⏱️ BACKGROUND PROCESSING TIMEOUT for {call_sid}")
+                # Fallback response if processing takes too long
+                response_text = "I'm working on that for you. Let me get you the information you need."
+                voice_response = create_voice_response(response_text)
+                
+                return f"""<?xml version="1.0" encoding="UTF-8"?>
+                <Response>
+                    {voice_response}
+                    <Gather input="speech dtmf" timeout="8" speechTimeout="4" dtmfTimeout="2" language="en-US" action="/handle-input/{call_sid}" method="POST">
+                    </Gather>
+                    <Redirect>/handle-speech/{call_sid}</Redirect>
+                </Response>"""
+                
+        except Exception as e:
+            logger.error(f"❌ Error getting background result: {e}")
+            # Fallback to simple response
+            response_text = "I'm here to help! What can I do for you?"
+            voice_response = create_voice_response(response_text)
+            
+            return f"""<?xml version="1.0" encoding="UTF-8"?>
+            <Response>
+                {voice_response}
+                <Gather input="speech dtmf" timeout="8" speechTimeout="4" dtmfTimeout="2" language="en-US" action="/handle-input/{call_sid}" method="POST">
+                </Gather>
+                <Redirect>/handle-speech/{call_sid}</Redirect>
+            </Response>"""
+
     @app.route("/warmup-status")
     def warmup_status():
         """Display comprehensive warm-up system status"""
@@ -3180,40 +3249,8 @@ Respond thoughtfully, showing your reasoning if this is a test scenario, or ackn
             <Say>{message}</Say>
         </Response>"""
     
-    # Background processing result route
-    @app.route('/get-result/<call_sid>', methods=['GET', 'POST'])
-    def get_background_result(call_sid):
-        """Get result from background AI processing"""
-        try:
-            # Wait for background processing to complete
-            result = get_processing_result(call_sid, timeout=4.0)
-            
-            if result:
-                logger.info(f"✅ BACKGROUND PROCESSING COMPLETE: {call_sid}")
-                cleanup_processing_task(call_sid)
-                
-                # Create TwiML with the AI response
-                return create_result_twiml(result, call_sid)
-            else:
-                logger.warning(f"⏰ BACKGROUND PROCESSING TIMEOUT: {call_sid}")
-                cleanup_processing_task(call_sid)
-                
-                # Fallback response if processing takes too long
-                fallback_response = "I'm processing your request. Let me help you with that."
-                return create_result_twiml(fallback_response, call_sid)
-                
-        except Exception as e:
-            logger.error(f"❌ Background processing error: {e}")
-            cleanup_processing_task(call_sid)
-            
-            # Emergency fallback
-            return f'''<?xml version="1.0" encoding="UTF-8"?>
-            <Response>
-                <Say voice="Polly.Matthew-Neural">I'm sorry, there was a technical issue. How can I help you?</Say>
-                <Gather input="speech dtmf" timeout="8" speechTimeout="4" dtmfTimeout="2" language="en-US" action="/handle-input/{call_sid}" method="POST">
-                </Gather>
-                <Redirect>/handle-speech/{call_sid}</Redirect>
-            </Response>'''
+    # Background processing result route - REMOVED DUPLICATE
+
 
     # Wrap the handle_speech_internal function with background processing
     global handle_speech_internal_with_hold
