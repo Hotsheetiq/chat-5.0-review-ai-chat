@@ -4084,7 +4084,7 @@ PERSONALITY: Warm, empathetic, and intelligent. Show you're genuinely listening 
                                             
                                             if (data.requests && data.requests.length > 0) {
                                                 let html = '';
-                                                data.requests.forEach(request => {
+                                                data.requests.forEach((request, index) => {
                                                     const statusBadge = request.status === 'complete' ? 
                                                         '<span class="badge bg-success">✅ COMPLETE</span>' :
                                                         request.status === 'in_progress' ?
@@ -4105,7 +4105,13 @@ PERSONALITY: Warm, empathetic, and intelligent. Show you're genuinely listening 
                                                             hour12: true
                                                         }) : 'Unknown Date';
                                                     
+                                                    // Add green banner for the most recent request (index 0)
+                                                    const isLatest = index === 0;
+                                                    const latestBanner = isLatest ? 
+                                                        '<div class="alert alert-success mb-2 py-2" style="border-left: 4px solid #28a745; background: linear-gradient(135deg, #d4edda 0%, #c3e6cb 100%);"><small class="fw-bold text-success">🌟 LATEST REQUEST</small></div>' : '';
+                                                    
                                                     html += `
+                                                        ${latestBanner}
                                                         <div class="mb-3 p-3 border-start border-3 ${priorityClass} bg-light" style="color: black;">
                                                             <div class="d-flex justify-content-between align-items-start">
                                                                 <div>
