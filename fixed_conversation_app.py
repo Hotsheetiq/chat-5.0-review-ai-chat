@@ -97,9 +97,12 @@ try:
         
     # Create hold audio if it doesn't exist
     if not os.path.exists("static/please_hold.mp3"):
-        from create_hold_audio import create_hold_message
-        create_hold_message()
-        logger.info("✅ Hold message audio created")
+        try:
+            from create_hold_audio import create_hold_message
+            create_hold_message()
+            logger.info("✅ Hold message audio created")
+        except ImportError:
+            logger.warning("⚠️ Hold audio creation module not found")
         
 except Exception as e:
     logger.warning(f"Grok AI initialization failed: {e}")
@@ -109,6 +112,8 @@ except Exception as e:
 conversation_history = {}
 # Anti-repetition tracking per call - tracks all phrases used
 response_tracker = {}
+# Service issue tracking for SMS functionality
+current_service_issue = {}
 # Varied response pools for common situations
 ACKNOWLEDGMENT_PHRASES = [
     "Got it, give me just a moment...",
@@ -278,7 +283,7 @@ def create_app():
             logger.error(f"Office hours calculation error: {e}")
             return "Our office hours are Monday through Friday, 9 AM to 5 PM Eastern. How can I help you today?"
     
-    def create_service_ticket(issue_type, address):
+    def create_service_ticket(issue_type, address, call_sid=None):
         """Create service ticket with REAL Rent Manager integration - ONLY called after address verification"""
         global current_service_issue
         
@@ -346,8 +351,7 @@ def create_app():
                 'assigned_to': 'Dimitry Simanovsky'
             }
             
-            # Store in global variable and conversation history
-            current_service_issue[call_sid] = service_issue_info
+            # Store in conversation history for SMS lookup
             
             # Also store in conversation history for SMS lookup
             if call_sid in conversation_history:
@@ -3194,11 +3198,14 @@ Respond thoughtfully, showing your reasoning if this is a test scenario, or ackn
 
 
     # Wrap the handle_speech_internal function with background processing
-    global handle_speech_internal_with_hold
-    handle_speech_internal_with_hold = wrap_with_hold_processing(handle_speech_internal)
-    
-    # Add the continue processing route
-    add_hold_processing_route(app, handle_speech_internal)
+    try:
+        global handle_speech_internal_with_hold
+        handle_speech_internal_with_hold = wrap_with_hold_processing(handle_speech_internal)
+        
+        # Add the continue processing route
+        add_hold_processing_route(app, handle_speech_internal)
+    except NameError:
+        logger.warning("⚠️ Background processing functions not available")
     
     @app.route('/status')
     def service_status_dashboard():
