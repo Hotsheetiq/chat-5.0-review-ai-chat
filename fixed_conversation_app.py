@@ -89,6 +89,11 @@ try:
     from service_warmup import initialize_warmup_system
     initialize_warmup_system()
     logger.info("🔥 Service warm-up system started - all services will stay active")
+    
+    # Initialize Call Monitoring System
+    from call_monitoring import get_call_monitor
+    call_monitor = get_call_monitor()
+    logger.info("📞 Call monitoring system initialized")
         
     # Create hold audio if it doesn't exist
     if not os.path.exists("static/please_hold.mp3"):
@@ -1528,6 +1533,10 @@ PERSONALITY: Warm, empathetic, and intelligent. Show you're genuinely listening 
             if original_input != user_input:
                 logger.info(f"🎯 CORRECTED FROM: '{original_input}'")
             
+            # Add user input to call transcription
+            from call_monitoring import add_call_transcription
+            add_call_transcription(call_sid, user_input, 'caller')
+            
             # Enhanced debugging for empty speech results
             if not user_input:
                 all_params = dict(request.values)
@@ -2617,6 +2626,10 @@ PERSONALITY: Warm, empathetic, and intelligent. Show you're genuinely listening 
             
             logger.info(f"📞 INCOMING CALL via /voice/incoming: {call_sid} from {caller_phone}")
             
+            # Start call monitoring
+            from call_monitoring import start_call_monitoring, add_call_transcription
+            start_call_monitoring(call_sid, caller_phone)
+            
             # Initialize conversation
             if call_sid not in conversation_history:
                 conversation_history[call_sid] = []
@@ -2624,6 +2637,9 @@ PERSONALITY: Warm, empathetic, and intelligent. Show you're genuinely listening 
             # OPTIMIZED GREETING: Pre-warm systems during greeting to reduce first response delay
             greeting_text = "Good morning, hey it's Chris with Grinberg Management. How can I help you today?"
             main_voice = create_voice_response(greeting_text)
+            
+            # Add greeting to transcription
+            add_call_transcription(call_sid, greeting_text, 'chris')
             
             # REMOVED: Pre-warming system that may cause delays - prioritize immediate response
             
@@ -2674,6 +2690,132 @@ PERSONALITY: Warm, empathetic, and intelligent. Show you're genuinely listening 
                 <Say voice="Polly.Matthew-Neural">Please call our office at 718-414-6984 for assistance.</Say>
             </Response>"""
     
+    @app.route("/live-monitoring")
+    def live_monitoring():
+        """Live call monitoring dashboard"""
+        return render_template("live_monitoring.html")
+    
+    @app.route("/api/calls/active")
+    def api_active_calls():
+        """API endpoint for active calls"""
+        from call_monitoring import get_call_monitor
+        monitor = get_call_monitor()
+        return jsonify(monitor.get_active_calls())
+    
+    @app.route("/api/calls/history")
+    def api_call_history():
+        """API endpoint for call history"""
+        from call_monitoring import get_call_monitor
+        monitor = get_call_monitor()
+        return jsonify(monitor.get_call_history())
+    
+    @app.route("/api/calls/search")
+    def api_search_calls():
+        """API endpoint for searching calls"""
+        query = request.args.get('q', '')
+        from call_monitoring import get_call_monitor
+        monitor = get_call_monitor()
+        results = monitor.search_calls(query=query)
+        return jsonify(results)
+    
+    @app.route("/call-details/<call_sid>")
+    def call_details(call_sid):
+        """Detailed view of a specific call"""
+        from call_monitoring import get_call_monitor
+        monitor = get_call_monitor()
+        call_info = monitor.get_call_details(call_sid)
+        
+        if not call_info:
+            return "Call not found", 404
+            
+        return render_template_string('''
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Call Details - {{ call_info.call_sid }}</title>
+    <link href="https://cdn.replit.com/agent/bootstrap-agent-dark-theme.min.css" rel="stylesheet">
+</head>
+<body data-bs-theme="dark">
+    <div class="container mt-4">
+        <h2>📞 Call Details</h2>
+        
+        <div class="row">
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-header">
+                        <h5>Call Information</h5>
+                    </div>
+                    <div class="card-body">
+                        <p><strong>Call ID:</strong> {{ call_info.call_sid }}</p>
+                        <p><strong>From:</strong> {{ call_info.from_number }}</p>
+                        <p><strong>Caller:</strong> {{ call_info.caller_name or 'Unknown' }}</p>
+                        <p><strong>Issue Type:</strong> {{ call_info.issue_type or 'Not specified' }}</p>
+                        <p><strong>Status:</strong> {{ call_info.status }}</p>
+                        <p><strong>Duration:</strong> {{ call_info.duration }}s</p>
+                        <p><strong>Start Time:</strong> {{ call_info.start_time }}</p>
+                        {% if call_info.end_time %}
+                        <p><strong>End Time:</strong> {{ call_info.end_time }}</p>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-header">
+                        <h5>Recording</h5>
+                    </div>
+                    <div class="card-body">
+                        {% if call_info.recording_url %}
+                        <audio controls class="w-100">
+                            <source src="{{ call_info.recording_url }}" type="audio/mpeg">
+                            Your browser does not support audio playback.
+                        </audio>
+                        <p class="mt-2">
+                            <a href="{{ call_info.recording_url }}" target="_blank" class="btn btn-outline-primary btn-sm">
+                                📥 Download Recording
+                            </a>
+                        </p>
+                        {% else %}
+                        <p class="text-muted">No recording available for this call.</p>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="row mt-4">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header">
+                        <h5>Full Transcript</h5>
+                    </div>
+                    <div class="card-body">
+                        <div style="max-height: 500px; overflow-y: auto;">
+                            {% for segment in call_info.transcription %}
+                            <div class="mb-3 p-3 border-start border-3 
+                                {% if segment.speaker == 'caller' %}border-primary bg-primary-subtle{% else %}border-success bg-success-subtle{% endif %}">
+                                <div class="d-flex justify-content-between align-items-start">
+                                    <strong>{{ segment.speaker.title() }}:</strong>
+                                    <small class="text-muted">{{ segment.timestamp }}</small>
+                                </div>
+                                <p class="mb-0 mt-1">{{ segment.text }}</p>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="mt-3">
+            <a href="/live-monitoring" class="btn btn-primary">← Back to Monitoring</a>
+        </div>
+    </div>
+</body>
+</html>
+        ''', call_info=call_info)
+
     @app.route("/warmup-status")
     def warmup_status():
         """Display comprehensive warm-up system status"""
@@ -2775,6 +2917,21 @@ PERSONALITY: Warm, empathetic, and intelligent. Show you're genuinely listening 
                                 <p>✅ No hanging up during calls</p>
                                 <p>✅ Address verification security</p>
                                 <p>✅ Conversation memory working</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="row mt-4">
+                    <div class="col-12">
+                        <div class="card">
+                            <div class="card-header">
+                                <h5>Live Call Monitoring</h5>
+                            </div>
+                            <div class="card-body">
+                                <p>Real-time call visibility with audio recording and live transcription</p>
+                                <a href="/live-monitoring" class="btn btn-success">📞 View Live Calls</a>
+                                <a href="/call-history" class="btn btn-outline-primary ms-2">📋 Call History</a>
                             </div>
                         </div>
                     </div>
