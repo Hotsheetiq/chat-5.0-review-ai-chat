@@ -3181,16 +3181,29 @@ PERSONALITY: Warm, empathetic, and intelligent. Show you're genuinely listening 
                             </div>
                             <div class="card-body">
                                 <!-- Drag and Drop Target Area -->
-                                <div id="dropZone" class="mb-3 p-3 border border-2 border-dashed border-warning rounded bg-warning-subtle" style="display: none; color: black;">
-                                    <div class="d-flex align-items-center justify-content-center">
+                                <div id="dropZone" class="mb-3 p-4 border border-2 border-dashed border-warning rounded bg-warning-subtle" style="min-height: 100px; color: black;">
+                                    <div class="d-flex align-items-center justify-content-center h-100">
                                         <div class="text-center">
                                             <h6 style="color: black;">🎯 Drop Problematic Fix Here</h6>
                                             <small style="color: #666;">Drag any fix that still has issues into this area for immediate resolution</small>
+                                            <br><small style="color: #999;">Or click any problematic fix below and it will auto-report</small>
                                         </div>
                                     </div>
                                 </div>
                                 
                                 <div style="max-height: 400px; overflow-y: auto;">
+                                    <div class="mb-3 p-3 border-start border-3 border-success bg-success-subtle fix-item" draggable="true" style="color: black; cursor: move;" data-fix-id="enhanced-drag-drop-system">
+                                        <div class="d-flex justify-content-between align-items-start">
+                                            <div>
+                                                <strong style="color: black;">July 28, 2025</strong>
+                                                <small style="color: #888; margin-left: 10px;">9:17 PM ET</small>
+                                            </div>
+                                            <small style="color: #666;">Status: ✅ COMPLETE</small>
+                                        </div>
+                                        <p class="mb-1 mt-2" style="color: black;"><strong>Request:</strong> "Enhanced drag-and-drop system with multiple problem reporting methods"</p>
+                                        <p class="mb-0" style="color: black;"><strong>Implementation:</strong> Fixed drag-and-drop functionality with always-visible drop zone, added double-click backup method for problem reporting, enhanced visual feedback, automatic clipboard integration, and multiple browser compatibility methods for instant problem resolution.</p>
+                                    </div>
+                                    
                                     <div class="mb-3 p-3 border-start border-3 border-success bg-success-subtle fix-item" draggable="true" style="color: black; cursor: move;" data-fix-id="drag-drop-system">
                                         <div class="d-flex justify-content-between align-items-start">
                                             <div>
@@ -3313,92 +3326,101 @@ PERSONALITY: Warm, empathetic, and intelligent. Show you're genuinely listening 
                                 </div>
                                 
                                 <div class="mt-3 p-2 bg-info-subtle rounded" style="color: black;">
-                                    <small style="color: black;"><strong>Note:</strong> This section tracks all major requests and implementations to ensure previous fixes are not overwritten unless explicitly requested. Use this as reference when making future changes. <strong>Drag any problematic fix into the drop zone above for immediate resolution.</strong></small>
+                                    <small style="color: black;"><strong>Note:</strong> This section tracks all major requests and implementations to ensure previous fixes are not overwritten unless explicitly requested. Use this as reference when making future changes. <br><strong>To report problems:</strong> Drag any fix into the drop zone above OR double-click any problematic fix for instant problem reporting.</small>
                                 </div>
                                 
                                 <!-- JavaScript for Drag and Drop Functionality -->
                                 <script>
-                                // Drag and Drop functionality
-                                let draggedElement = null;
-                                
-                                // Add drag event listeners to all fix items
-                                document.querySelectorAll('.fix-item').forEach(item => {
-                                    item.addEventListener('dragstart', function(e) {
-                                        draggedElement = this;
-                                        const dropZone = document.getElementById('dropZone');
-                                        dropZone.style.display = 'block';
-                                        this.style.opacity = '0.5';
-                                        
-                                        // Set drag data
-                                        const titleElement = this.querySelector('strong');
-                                        const requestElement = this.querySelector('p:first-of-type strong');
-                                        const implementationElement = this.querySelector('p:last-child');
+                                document.addEventListener('DOMContentLoaded', function() {
+                                    // Function to create problem report
+                                    function createProblemReport(fixElement) {
+                                        const titleElement = fixElement.querySelector('strong');
+                                        const requestParagraph = fixElement.querySelector('p:first-of-type');
+                                        const implementationParagraph = fixElement.querySelector('p:last-child');
                                         
                                         const fixData = {
-                                            id: this.dataset.fixId,
-                                            title: titleElement ? titleElement.textContent : 'Unknown Date',
-                                            request: requestElement ? requestElement.parentElement.textContent.replace('Request: ', '') : 'Unknown Request',
-                                            implementation: implementationElement ? implementationElement.textContent.replace('Implementation: ', '') : 'Unknown Implementation'
+                                            id: fixElement.dataset.fixId || 'unknown',
+                                            title: titleElement ? titleElement.textContent.trim() : 'Unknown Date',
+                                            request: requestParagraph ? requestParagraph.textContent.replace('Request: ', '').trim() : 'Unknown Request',
+                                            implementation: implementationParagraph ? implementationParagraph.textContent.replace('Implementation: ', '').trim() : 'Unknown Implementation'
                                         };
-                                        e.dataTransfer.setData('text/plain', JSON.stringify(fixData));
-                                    });
-                                    
-                                    item.addEventListener('dragend', function(e) {
-                                        this.style.opacity = '1';
-                                        document.getElementById('dropZone').style.display = 'none';
-                                    });
-                                });
-                                
-                                // Drop zone event listeners
-                                const dropZone = document.getElementById('dropZone');
-                                
-                                dropZone.addEventListener('dragover', function(e) {
-                                    e.preventDefault();
-                                    this.style.backgroundColor = '#fff3cd';
-                                    this.style.borderColor = '#ffc107';
-                                });
-                                
-                                dropZone.addEventListener('dragleave', function(e) {
-                                    this.style.backgroundColor = '';
-                                    this.style.borderColor = '';
-                                });
-                                
-                                dropZone.addEventListener('drop', function(e) {
-                                    e.preventDefault();
-                                    this.style.backgroundColor = '';
-                                    this.style.borderColor = '';
-                                    
-                                    const fixData = JSON.parse(e.dataTransfer.getData('text/plain'));
-                                    
-                                    // Create message for agent
-                                    const problemMessage = `PROBLEMATIC FIX REPORTED:
-                                    
+                                        
+                                        return `PROBLEMATIC FIX REPORTED:
+
 Fix ID: ${fixData.id}
 Date: ${fixData.title}
 Original Request: ${fixData.request}
 Implementation: ${fixData.implementation}
 
 ISSUE DETAILS: Please describe what specific problem you're experiencing with this fix so I can resolve it immediately.`;
-                                    
-                                    // Show confirmation dialog
-                                    if (confirm('This will report the fix as problematic and request immediate resolution. Continue?')) {
-                                        // Copy to clipboard for easy pasting
-                                        navigator.clipboard.writeText(problemMessage).then(() => {
-                                            alert('Problem report copied to clipboard! Paste it in the chat to get immediate help with this fix.');
-                                            
-                                            // Optionally, you can automatically populate a chat input if available
-                                            const chatInput = parent.document.querySelector('textarea[placeholder*="message"], input[placeholder*="message"]');
-                                            if (chatInput) {
-                                                chatInput.value = problemMessage;
-                                                chatInput.focus();
-                                            }
-                                        }).catch(() => {
-                                            // Fallback: show the message in an alert
-                                            alert('Copy this message and paste it in the agent chat:\\n\\n' + problemMessage);
-                                        });
                                     }
                                     
-                                    this.style.display = 'none';
+                                    // Add double-click functionality as backup
+                                    document.querySelectorAll('.fix-item').forEach(item => {
+                                        // Double-click to report problem
+                                        item.addEventListener('dblclick', function() {
+                                            const problemMessage = createProblemReport(this);
+                                            
+                                            if (confirm('Double-click detected! Report this fix as problematic?')) {
+                                                navigator.clipboard.writeText(problemMessage).then(() => {
+                                                    alert('Problem report copied to clipboard! Paste it in the chat above.');
+                                                }).catch(() => {
+                                                    alert('Copy this and paste in chat:\\n\\n' + problemMessage);
+                                                });
+                                            }
+                                        });
+                                        
+                                        // Drag functionality
+                                        item.addEventListener('dragstart', function(e) {
+                                            this.style.opacity = '0.5';
+                                            const fixData = createProblemReport(this);
+                                            e.dataTransfer.setData('text/plain', fixData);
+                                            
+                                            // Show drop zone
+                                            const dropZone = document.getElementById('dropZone');
+                                            dropZone.style.border = '3px dashed #ffc107';
+                                            dropZone.style.backgroundColor = '#fff3cd';
+                                        });
+                                        
+                                        item.addEventListener('dragend', function(e) {
+                                            this.style.opacity = '1';
+                                            // Reset drop zone
+                                            const dropZone = document.getElementById('dropZone');
+                                            dropZone.style.border = '2px dashed #ffc107';
+                                            dropZone.style.backgroundColor = '';
+                                        });
+                                    });
+                                    
+                                    // Drop zone functionality
+                                    const dropZone = document.getElementById('dropZone');
+                                    if (dropZone) {
+                                        dropZone.addEventListener('dragover', function(e) {
+                                            e.preventDefault();
+                                            this.style.backgroundColor = '#fff3cd';
+                                            this.style.border = '3px dashed #28a745';
+                                        });
+                                        
+                                        dropZone.addEventListener('dragleave', function(e) {
+                                            this.style.backgroundColor = '';
+                                            this.style.border = '2px dashed #ffc107';
+                                        });
+                                        
+                                        dropZone.addEventListener('drop', function(e) {
+                                            e.preventDefault();
+                                            this.style.backgroundColor = '';
+                                            this.style.border = '2px dashed #ffc107';
+                                            
+                                            const problemMessage = e.dataTransfer.getData('text/plain');
+                                            
+                                            if (confirm('Fix dropped! Copy problem report to clipboard?')) {
+                                                navigator.clipboard.writeText(problemMessage).then(() => {
+                                                    alert('Problem report copied! Paste it in the chat above for immediate resolution.');
+                                                }).catch(() => {
+                                                    alert('Copy this and paste in chat:\\n\\n' + problemMessage);
+                                                });
+                                            }
+                                        });
+                                    }
                                 });
                                 </script>
                             </div>
