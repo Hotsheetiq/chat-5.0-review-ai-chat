@@ -3198,7 +3198,12 @@ PERSONALITY: Warm, empathetic, and intelligent. Show you're genuinely listening 
                                                 <strong style="color: black;">July 28, 2025</strong>
                                                 <small style="color: #888; margin-left: 10px;">9:17 PM ET</small>
                                             </div>
-                                            <small style="color: #666;">Status: ✅ COMPLETE</small>
+                                            <div class="d-flex align-items-center gap-2">
+                                                <button class="btn btn-sm btn-outline-warning copy-problem-btn" onclick="copyProblemReport(this)" title="Copy Problem Report">
+                                                    📋 Report Issue
+                                                </button>
+                                                <small style="color: #666;">Status: ✅ COMPLETE</small>
+                                            </div>
                                         </div>
                                         <p class="mb-1 mt-2" style="color: black;"><strong>Request:</strong> "Enhanced drag-and-drop system with multiple problem reporting methods"</p>
                                         <p class="mb-0" style="color: black;"><strong>Implementation:</strong> Fixed drag-and-drop functionality with always-visible drop zone, added double-click backup method for problem reporting, enhanced visual feedback, automatic clipboard integration, and multiple browser compatibility methods for instant problem resolution.</p>
@@ -3210,7 +3215,12 @@ PERSONALITY: Warm, empathetic, and intelligent. Show you're genuinely listening 
                                                 <strong style="color: black;">July 28, 2025</strong>
                                                 <small style="color: #888; margin-left: 10px;">9:12 PM ET</small>
                                             </div>
-                                            <small style="color: #666;">Status: ✅ COMPLETE</small>
+                                            <div class="d-flex align-items-center gap-2">
+                                                <button class="btn btn-sm btn-outline-warning copy-problem-btn" onclick="copyProblemReport(this)" title="Copy Problem Report">
+                                                    📋 Report Issue
+                                                </button>
+                                                <small style="color: #666;">Status: ✅ COMPLETE</small>
+                                            </div>
                                         </div>
                                         <p class="mb-1 mt-2" style="color: black;"><strong>Request:</strong> "Add timestamps to completed fixes and allow drag-and-drop for problematic fixes"</p>
                                         <p class="mb-0" style="color: black;"><strong>Implementation:</strong> Added precise Eastern Time timestamps to all fixes, created interactive drag-and-drop interface with visual drop zone, implemented automatic problem report generation with clipboard integration for instant agent assistance.</p>
@@ -3222,7 +3232,12 @@ PERSONALITY: Warm, empathetic, and intelligent. Show you're genuinely listening 
                                                 <strong style="color: black;">July 28, 2025</strong>
                                                 <small style="color: #888; margin-left: 10px;">9:08 PM ET</small>
                                             </div>
-                                            <small style="color: #666;">Status: ✅ COMPLETE</small>
+                                            <div class="d-flex align-items-center gap-2">
+                                                <button class="btn btn-sm btn-outline-warning copy-problem-btn" onclick="copyProblemReport(this)" title="Copy Problem Report">
+                                                    📋 Report Issue
+                                                </button>
+                                                <small style="color: #666;">Status: ✅ COMPLETE</small>
+                                            </div>
                                         </div>
                                         <p class="mb-1 mt-2" style="color: black;"><strong>Request:</strong> "Make text black in Request History & Fixes section"</p>
                                         <p class="mb-0" style="color: black;"><strong>Implementation:</strong> Updated all text styling in the Request History section to use black color (style="color: black;") for better readability. Status labels use dark gray (#666) for contrast while maintaining all main text in black.</p>
@@ -3234,7 +3249,12 @@ PERSONALITY: Warm, empathetic, and intelligent. Show you're genuinely listening 
                                                 <strong style="color: black;">July 28, 2025</strong>
                                                 <small style="color: #888; margin-left: 10px;">2:06 AM ET</small>
                                             </div>
-                                            <small style="color: #666;">Status: ✅ COMPLETE</small>
+                                            <div class="d-flex align-items-center gap-2">
+                                                <button class="btn btn-sm btn-outline-warning copy-problem-btn" onclick="copyProblemReport(this)" title="Copy Problem Report">
+                                                    📋 Report Issue
+                                                </button>
+                                                <small style="color: #666;">Status: ✅ COMPLETE</small>
+                                            </div>
                                         </div>
                                         <p class="mb-1 mt-2" style="color: black;"><strong>Request:</strong> "Rent Manager API completely fixed - authentication and property database access working"</p>
                                         <p class="mb-0" style="color: black;"><strong>Implementation:</strong> Fixed warmup system method calls, enhanced authentication flow with proper async handling, added property lookup testing for connection validation. Result: Complete property management system integration with 430+ properties accessible.</p>
@@ -3246,7 +3266,12 @@ PERSONALITY: Warm, empathetic, and intelligent. Show you're genuinely listening 
                                                 <strong style="color: black;">July 28, 2025</strong>
                                                 <small style="color: #888; margin-left: 10px;">1:45 AM ET</small>
                                             </div>
-                                            <small style="color: #666;">Status: ✅ COMPLETE</small>
+                                            <div class="d-flex align-items-center gap-2">
+                                                <button class="btn btn-sm btn-outline-warning copy-problem-btn" onclick="copyProblemReport(this)" title="Copy Problem Report">
+                                                    📋 Report Issue
+                                                </button>
+                                                <small style="color: #666;">Status: ✅ COMPLETE</small>
+                                            </div>
                                         </div>
                                         <p class="mb-1 mt-2" style="color: black;"><strong>Request:</strong> "Live Monitoring page redesign - eliminate duplicate search functionality"</p>
                                         <p class="mb-0" style="color: black;"><strong>Implementation:</strong> Redesigned Live Monitoring to focus on real-time active calls and statistics dashboard. Centralized all search features exclusively on Call History page. Added call statistics with today's totals, service requests, average duration, and active issues.</p>
@@ -3258,7 +3283,12 @@ PERSONALITY: Warm, empathetic, and intelligent. Show you're genuinely listening 
                                                 <strong style="color: black;">July 27, 2025</strong>
                                                 <small style="color: #888; margin-left: 10px;">11:30 PM ET</small>
                                             </div>
-                                            <small style="color: #666;">Status: ✅ COMPLETE</small>
+                                            <div class="d-flex align-items-center gap-2">
+                                                <button class="btn btn-sm btn-outline-warning copy-problem-btn" onclick="copyProblemReport(this)" title="Copy Problem Report">
+                                                    📋 Report Issue
+                                                </button>
+                                                <small style="color: #666;">Status: ✅ COMPLETE</small>
+                                            </div>
                                         </div>
                                         <p class="mb-1 mt-2" style="color: black;"><strong>Request:</strong> "Automated service warm-up system to eliminate cold start latency"</p>
                                         <p class="mb-0" style="color: black;"><strong>Implementation:</strong> Created multi-service warm-up system with intelligent scheduling for Twilio (5min), Replit backend (5min), Grok AI (10min), ElevenLabs (10min), Rent Manager API (10min). Added background processing and comprehensive service health monitoring.</p>
@@ -3270,7 +3300,12 @@ PERSONALITY: Warm, empathetic, and intelligent. Show you're genuinely listening 
                                                 <strong style="color: black;">July 27, 2025</strong>
                                                 <small style="color: #888; margin-left: 10px;">6:15 PM ET</small>
                                             </div>
-                                            <small style="color: #666;">Status: ✅ COMPLETE</small>
+                                            <div class="d-flex align-items-center gap-2">
+                                                <button class="btn btn-sm btn-outline-warning copy-problem-btn" onclick="copyProblemReport(this)" title="Copy Problem Report">
+                                                    📋 Report Issue
+                                                </button>
+                                                <small style="color: #666;">Status: ✅ COMPLETE</small>
+                                            </div>
                                         </div>
                                         <p class="mb-1 mt-2" style="color: black;"><strong>Request:</strong> "Background processing with hold messages for ultra-fast response system"</p>
                                         <p class="mb-0" style="color: black;"><strong>Implementation:</strong> Created parallel AI processing system where complex requests play "Please hold on for a moment while I process that for you" audio while AI works in background. Added instant vs complex request detection with 4-second processing window.</p>
@@ -3282,7 +3317,12 @@ PERSONALITY: Warm, empathetic, and intelligent. Show you're genuinely listening 
                                                 <strong style="color: black;">July 26-27, 2025</strong>
                                                 <small style="color: #888; margin-left: 10px;">3:20 PM ET</small>
                                             </div>
-                                            <small style="color: #666;">Status: ✅ COMPLETE</small>
+                                            <div class="d-flex align-items-center gap-2">
+                                                <button class="btn btn-sm btn-outline-warning copy-problem-btn" onclick="copyProblemReport(this)" title="Copy Problem Report">
+                                                    📋 Report Issue
+                                                </button>
+                                                <small style="color: #666;">Status: ✅ COMPLETE</small>
+                                            </div>
                                         </div>
                                         <p class="mb-1 mt-2" style="color: black;"><strong>Request:</strong> "Complete conversation fixes - address confirmation, name extraction, SMS workflow"</p>
                                         <p class="mb-0" style="color: black;"><strong>Implementation:</strong> Fixed address confirmation workflow, enhanced name extraction from speech recognition, eliminated SMS loops, added professional caller verification process. All conversation flow issues resolved with loop-free service ticket creation.</p>
@@ -3294,7 +3334,12 @@ PERSONALITY: Warm, empathetic, and intelligent. Show you're genuinely listening 
                                                 <strong style="color: black;">July 24-25, 2025</strong>
                                                 <small style="color: #888; margin-left: 10px;">8:45 PM ET</small>
                                             </div>
-                                            <small style="color: #666;">Status: ✅ COMPLETE</small>
+                                            <div class="d-flex align-items-center gap-2">
+                                                <button class="btn btn-sm btn-outline-warning copy-problem-btn" onclick="copyProblemReport(this)" title="Copy Problem Report">
+                                                    📋 Report Issue
+                                                </button>
+                                                <small style="color: #666;">Status: ✅ COMPLETE</small>
+                                            </div>
                                         </div>
                                         <p class="mb-1 mt-2" style="color: black;"><strong>Request:</strong> "Chris must use pure AI intelligence, reject machine-like behavior"</p>
                                         <p class="mb-0" style="color: black;"><strong>Implementation:</strong> Enhanced GPT-4o integration with natural conversation intelligence, conversational memory, anti-repetition system, ChatGPT-level personality. Chris now engages in genuine conversation with warmth, empathy, and intelligent contextual responses.</p>
@@ -3306,7 +3351,12 @@ PERSONALITY: Warm, empathetic, and intelligent. Show you're genuinely listening 
                                                 <strong style="color: black;">July 24, 2025</strong>
                                                 <small style="color: #888; margin-left: 10px;">4:30 PM ET</small>
                                             </div>
-                                            <small style="color: #666;">Status: ✅ COMPLETE</small>
+                                            <div class="d-flex align-items-center gap-2">
+                                                <button class="btn btn-sm btn-outline-warning copy-problem-btn" onclick="copyProblemReport(this)" title="Copy Problem Report">
+                                                    📋 Report Issue
+                                                </button>
+                                                <small style="color: #666;">Status: ✅ COMPLETE</small>
+                                            </div>
                                         </div>
                                         <p class="mb-1 mt-2" style="color: black;"><strong>Request:</strong> "SMS notification system with service confirmations complete"</p>
                                         <p class="mb-0" style="color: black;"><strong>Implementation:</strong> Added SMS confirmation offer after creating service tickets, integrated Twilio SMS API, created professional SMS message format with issue number, type, location, assigned technician, and contact information.</p>
@@ -3318,7 +3368,12 @@ PERSONALITY: Warm, empathetic, and intelligent. Show you're genuinely listening 
                                                 <strong style="color: black;">July 23, 2025</strong>
                                                 <small style="color: #888; margin-left: 10px;">12:15 PM ET</small>
                                             </div>
-                                            <small style="color: #666;">Status: ✅ COMPLETE</small>
+                                            <div class="d-flex align-items-center gap-2">
+                                                <button class="btn btn-sm btn-outline-warning copy-problem-btn" onclick="copyProblemReport(this)" title="Copy Problem Report">
+                                                    📋 Report Issue
+                                                </button>
+                                                <small style="color: #666;">Status: ✅ COMPLETE</small>
+                                            </div>
                                         </div>
                                         <p class="mb-1 mt-2" style="color: black;"><strong>Request:</strong> "ElevenLabs natural human voice successfully integrated"</p>
                                         <p class="mb-0" style="color: black;"><strong>Implementation:</strong> Complete ElevenLabs integration eliminates all robotic voice patterns. Uses professional Adam voice with natural conversational quality. All Twilio Say commands replaced with Play ElevenLabs audio files.</p>
@@ -3326,7 +3381,7 @@ PERSONALITY: Warm, empathetic, and intelligent. Show you're genuinely listening 
                                 </div>
                                 
                                 <div class="mt-3 p-2 bg-info-subtle rounded" style="color: black;">
-                                    <small style="color: black;"><strong>Note:</strong> This section tracks all major requests and implementations to ensure previous fixes are not overwritten unless explicitly requested. Use this as reference when making future changes. <br><strong>To report problems:</strong> Drag any fix into the drop zone above OR double-click any problematic fix for instant problem reporting.</small>
+                                    <small style="color: black;"><strong>Note:</strong> This section tracks all major requests and implementations to ensure previous fixes are not overwritten unless explicitly requested. Use this as reference when making future changes. <br><strong>To report problems:</strong> Click the "📋 Report Issue" button next to any fix that has problems. The formatted report will copy to your clipboard - just paste it in the chat above.</small>
                                 </div>
                                 
                                 <!-- JavaScript for Drag and Drop Functionality -->
@@ -3422,6 +3477,46 @@ ISSUE DETAILS: Please describe what specific problem you're experiencing with th
                                         });
                                     }
                                 });
+                                
+                                // Copy problem report function
+                                window.copyProblemReport = function(button) {
+                                    const fixItem = button.closest('.fix-item');
+                                    const titleElement = fixItem.querySelector('strong');
+                                    const requestParagraph = fixItem.querySelector('p:first-of-type');
+                                    const implementationParagraph = fixItem.querySelector('p:last-child');
+                                    
+                                    const fixData = {
+                                        id: fixItem.dataset.fixId || 'unknown',
+                                        title: titleElement ? titleElement.textContent.trim() : 'Unknown Date',
+                                        request: requestParagraph ? requestParagraph.textContent.replace('Request: ', '').trim() : 'Unknown Request',
+                                        implementation: implementationParagraph ? implementationParagraph.textContent.replace('Implementation: ', '').trim() : 'Unknown Implementation'
+                                    };
+                                    
+                                    const problemReport = `> **PREVIOUSLY RESOLVED ISSUE - NOW HAS PROBLEMS:**
+> 
+> **Fix ID:** ${fixData.id}
+> **Date:** ${fixData.title}
+> **Original Request:** ${fixData.request}
+> **Implementation:** ${fixData.implementation}
+> 
+> **CURRENT PROBLEM:** [Please describe what specific issue you're experiencing with this previously completed fix]`;
+                                    
+                                    navigator.clipboard.writeText(problemReport).then(() => {
+                                        // Change button text temporarily
+                                        const originalText = button.innerHTML;
+                                        button.innerHTML = '✅ Copied!';
+                                        button.classList.remove('btn-outline-warning');
+                                        button.classList.add('btn-success');
+                                        
+                                        setTimeout(() => {
+                                            button.innerHTML = originalText;
+                                            button.classList.remove('btn-success');
+                                            button.classList.add('btn-outline-warning');
+                                        }, 2000);
+                                    }).catch(() => {
+                                        alert('Failed to copy. Here is the problem report:\\n\\n' + problemReport);
+                                    });
+                                };
                                 </script>
                             </div>
                         </div>
