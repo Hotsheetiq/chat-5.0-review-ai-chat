@@ -6,7 +6,7 @@ FIXED Chris Conversation App - All Critical Issues Resolved
 - Simplified, reliable conversation flow
 """
 
-from flask import Flask, request, Response, render_template, render_template_string, jsonify
+from flask import Flask, request, Response, render_template, render_template_string, jsonify, redirect
 import os
 import logging
 import requests
@@ -3231,16 +3231,8 @@ Respond thoughtfully, showing your reasoning if this is a test scenario, or ackn
 
     @app.route('/warmup-status')
     def warmup_status_api():
-        """API endpoint for warmup status (JSON)"""
-        try:
-            from enhanced_service_warmup import get_warmup_status
-            return jsonify(get_warmup_status())
-        except Exception as e:
-            return jsonify({
-                'error': str(e),
-                'system_status': 'error',
-                'last_updated': datetime.now().isoformat()
-            }), 500
+        """API endpoint for warmup status (JSON) - Redirect to HTML dashboard"""
+        return redirect('/status')
 
     return app
 
