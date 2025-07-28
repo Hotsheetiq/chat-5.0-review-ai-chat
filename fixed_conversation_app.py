@@ -7,6 +7,7 @@ import os
 import re
 import json
 import logging
+import asyncio
 from datetime import datetime
 import pytz
 from flask import Flask, request, render_template, jsonify, render_template_string
@@ -649,6 +650,14 @@ def create_app():
     # Hardened logging system - follows CONSTRAINTS.md rules
     request_history_logs = [
         {
+            "id": 21,
+            "date": "July 28, 2025",
+            "time": "4:58 PM ET",
+            "request": "1042 windsor st is not a property of ours he has to confirm the property against rent manager api",
+            "resolution": "CRITICAL SECURITY FIX - REAL RENT MANAGER API VERIFICATION: Replaced fake address confirmation with actual Rent Manager API verification. Chris was incorrectly confirming non-existent addresses like '1042 Windsor Street'. Now uses real AddressMatcher class with RentManagerAPI to verify addresses against actual property database. Only confirms addresses that exist in Rent Manager system. Prevents false confirmations and ensures accurate property management.",
+            "constraint_note": "Rule #2 followed as required (appended new entry). Rule #4 followed as required (mirrored to REQUEST_HISTORY.md)."
+        },
+        {
             "id": 20,
             "date": "July 28, 2025",
             "time": "4:53 PM ET",
@@ -954,23 +963,63 @@ log #{log_entry['id']:03d} – {log_entry['date']}
                 'caller_phone': caller_phone
             })
             
-            # Check for address mentions and add confirmation context
+            # REAL ADDRESS VERIFICATION using Rent Manager API
             address_context = ""
+            verified_address = None
+            
+            # Check if this looks like an address mention
             address_patterns = [
+                r'(\d+)\s+([a-zA-Z\s]+(?:street|avenue|ave|st|road|rd|lane|ln|drive|dr|place|pl))',
                 r'(\d+)\s+(port\s+richmond|targee|richmond)',
-                r'(29|31|122)\s+(port|targee|richmond)',
-                r'(port\s+richmond|targee\s+street|richmond\s+avenue)'
             ]
             
             for pattern in address_patterns:
-                if re.search(pattern, speech_result, re.IGNORECASE):
-                    # Found potential address mention
-                    if '29' in speech_result and 'port' in speech_result:
-                        address_context = "\n\nIMMORTANT: The caller mentioned 29 Port Richmond Avenue. You should confirm: 'Great! I found 29 Port Richmond Avenue in our system.'"
-                    elif '31' in speech_result and 'port' in speech_result:
-                        address_context = "\n\nIMMORTANT: The caller mentioned 31 Port Richmond Avenue. You should confirm: 'Great! I found 31 Port Richmond Avenue in our system.'"
-                    elif '122' in speech_result and 'targee' in speech_result:
-                        address_context = "\n\nIMMORTANT: The caller mentioned 122 Targee Street. You should confirm: 'Great! I found 122 Targee Street in our system.'"
+                match = re.search(pattern, speech_result, re.IGNORECASE)
+                if match:
+                    potential_address = match.group(0).strip()
+                    logger.info(f"🏠 POTENTIAL ADDRESS DETECTED: '{potential_address}' from speech: '{speech_result}'")
+                    
+                    # Initialize API components for verification
+                    try:
+                        from rent_manager import RentManagerAPI
+                        from address_matcher import AddressMatcher
+                        
+                        # Create Rent Manager API instance
+                        api_key = os.environ.get("RENT_MANAGER_API_KEY")
+                        username = os.environ.get("RENT_MANAGER_USERNAME")
+                        password = os.environ.get("RENT_MANAGER_PASSWORD")
+                        location_id = os.environ.get("RENT_MANAGER_LOCATION_ID", "1")
+                        
+                        if api_key and username and password:
+                            credentials = f"{username}:{password}:{location_id}"
+                            rent_manager = RentManagerAPI(credentials)
+                            address_matcher = AddressMatcher(rent_manager)
+                            
+                            # ACTUAL API VERIFICATION - Run async function properly
+                            loop = None
+                            try:
+                                loop = asyncio.get_event_loop()
+                            except RuntimeError:
+                                loop = asyncio.new_event_loop()
+                                asyncio.set_event_loop(loop)
+                            
+                            matched_property = loop.run_until_complete(address_matcher.find_matching_property(potential_address))
+                            
+                            if matched_property:
+                                verified_address = matched_property.get('Name', potential_address)
+                                address_context = f"\n\nVERIFIED ADDRESS: The caller mentioned '{potential_address}' which matches '{verified_address}' in our Rent Manager system. Confirm: 'Great! I found {verified_address} in our system.'"
+                                logger.info(f"✅ API VERIFIED: '{potential_address}' → '{verified_address}'")
+                            else:
+                                address_context = f"\n\nUNVERIFIED ADDRESS: The caller mentioned '{potential_address}' but it's NOT found in our Rent Manager property database. Respond: 'I couldn't find {potential_address} in our property system. Could you double-check the address? We manage properties on Port Richmond Avenue and Targee Street.'"
+                                logger.warning(f"❌ API REJECTION: '{potential_address}' not found in property system")
+                        else:
+                            logger.warning("⚠️ RENT MANAGER API NOT CONFIGURED - Using fallback verification")
+                            address_context = f"\n\nFALLBACK: Address mention detected but API not available. Ask caller to verify: 'Let me verify that address in our system. Can you repeat the full address?'"
+                    
+                    except Exception as e:
+                        logger.error(f"❌ ADDRESS VERIFICATION ERROR: {e}")
+                        address_context = f"\n\nERROR FALLBACK: Could not verify address due to technical issue. Ask: 'Let me help you with that address. Can you please repeat it slowly?'"
+                    
                     break
 
             # Generate intelligent AI response using Grok

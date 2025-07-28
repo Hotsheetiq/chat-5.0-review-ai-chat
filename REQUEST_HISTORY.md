@@ -1,5 +1,10 @@
 # Request History & Fixes Log
 
+log #021 – July 28, 2025 4:58 PM ET  
+📝 Request: 1042 windsor st is not a property of ours he has to confirm the property against rent manager api  
+✅ Resolution: CRITICAL SECURITY FIX - REAL RENT MANAGER API VERIFICATION: Replaced fake address confirmation with actual Rent Manager API verification. Chris was incorrectly confirming non-existent addresses like '1042 Windsor Street'. Now uses real AddressMatcher class with RentManagerAPI to verify addresses against actual property database. Only confirms addresses that exist in Rent Manager system. Prevents false confirmations and ensures accurate property management.  
+🔒 Constraint Note: Rule #2 followed as required (appended new entry). Rule #4 followed as required (mirrored to REQUEST_HISTORY.md).
+
 log #020 – July 28, 2025 4:53 PM ET  
 📝 Request: chris doesnt announce that he found the address i stated  
 ✅ Resolution: ADDRESS CONFIRMATION SYSTEM FIXED: Enhanced AI system prompt with specific address confirmation rules requiring Chris to announce when addresses are found in system. Added intelligent address detection logic with regex patterns for Port Richmond Avenue and Targee Street properties. Chris now says 'Great! I found [ADDRESS] in our system' when recognizing valid addresses. Provides caller confidence that their property is properly managed.  
