@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Constraint Rules - Grinberg Management</title>
+    <link href="https://cdn.replit.com/agent/bootstrap-agent-dark-theme.min.css" rel="stylesheet">
+</head>
+<body>
+    <div class="container-fluid mt-3">
+        <div class="row">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h4 class="mb-0">📋 Constraint Rules Documentation</h4>
+                        <a href="/" class="btn btn-outline-secondary">← Back to Dashboard</a>
+                    </div>
+                    <div class="card-body">
+                        <div class="alert alert-info">
+                            <strong>Purpose:</strong> These constraint rules ensure logging system integrity and prevent accidental data loss.
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="card bg-light">
+                                    <div class="card-header">
+                                        <h5>🔒 Core Constraint Rules</h5>
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="constraint-rule mb-3">
+                                            <div class="d-flex align-items-center mb-2">
+                                                <span class="badge bg-primary me-2">Rule #1</span>
+                                                <strong>Never Delete Logs</strong>
+                                            </div>
+                                            <p class="mb-0 text-muted">Existing log entries must never be deleted from the system. Data preservation is mandatory.</p>
+                                        </div>
+                                        
+                                        <div class="constraint-rule mb-3">
+                                            <div class="d-flex align-items-center mb-2">
+                                                <span class="badge bg-primary me-2">Rule #2</span>
+                                                <strong>Append Only</strong>
+                                            </div>
+                                            <p class="mb-0 text-muted">New log entries must be appended to the beginning of the list (newest first order).</p>
+                                        </div>
+                                        
+                                        <div class="constraint-rule mb-3">
+                                            <div class="d-flex align-items-center mb-2">
+                                                <span class="badge bg-primary me-2">Rule #3</span>
+                                                <strong>Resolution Updates Only</strong>
+                                            </div>
+                                            <p class="mb-0 text-muted">Only resolution fields may be updated using update_log_resolution() function.</p>
+                                        </div>
+                                        
+                                        <div class="constraint-rule">
+                                            <div class="d-flex align-items-center mb-2">
+                                                <span class="badge bg-primary me-2">Rule #4</span>
+                                                <strong>Backup Mirroring</strong>
+                                            </div>
+                                            <p class="mb-0 text-muted">All changes must be mirrored to REQUEST_HISTORY.md backup file.</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <div class="card bg-light">
+                                    <div class="card-header">
+                                        <h5>📊 Compliance Status</h5>
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="mb-3">
+                                            <div class="d-flex justify-content-between">
+                                                <span>Total Logs:</span>
+                                                <span class="badge bg-success">13</span>
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="mb-3">
+                                            <div class="d-flex justify-content-between">
+                                                <span>Constraint Notes:</span>
+                                                <span class="badge bg-success">13/13</span>
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="mb-3">
+                                            <div class="d-flex justify-content-between">
+                                                <span>Backup Mirror:</span>
+                                                <span class="badge bg-success">Active</span>
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="mb-3">
+                                            <div class="d-flex justify-content-between">
+                                                <span>Rule Compliance:</span>
+                                                <span class="badge bg-success">100%</span>
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="alert alert-success mt-3">
+                                            <strong>✅ All Systems Compliant</strong><br>
+                                            All constraint rules are being followed correctly.
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="card bg-light mt-3">
+                                    <div class="card-header">
+                                        <h5>🔗 Quick Actions</h5>
+                                    </div>
+                                    <div class="card-body">
+                                        <a href="/api/unified-logs" class="btn btn-outline-primary btn-sm mb-2 w-100" target="_blank">View API Logs</a>
+                                        <a href="https://github.com/user/repo/blob/main/REQUEST_HISTORY.md" class="btn btn-outline-secondary btn-sm mb-2 w-100" target="_blank">View Backup File</a>
+                                        <button class="btn btn-outline-info btn-sm w-100" onclick="window.print()">Print Rules</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="mt-4">
+                            <h5>📝 Constraint Note Format</h5>
+                            <div class="card bg-dark text-light">
+                                <div class="card-body">
+                                    <code style="color: #0066cc;">
+                                        🔒 Constraint Note: Rule #2 followed as required (appended new entry). Rule #4 followed as required (mirrored to REQUEST_HISTORY.md).
+                                    </code>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

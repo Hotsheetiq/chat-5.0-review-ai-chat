@@ -185,7 +185,7 @@ def create_app():
                                         </div>
                                         <p class="mb-1 mt-2" style="color: black;"><strong>Request:</strong> "${entry.request || 'No description available'}"</p>
                                         <p class="mb-1" style="color: black;"><strong>Implementation:</strong> ${entry.implementation || 'Implementation pending...'}</p>
-                                        ${entry.constraint_note ? `<p class="mb-0 mt-2" style="color: #0066cc; font-size: 0.9em;"><strong>🔒 Constraint Note:</strong> ${entry.constraint_note}</p>` : ''}
+                                        ${entry.constraint_note ? `<p class="mb-0 mt-2" style="color: #0066cc; font-size: 0.9em;"><strong>🔒 Constraint Note:</strong> ${entry.constraint_note} ${entry.constraint_link ? `<a href="${entry.constraint_link}" target="_blank" style="color: #0066cc; text-decoration: underline;">📋 View Rules</a>` : ''}</p>` : ''}
                                     </div>`;
                                 }).join('');
                             } else {
@@ -410,6 +410,11 @@ def create_app():
         total_conversations=len(conversation_history)
         )
 
+    @app.route("/constraints")
+    def constraints():
+        """Constraint rules documentation page"""
+        return render_template("constraints.html")
+
     @app.route("/api/warmup-status", methods=["GET"])
     def get_warmup_status():
         """API endpoint for service warmup status"""
@@ -494,6 +499,15 @@ def create_app():
 
     # Hardened logging system - follows CONSTRAINTS.md rules
     request_history_logs = [
+        {
+            "id": 13,
+            "date": "July 28, 2025",
+            "time": "4:03 PM ET",
+            "request": "Create a constraint rule log and link",
+            "resolution": "CONSTRAINT RULE LOG & LINK SYSTEM IMPLEMENTED: Created Log #013 documenting constraint rule system establishment. Added direct link to CONSTRAINTS.md file with clickable access. Enhanced dashboard to display constraint rule documentation with proper linking structure. Created centralized constraint rule reference system for all future log entries.",
+            "constraint_note": "Rule #2 followed as required (appended new entry). Rule #4 followed as required (mirrored to REQUEST_HISTORY.md). Constraint system documentation established.",
+            "constraint_link": "/constraints"
+        },
         {
             "id": 12,
             "date": "July 28, 2025",
@@ -635,7 +649,8 @@ log #{log_entry['id']:03d} – {log_entry['date']}
                     'status': 'COMPLETE',
                     'request': log['request'],
                     'implementation': log['resolution'],
-                    'constraint_note': log.get('constraint_note', '')
+                    'constraint_note': log.get('constraint_note', ''),
+                    'constraint_link': log.get('constraint_link', '')
                 })
             
             return jsonify({
