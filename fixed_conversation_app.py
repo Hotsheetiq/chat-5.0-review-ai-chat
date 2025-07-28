@@ -191,9 +191,18 @@ def create_app():
                                                 <small style="color: #888; margin-left: 10px;">${entry.time}</small>
                                             </div>
                                             <div class="d-flex align-items-center gap-2">
-                                                <button class="btn btn-sm btn-outline-secondary flag-btn" onclick="toggleFlag('${entry.id}')" title="Toggle Flag" style="display: none;">
-                                                    🏳️
-                                                </button>
+                                                <div class="dropdown flag-selector" style="display: none;">
+                                                    <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown" title="Select Flag">
+                                                        🏳️
+                                                    </button>
+                                                    <ul class="dropdown-menu">
+                                                        <li><a class="dropdown-item" href="#" onclick="setFlag('${entry.id}', 'critical')">🔥 Critical</a></li>
+                                                        <li><a class="dropdown-item" href="#" onclick="setFlag('${entry.id}', 'important')">⭐ Important</a></li>
+                                                        <li><a class="dropdown-item" href="#" onclick="setFlag('${entry.id}', 'reference')">📌 Reference</a></li>
+                                                        <li><hr class="dropdown-divider"></li>
+                                                        <li><a class="dropdown-item" href="#" onclick="setFlag('${entry.id}', '')">❌ Remove Flag</a></li>
+                                                    </ul>
+                                                </div>
                                                 <button class="btn btn-sm btn-outline-warning copy-problem-btn" onclick="copyProblemReport(this)" title="Copy Problem Report">
                                                     📋 Report Issue
                                                 </button>
@@ -437,15 +446,15 @@ def create_app():
                 
                 function toggleFlagMode() {
                     flagModeActive = !flagModeActive;
-                    const flagBtns = document.querySelectorAll('.flag-btn');
+                    const flagSelectors = document.querySelectorAll('.flag-selector');
                     const modeBtn = document.getElementById('flag-mode-btn');
                     
                     if (flagModeActive) {
-                        flagBtns.forEach(btn => btn.style.display = 'block');
+                        flagSelectors.forEach(selector => selector.style.display = 'block');
                         modeBtn.textContent = '❌ Exit Flag Mode';
                         modeBtn.className = 'btn btn-sm btn-outline-danger';
                     } else {
-                        flagBtns.forEach(btn => btn.style.display = 'none');
+                        flagSelectors.forEach(selector => selector.style.display = 'none');
                         modeBtn.textContent = '🏳️ Flag Mode';
                         modeBtn.className = 'btn btn-sm btn-outline-light';
                     }
@@ -471,10 +480,61 @@ def create_app():
                     });
                 }
                 
-                function toggleFlag(logId) {
-                    // This would normally make an API call to update the flag
-                    // For now, just show a notification
-                    alert(`Flag toggle for ${logId} - API integration pending`);
+                function setFlag(logId, flagType) {
+                    // Send API request to update flag
+                    fetch(`/api/set-flag`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            log_id: logId,
+                            flag: flagType
+                        })
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            // Reload logs to show updated flag
+                            loadUnifiedLogs();
+                            
+                            // Show success notification
+                            const flagName = flagType ? getFlagName(flagType) : 'removed';
+                            showNotification(`Flag ${flagName} applied to ${logId}`, 'success');
+                        } else {
+                            showNotification('Failed to update flag', 'error');
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error updating flag:', error);
+                        showNotification('Error updating flag', 'error');
+                    });
+                }
+                
+                function getFlagName(flagType) {
+                    switch(flagType) {
+                        case 'critical': return '🔥 Critical';
+                        case 'important': return '⭐ Important';
+                        case 'reference': return '📌 Reference';
+                        default: return 'No flag';
+                    }
+                }
+                
+                function showNotification(message, type) {
+                    // Create notification element
+                    const notification = document.createElement('div');
+                    notification.className = `alert alert-${type === 'success' ? 'success' : 'danger'} position-fixed`;
+                    notification.style.cssText = 'top: 20px; right: 20px; z-index: 1050; min-width: 300px;';
+                    notification.textContent = message;
+                    
+                    document.body.appendChild(notification);
+                    
+                    // Auto-remove after 3 seconds
+                    setTimeout(() => {
+                        if (notification.parentNode) {
+                            notification.parentNode.removeChild(notification);
+                        }
+                    }, 3000);
                 }
 
                 // Initial load
@@ -519,6 +579,7 @@ def create_app():
             <meta name="viewport" content="width=device-width, initial-scale=1.0">
             <title>Service Status - Chris Voice Assistant</title>
             <link href="https://cdn.replit.com/agent/bootstrap-agent-dark-theme.min.css" rel="stylesheet">
+            <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
         </head>
         <body class="bg-dark text-light">
             <div class="container mt-4">
@@ -584,7 +645,7 @@ def create_app():
             "date": "July 28, 2025",
             "time": "4:06 PM ET",
             "request": "Create an option to flag log entries for later reference or to show that they are important",
-            "resolution": "LOG FLAGGING SYSTEM IMPLEMENTED: Added importance flags with visual indicators (🔥 Critical, ⭐ Important, 📌 Reference). Enhanced dashboard with flag filtering options and priority sorting. Implemented toggle functionality for flag management and visual distinction for flagged entries.",
+            "resolution": "LOG FLAGGING SYSTEM IMPLEMENTED: Added importance flags with visual indicators (🔥 Critical, ⭐ Important, 📌 Reference). Enhanced dashboard with flag filtering options and interactive flag selection dropdown. Implemented API endpoint for flag management with real-time updates and visual notifications.",
             "constraint_note": "Rule #2 followed as required (appended new entry). Rule #4 followed as required (mirrored to REQUEST_HISTORY.md).",
             "flag": "important"
         },
@@ -752,6 +813,37 @@ log #{log_entry['id']:03d} – {log_entry['date']}
         except Exception as e:
             logger.error(f"Error getting unified logs: {e}")
             return jsonify({'error': 'Could not load logs'}), 500
+
+    @app.route("/api/set-flag", methods=["POST"])
+    def set_flag():
+        """API endpoint to update log entry flags"""
+        try:
+            data = request.get_json()
+            log_id = data.get('log_id', '').replace('log_', '')  # Remove log_ prefix
+            flag_value = data.get('flag', '')
+            
+            # Find and update the log entry
+            log_updated = False
+            for log in request_history_logs:
+                if str(log['id']).zfill(3) == log_id:
+                    if flag_value:
+                        log['flag'] = flag_value
+                    else:
+                        log.pop('flag', None)  # Remove flag if empty
+                    log_updated = True
+                    
+                    # Update REQUEST_HISTORY.md with flag information
+                    append_to_request_history_file(log)
+                    break
+            
+            if log_updated:
+                return jsonify({'success': True, 'message': f'Flag updated for {log_id}'})
+            else:
+                return jsonify({'success': False, 'message': 'Log entry not found'}), 404
+                
+        except Exception as e:
+            logger.error(f"Error setting flag: {e}")
+            return jsonify({'success': False, 'message': 'Error updating flag'}), 500
 
     @app.route("/voice", methods=["GET", "POST"])
     @app.route("/webhook", methods=["GET", "POST"])
