@@ -43,3 +43,35 @@ class ActiveCall(db.Model):
     
     def __repr__(self):
         return f'<ActiveCall {self.phone_number} - {self.caller_name or "Unknown"}>'
+
+
+class RequestHistory(db.Model):
+    __tablename__ = 'request_history'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    request_title = db.Column(db.String(200), nullable=False)
+    request_description = db.Column(db.Text, nullable=True)
+    implementation_details = db.Column(db.Text, nullable=True)
+    status = db.Column(db.String(20), default='pending')  # pending, in_progress, complete, failed
+    priority = db.Column(db.String(20), default='normal')  # low, normal, high, critical
+    date_requested = db.Column(db.DateTime, default=datetime.utcnow)
+    date_completed = db.Column(db.DateTime, nullable=True)
+    source = db.Column(db.String(50), default='user_input')  # user_input, automatic, complaint
+    category = db.Column(db.String(50), nullable=True)  # bug_fix, feature_request, enhancement, complaint
+    
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'request_title': self.request_title,
+            'request_description': self.request_description,
+            'implementation_details': self.implementation_details,
+            'status': self.status,
+            'priority': self.priority,
+            'date_requested': self.date_requested.isoformat() if self.date_requested else None,
+            'date_completed': self.date_completed.isoformat() if self.date_completed else None,
+            'source': self.source,
+            'category': self.category
+        }
+    
+    def __repr__(self):
+        return f'<RequestHistory {self.request_title} - {self.status}>'

@@ -254,6 +254,57 @@ def create_voice_response(text):
 
 call_states = {}
 
+# Global complaint tracking system
+complaint_tracker = {
+    'recent_complaints': [],
+    'auto_fixes': []
+}
+
+def track_new_complaint(complaint_text, category='complaint'):
+    """Automatically track complaints and add them to fixes section"""
+    try:
+        timestamp = datetime.now(pytz.timezone('US/Eastern'))
+        
+        # Extract key complaint details
+        complaint_entry = {
+            'id': f"complaint_{timestamp.strftime('%Y%m%d_%H%M%S')}",
+            'title': complaint_text[:100] + ('...' if len(complaint_text) > 100 else ''),
+            'description': complaint_text,
+            'status': 'pending',
+            'date': timestamp.strftime('%B %d, %Y'),
+            'time': timestamp.strftime('%I:%M %p ET'),
+            'category': category,
+            'source': 'user_complaint'
+        }
+        
+        # Add to recent complaints
+        complaint_tracker['recent_complaints'].insert(0, complaint_entry)
+        
+        # Keep only last 10 complaints
+        if len(complaint_tracker['recent_complaints']) > 10:
+            complaint_tracker['recent_complaints'] = complaint_tracker['recent_complaints'][:10]
+        
+        logger.info(f"📝 NEW COMPLAINT TRACKED: {complaint_entry['title']}")
+        return complaint_entry
+        
+    except Exception as e:
+        logger.error(f"Error tracking complaint: {e}")
+        return None
+
+def auto_detect_complaints(user_message):
+    """Detect complaints in user messages and automatically track them"""
+    complaint_indicators = [
+        'not being added', 'not working', 'is broken', 'bug', 'error', 
+        'problem', 'issue', 'wrong', 'doesnt work', 'failing',
+        'not automatic', 'supposed to be', 'should be', 'not happening'
+    ]
+    
+    message_lower = user_message.lower()
+    if any(indicator in message_lower for indicator in complaint_indicators):
+        track_new_complaint(user_message, 'auto_detected')
+        return True
+    return False
+
 def create_app():
     app = Flask(__name__)
     app.secret_key = os.environ.get("SESSION_SECRET", "dev-secret-key")
@@ -1585,6 +1636,9 @@ PERSONALITY: Warm, empathetic, and intelligent. Show you're genuinely listening 
         try:
             # Declare all global variables used in this function
             global current_service_issue, conversation_history, verified_address_info
+            
+            # AUTO-DETECT COMPLAINTS AND ADD TO TRACKING SYSTEM
+            auto_detect_complaints(user_input)
             
             # REMOVED: Problematic immediate acknowledgment system that added delays
             
@@ -4210,6 +4264,18 @@ Respond thoughtfully, showing your reasoning if this is a test scenario, or ackn
                 <Redirect>/handle-speech/{call_sid}</Redirect>
             </Response>"""
 
+    # Add test complaint for demonstration
+    @app.route('/add-test-complaint')
+    def add_test_complaint():
+        """Add a test complaint to demonstrate automatic tracking"""
+        track_new_complaint("The automatic complaint tracking system is not working - complaints should be automatically added to the fixes section but aren't being captured", "bug_fix")
+        return jsonify({"status": "success", "message": "Test complaint added"})
+    
+    @app.route('/api/recent-complaints')
+    def get_recent_complaints():
+        """API endpoint to get recent complaints"""
+        return jsonify(complaint_tracker.get('recent_complaints', []))
+    
     return app
 
 if __name__ == "__main__":
