@@ -177,10 +177,10 @@ admin_capabilities = {
 def prevent_exact_repetition(call_sid, proposed_response):
     """HARD ANTI-REPETITION RULE - Prevents identical speech responses within same call"""
     if call_sid not in response_tracker:
-        response_tracker[call_sid] = []
+        response_tracker[call_sid] = {'used_phrases': set(), 'phrase_counts': {}}
     
     # Check if exact response was already used
-    if proposed_response in response_tracker[call_sid]:
+    if proposed_response in response_tracker[call_sid]['used_phrases']:
         logger.warning(f"🚫 REPETITION BLOCKED: '{proposed_response[:50]}...' already used in call {call_sid}")
         
         # Generate alternative response with varied phrasing
@@ -195,18 +195,18 @@ def prevent_exact_repetition(call_sid, proposed_response):
         
         # Find first unused alternative
         for alt in alternatives:
-            if alt not in response_tracker[call_sid]:
-                response_tracker[call_sid].append(alt)
+            if alt not in response_tracker[call_sid]['used_phrases']:
+                response_tracker[call_sid]['used_phrases'].add(alt)
                 logger.info(f"✅ ANTI-REPETITION: Using alternative '{alt[:50]}...' instead")
                 return alt
         
         # If all alternatives used, modify response with variation
         varied_response = f"Absolutely. {proposed_response.replace('Perfect!', 'Excellent!').replace('I heard', 'You said')}"
-        response_tracker[call_sid].append(varied_response)
+        response_tracker[call_sid]['used_phrases'].add(varied_response)
         return varied_response
     
     # Track new response
-    response_tracker[call_sid].append(proposed_response)
+    response_tracker[call_sid]['used_phrases'].add(proposed_response)
     return proposed_response
 
 def get_varied_response(call_sid, response_type):
