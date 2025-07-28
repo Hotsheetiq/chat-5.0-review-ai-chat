@@ -17,9 +17,68 @@ from datetime import datetime
 import random
 import pytz
 
+# Initialize Flask app and database
+app = Flask(__name__)
+app.secret_key = os.environ.get("SESSION_SECRET", "default-secret-key")
+
+# Database configuration
+app.config["SQLALCHEMY_DATABASE_URI"] = os.environ.get("DATABASE_URL")
+app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {
+    "pool_recycle": 300,
+    "pool_pre_ping": True,
+}
+
+# Initialize database
+from models import db, RequestHistory
+db.init_app(app)
+
+# Create database tables
+with app.app_context():
+    db.create_all()
+
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+
+# Simple request tracking system using global storage
+request_history_storage = []
+
+def log_user_request(title, description=None, category="user_request", priority="normal"):
+    """Log user requests and implementations to storage"""
+    try:
+        request_data = {
+            'id': len(request_history_storage) + 1,
+            'request_title': title,
+            'request_description': description,
+            'status': 'in_progress',
+            'priority': priority,
+            'category': category,
+            'source': 'user_input',
+            'date_requested': datetime.utcnow().isoformat(),
+            'date_completed': None,
+            'implementation_details': None
+        }
+        request_history_storage.append(request_data)
+        logger.info(f"📝 User request logged: {title}")
+        return request_data['id']
+    except Exception as e:
+        logger.error(f"Failed to log user request: {e}")
+        return None
+
+def update_request_implementation(request_id, implementation_details, status='complete'):
+    """Update request with implementation details"""
+    try:
+        for request in request_history_storage:
+            if request['id'] == request_id:
+                request['implementation_details'] = implementation_details
+                request['status'] = status
+                request['date_completed'] = datetime.utcnow().isoformat()
+                logger.info(f"✅ Request {request_id} updated with implementation")
+                return True
+        return False
+    except Exception as e:
+        logger.error(f"Failed to update request implementation: {e}")
+        return False
 
 # API Keys
 OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY")
@@ -3333,6 +3392,51 @@ PERSONALITY: Warm, empathetic, and intelligent. Show you're genuinely listening 
                 'transcription_preview': f'Debug: {str(e)} | History length: {len(conversation_history) if conversation_history else 0}'
             }])
     
+    @app.route("/api/request-history")
+    def api_request_history():
+        """API endpoint to get all request history"""
+        try:
+            # Sort by date_requested (newest first)
+            sorted_requests = sorted(request_history_storage, key=lambda x: x['date_requested'], reverse=True)
+            return jsonify(sorted_requests)
+        except Exception as e:
+            logger.error(f"Error fetching request history: {e}")
+            return jsonify([])
+    
+    @app.route("/api/log-request", methods=['POST'])
+    def api_log_request():
+        """API endpoint to log new user requests"""
+        try:
+            data = request.get_json()
+            title = data.get('title', 'User Request')
+            description = data.get('description', '')
+            category = data.get('category', 'user_request')
+            priority = data.get('priority', 'normal')
+            
+            request_id = log_user_request(title, description, category, priority)
+            if request_id:
+                return jsonify({'success': True, 'request_id': request_id})
+            else:
+                return jsonify({'success': False, 'error': 'Failed to log request'})
+        except Exception as e:
+            logger.error(f"Error logging request: {e}")
+            return jsonify({'success': False, 'error': str(e)})
+    
+    @app.route("/api/update-implementation", methods=['POST'])
+    def api_update_implementation():
+        """API endpoint to update request implementation"""
+        try:
+            data = request.get_json()
+            request_id = data.get('request_id')
+            implementation = data.get('implementation_details', '')
+            status = data.get('status', 'complete')
+            
+            success = update_request_implementation(request_id, implementation, status)
+            return jsonify({'success': success})
+        except Exception as e:
+            logger.error(f"Error updating implementation: {e}")
+            return jsonify({'success': False, 'error': str(e)})
+    
     @app.route("/api/test-call-data")
     def api_test_call_data():
         """Create test conversation data for dashboard testing"""
@@ -3951,25 +4055,104 @@ PERSONALITY: Warm, empathetic, and intelligent. Show you're genuinely listening 
                                     </div>
                                 </div>
                                 
-                                <div style="max-height: 400px; overflow-y: auto;">
-                                    <div class="mb-3 p-3 border-start border-3 border-success bg-success-subtle fix-item" draggable="true" style="color: black; cursor: move;" data-fix-id="address-matching-repetition-fix">
-                                        <div class="d-flex justify-content-between align-items-start">
-                                            <div>
-                                                <strong style="color: black;">July 28, 2025</strong>
-                                                <small style="color: #888; margin-left: 10px;">12:05 AM ET → 12:16 AM ET</small>
-                                            </div>
-                                            <div class="d-flex align-items-center gap-2">
-                                                <button class="btn btn-sm btn-outline-warning copy-problem-btn" onclick="copyProblemReport(this)" title="Copy Problem Report">
-                                                    📋 Report Issue
-                                                </button>
-                                                <small style="color: #666;">Status: ✅ COMPLETE</small>
-                                            </div>
+                                <div style="max-height: 400px; overflow-y: auto;" id="request-history-container">
+                                    <!-- Request history will be loaded dynamically -->
+                                    <div class="text-center text-muted">
+                                        <div class="spinner-border spinner-border-sm" role="status">
+                                            <span class="visually-hidden">Loading...</span>
                                         </div>
-                                        <p class="mb-1 mt-2" style="color: black;"><strong>Request:</strong> "Chris isn't able to find the address and ask for the correct address instead of finding a close match. The address does exist in the system is he not using API? He also repeats himself. Make it a rule the repeating exact speech is not allowed!"</p>
-                                        <p class="mb-0" style="color: black;"><strong>Implementation:</strong> CRITICAL ADDRESS MATCHING FIX - Enhanced address matcher to use API-based intelligent proximity matching instead of asking for corrections when addresses exist in system. Implemented HARD anti-repetition rule preventing identical speech responses within same call. <span style="color: #0066cc;">[AMENDMENT 12:16 AM ET: Adding numerical proximity algorithm for closest street number matching + mandatory alternative response generation system]</span></p>
+                                        <small class="ms-2">Loading request history...</small>
                                     </div>
-                                    
-                                    <div class="mb-3 p-3 border-start border-3 border-success bg-success-subtle fix-item" draggable="true" style="color: black; cursor: move;" data-fix-id="roach-conversation-memory-fix">
+                                </div>
+                                
+                                <div class="mt-3 p-2 bg-info-subtle rounded" style="color: black;">
+                                    <small style="color: black;"><strong>Note:</strong> This section displays real request tracking data from the system. Use this as reference when making future changes.</small>
+                                </div>
+                                
+                                <!-- JavaScript for Request History Loading -->
+                                <script>
+                                document.addEventListener('DOMContentLoaded', function() {
+                                    loadRequestHistory();
+                                });
+                                
+                                function loadRequestHistory() {
+                                    fetch('/api/request-history')
+                                        .then(response => response.json())
+                                        .then(data => {
+                                            const container = document.getElementById('request-history-container');
+                                            if (!container) return;
+                                            
+                                            if (data.requests && data.requests.length > 0) {
+                                                let html = '';
+                                                data.requests.forEach(request => {
+                                                    const statusBadge = request.status === 'complete' ? 
+                                                        '<span class="badge bg-success">✅ COMPLETE</span>' :
+                                                        request.status === 'in_progress' ?
+                                                        '<span class="badge bg-warning">🔄 IN PROGRESS</span>' :
+                                                        '<span class="badge bg-secondary">📋 PENDING</span>';
+                                                    
+                                                    const priorityClass = request.priority === 'critical' ? 'border-danger' :
+                                                                         request.priority === 'high' ? 'border-warning' :
+                                                                         'border-success';
+                                                    
+                                                    const dateRequested = request.date_requested ? 
+                                                        new Date(request.date_requested).toLocaleDateString('en-US', {
+                                                            month: 'short',
+                                                            day: 'numeric',
+                                                            year: 'numeric',
+                                                            hour: 'numeric',
+                                                            minute: '2-digit',
+                                                            hour12: true
+                                                        }) : 'Unknown Date';
+                                                    
+                                                    html += `
+                                                        <div class="mb-3 p-3 border-start border-3 ${priorityClass} bg-light" style="color: black;">
+                                                            <div class="d-flex justify-content-between align-items-start">
+                                                                <div>
+                                                                    <strong style="color: black;">${request.request_title}</strong>
+                                                                    <br><small class="text-muted">${dateRequested}</small>
+                                                                </div>
+                                                                <div class="text-end">
+                                                                    ${statusBadge}
+                                                                    <br><small class="text-info">${request.category || 'General'}</small>
+                                                                </div>
+                                                            </div>
+                                                            ${request.request_description ? 
+                                                                `<p class="mb-1 mt-2" style="color: black;"><strong>Request:</strong> ${request.request_description}</p>` : ''}
+                                                            ${request.implementation_details ? 
+                                                                `<p class="mb-0" style="color: black;"><strong>Implementation:</strong> ${request.implementation_details}</p>` : ''}
+                                                        </div>
+                                                    `;
+                                                });
+                                                container.innerHTML = html;
+                                            } else {
+                                                container.innerHTML = `
+                                                    <div class="text-center text-muted py-4">
+                                                        <h6>No Request History Found</h6>
+                                                        <p>Recent requests and implementations will appear here.</p>
+                                                    </div>
+                                                `;
+                                            }
+                                        })
+                                        .catch(error => {
+                                            console.error('Error loading request history:', error);
+                                            const container = document.getElementById('request-history-container');
+                                            if (container) {
+                                                container.innerHTML = `
+                                                    <div class="alert alert-warning">
+                                                        <strong>Unable to load request history</strong>
+                                                        <br>Error: ${error.message}
+                                                    </div>
+                                                `;
+                                            }
+                                        });
+                                }
+                                </script>
+                                
+                            </div>
+                        </div>
+                    </div>
+                </div>
                                         <div class="d-flex justify-content-between align-items-start">
                                             <div>
                                                 <strong style="color: black;">July 28, 2025</strong>
