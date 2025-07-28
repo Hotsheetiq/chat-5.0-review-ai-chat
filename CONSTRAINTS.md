@@ -31,3 +31,10 @@ Before updating the UI or any logs, read this file and confirm you're following 
 - Format: "Rule #X followed as required" or "Rule #X overridden with user approval"
 - Constraint notes must be visible in both dashboard and REQUEST_HISTORY.md
 - Never make constraint-related changes silently - always document them
+
+### Timestamp Accuracy (CRITICAL REQUIREMENT)
+- All log timestamps must reflect the actual time when the change was implemented
+- Never use future timestamps - verify current time before setting log times
+- Use Eastern Time format: "H:MM AM/PM ET" (e.g., "4:30 PM ET")
+- When correcting timestamps, use the actual implementation time, not correction time
+- Before setting any timestamp, verify it's not in the future using current system time

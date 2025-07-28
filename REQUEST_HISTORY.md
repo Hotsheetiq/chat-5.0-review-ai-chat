@@ -1,5 +1,10 @@
 # Request History & Fixes Log
 
+log #016 – July 28, 2025 4:33 PM ET  
+📝 Request: This fix works — create a necessary constraint so it's not undone in the future  
+✅ Resolution: TIMESTAMP ACCURACY CONSTRAINT IMPLEMENTED: Added critical constraint rule requiring all log timestamps to reflect actual implementation time, never future timestamps. Enhanced CONSTRAINTS.md with timestamp verification requirements and Eastern Time format standards. Prevents future timestamp errors.  
+🔒 Constraint Note: Rule #2 followed as required (appended new entry). Rule #4 followed as required (mirrored to REQUEST_HISTORY.md). New timestamp constraint established.
+
 log #015 – July 28, 2025 4:30 PM ET  
 📝 Request: Change the greeting so that Chris sounds more human and doesn't announce himself as an AI attendant, he should speak more plainly and not so formal  
 ✅ Resolution: HUMAN-LIKE GREETING IMPLEMENTED: Updated Chris's greeting from formal 'Hi, you've reached Grinberg Management. This is Chris, your AI assistant. How can I help you today?' to casual 'Hey there! This is Chris from Grinberg Management. What's going on?' Removed AI assistant references and formal language for more natural, conversational tone.  
