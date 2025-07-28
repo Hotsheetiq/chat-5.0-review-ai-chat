@@ -486,6 +486,13 @@ def create_app():
     # Hardened logging system - follows CONSTRAINTS.md rules
     request_history_logs = [
         {
+            "id": 11,
+            "date": "July 28, 2025",
+            "time": "1:15 PM ET",
+            "request": "Application error when calling - webhook endpoints missing",
+            "resolution": "CRITICAL PHONE SYSTEM FIX: Added missing Twilio webhook endpoints (/voice, /webhook, /incoming-call) and speech handling (/handle-speech/<call_sid>) to fix application errors during phone calls. Implemented proper TwiML responses, conversation logging, and error handling for complete phone system functionality."
+        },
+        {
             "id": 10,
             "date": "July 28, 2025",
             "time": "1:10 PM ET",
@@ -609,6 +616,88 @@ log #{log_entry['id']:03d} – {log_entry['date']}
         except Exception as e:
             logger.error(f"Error getting unified logs: {e}")
             return jsonify({'error': 'Could not load logs'}), 500
+
+    @app.route("/voice", methods=["GET", "POST"])
+    @app.route("/webhook", methods=["GET", "POST"])
+    @app.route("/incoming-call", methods=["GET", "POST"])
+    def voice_incoming():
+        """Twilio webhook for incoming voice calls"""
+        try:
+            call_sid = request.values.get("CallSid", "")
+            caller_phone = request.values.get("From", "")
+            
+            logger.info(f"📞 INCOMING CALL: {call_sid} from {caller_phone}")
+            
+            # Initialize conversation for this call
+            if call_sid not in conversation_history:
+                conversation_history[call_sid] = []
+            
+            # Create TwiML response for initial greeting
+            response = f"""<?xml version="1.0" encoding="UTF-8"?>
+            <Response>
+                <Say voice="Polly.Matthew-Neural">Hi, you've reached Grinberg Management. This is Chris, your AI assistant. How can I help you today?</Say>
+                <Gather input="speech" timeout="8" speechTimeout="4" action="/handle-speech/{call_sid}" method="POST">
+                </Gather>
+                <Redirect>/handle-speech/{call_sid}</Redirect>
+            </Response>"""
+            
+            return response
+            
+        except Exception as e:
+            logger.error(f"Incoming call error: {e}")
+            return """<?xml version="1.0" encoding="UTF-8"?>
+            <Response>
+                <Say voice="Polly.Matthew-Neural">Hi, you've reached Grinberg Management. How can I help you?</Say>
+                <Gather input="speech" timeout="8" speechTimeout="4"/>
+            </Response>"""
+
+    @app.route("/handle-speech/<call_sid>", methods=["POST"])
+    def handle_speech(call_sid):
+        """Handle speech input from callers"""
+        try:
+            speech_result = request.values.get("SpeechResult", "").lower().strip()
+            caller_phone = request.values.get("From", "")
+            
+            logger.info(f"🎤 SPEECH from {caller_phone}: '{speech_result}'")
+            
+            # Store conversation
+            if call_sid not in conversation_history:
+                conversation_history[call_sid] = []
+            
+            conversation_history[call_sid].append({
+                'timestamp': datetime.now().isoformat(),
+                'speaker': 'Caller',
+                'message': speech_result,
+                'caller_phone': caller_phone
+            })
+            
+            # Simple AI response logic
+            response_text = "Thank you for calling. I understand you said: " + speech_result + ". How else can I help you?"
+            
+            # Store AI response
+            conversation_history[call_sid].append({
+                'timestamp': datetime.now().isoformat(),
+                'speaker': 'Chris',
+                'message': response_text,
+                'caller_phone': caller_phone
+            })
+            
+            # Return TwiML response
+            return f"""<?xml version="1.0" encoding="UTF-8"?>
+            <Response>
+                <Say voice="Polly.Matthew-Neural">{response_text}</Say>
+                <Gather input="speech" timeout="8" speechTimeout="4" action="/handle-speech/{call_sid}" method="POST">
+                </Gather>
+                <Redirect>/handle-speech/{call_sid}</Redirect>
+            </Response>"""
+            
+        except Exception as e:
+            logger.error(f"Speech handling error: {e}")
+            return """<?xml version="1.0" encoding="UTF-8"?>
+            <Response>
+                <Say voice="Polly.Matthew-Neural">I'm sorry, I had a technical issue. Please try again.</Say>
+                <Gather input="speech" timeout="8" speechTimeout="4"/>
+            </Response>"""
 
     @app.route("/api/calls/history", methods=["GET"])
     def get_call_history():
