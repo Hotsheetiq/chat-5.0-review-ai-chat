@@ -650,7 +650,7 @@ def create_app():
         {
             "id": 15,
             "date": "July 28, 2025",
-            "time": "9:30 PM ET",
+            "time": "4:30 PM ET",
             "request": "Change the greeting so that Chris sounds more human and doesn't announce himself as an AI attendant, he should speak more plainly and not so formal",
             "resolution": "HUMAN-LIKE GREETING IMPLEMENTED: Updated Chris's greeting from formal 'Hi, you've reached Grinberg Management. This is Chris, your AI assistant. How can I help you today?' to casual 'Hey there! This is Chris from Grinberg Management. What's going on?' Removed AI assistant references and formal language for more natural, conversational tone.",
             "constraint_note": "Rule #2 followed as required (appended new entry). Rule #4 followed as required (mirrored to REQUEST_HISTORY.md)."
