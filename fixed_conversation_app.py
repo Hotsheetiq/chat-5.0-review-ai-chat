@@ -731,8 +731,27 @@ def create_app():
             log_entry['constraint_note'] = "Rule #2 followed as required (appended new entry). Rule #4 followed as required (mirrored to REQUEST_HISTORY.md)."
         return log_entry
 
-    # Hardened logging system - follows CONSTRAINTS.md rules
-    request_history_logs = [
+    def load_logs_from_file():
+        """Load logs from persistent JSON file"""
+        try:
+            with open('logs_persistent.json', 'r') as f:
+                return json.load(f)
+        except FileNotFoundError:
+            return default_logs
+        except Exception as e:
+            logger.error(f"Error loading logs from file: {e}")
+            return default_logs
+
+    def save_logs_to_file(logs_list):
+        """Save logs to persistent JSON file"""
+        try:
+            with open('logs_persistent.json', 'w') as f:
+                json.dump(logs_list, f, indent=2)
+        except Exception as e:
+            logger.error(f"Error saving logs to file: {e}")
+
+    # Default logs if no persistent file exists
+    default_logs = [
         {
             "id": 23,
             "date": "July 28, 2025",
@@ -922,6 +941,9 @@ def create_app():
         }
     ]
 
+    # Load from persistent file if available, otherwise use default
+    request_history_logs = load_logs_from_file()
+
     def update_log_resolution(log_id, new_resolution):
         """Update only the resolution field of a specific log entry"""
         for log in request_history_logs:
@@ -935,6 +957,8 @@ def create_app():
     def append_new_log(new_log):
         """Add a new log entry to the beginning of the list (newest first)"""
         request_history_logs.insert(0, new_log)
+        # Save to persistent file
+        save_logs_to_file(request_history_logs)
         # Mirror to REQUEST_HISTORY.md
         append_to_request_history_file(new_log)
 
