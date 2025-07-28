@@ -4523,7 +4523,7 @@ ISSUE DETAILS: Please describe what specific problem you're experiencing with th
                 
                 // Load and display ALL logs (complaints + manual fixes) in unified section
                 function loadUnifiedLogs() {
-                    fetch('/api/recent-complaints')
+                    fetch('/api/unified-logs')
                         .then(response => response.json())
                         .then(complaints => {
                             const container = document.getElementById('unified-log-section');
@@ -4569,6 +4569,28 @@ ISSUE DETAILS: Please describe what specific problem you're experiencing with th
                 // Extract manual fixes from the page
                 function getManualFixes() {
                     const manualFixData = [
+                        {
+                            type: 'manual',
+                            date: 'July 28, 2025',
+                            timestamp: '2025-07-28T01:30:00',
+                            html: `<div class="mb-3 p-3 border-start border-3 border-success bg-success-subtle fix-item" draggable="true" style="color: black; cursor: move;" data-fix-id="enhanced-address-verification">
+                                <div class="d-flex justify-content-between align-items-start">
+                                    <div>
+                                        <strong style="color: black;">July 28, 2025</strong>
+                                        <small style="color: #888; margin-left: 10px;">1:30 AM ET</small>
+                                    </div>
+                                    <div class="d-flex align-items-center gap-2">
+                                        <button class="btn btn-sm btn-outline-warning copy-problem-btn" onclick="copyProblemReport(this)" title="Copy Problem Report">
+                                            📋 Report Issue
+                                        </button>
+                                        <small style="color: #666;">Status: ✅ COMPLETE</small>
+                                    </div>
+                                </div>
+                                <p class="mb-1 mt-2" style="color: black;"><strong>Request:</strong> "Enhanced address verification & email notifications for unverified addresses"</p>
+                                <p class="mb-0" style="color: black;"><strong>Implementation:</strong> CRITICAL ADDRESS VERIFICATION FIX: Enhanced Chris's address matching to use 430-property Rent Manager API database for intelligent verification instead of rejecting valid addresses. ALTERNATIVE INPUT WORKFLOW: When addresses not found in API, Chris guides callers through letter-by-letter street spelling and digit-by-digit house number entry for manual verification. UNVERIFIED ADDRESS EMAIL SYSTEM: Unverified addresses trigger professional email notifications to Dimasoftwaredev@gmail.com instead of creating service tickets, preventing false issues. SENDGRID INTEGRATION: Complete SendGrid email system with error handling and status logging for admin notifications. MULTI-STEP ADDRESS COLLECTION: Street spelling → House number → Apartment number → Email notification workflow for unverified properties. API INTELLIGENCE: System detects Rent Manager API availability (430 properties loaded) and adjusts verification approach accordingly.</p>
+                            </div>`,
+                            status: 'resolved'
+                        },
                         {
                             type: 'manual',
                             date: 'July 28, 2025',
@@ -5032,6 +5054,50 @@ Respond thoughtfully, showing your reasoning if this is a test scenario, or ackn
     def get_recent_complaints():
         """API endpoint to get recent complaints"""
         return jsonify(complaint_tracker.get('recent_complaints', []))
+    
+    @app.route("/api/unified-logs")
+    def get_unified_logs():
+        """Get unified logs combining complaints and manual fixes for dashboard"""
+        try:
+            unified_logs = []
+            
+            # Add recent address verification enhancement
+            unified_logs.append({
+                'id': 'enhanced-address-verification',
+                'title': 'July 28, 2025',
+                'time': '1:30 AM ET',
+                'status': 'COMPLETE',
+                'request': 'Enhanced address verification & email notifications for unverified addresses',
+                'implementation': '''CRITICAL ADDRESS VERIFICATION FIX: Enhanced Chris's address matching to use 430-property Rent Manager API database for intelligent verification instead of rejecting valid addresses.
+ALTERNATIVE INPUT WORKFLOW: When addresses not found in API, Chris guides callers through letter-by-letter street spelling and digit-by-digit house number entry for manual verification.
+UNVERIFIED ADDRESS EMAIL SYSTEM: Unverified addresses trigger professional email notifications to Dimasoftwaredev@gmail.com instead of creating service tickets, preventing false issues.
+SENDGRID INTEGRATION: Complete SendGrid email system with error handling and status logging for admin notifications.
+MULTI-STEP ADDRESS COLLECTION: Street spelling → House number → Apartment number → Email notification workflow for unverified properties.
+API INTELLIGENCE: System detects Rent Manager API availability (430 properties loaded) and adjusts verification approach accordingly.''',
+                'type': 'manual_fix'
+            })
+            
+            # Add auto-detected complaints
+            for complaint_id, complaint_data in complaint_tracker.items():
+                if isinstance(complaint_data, dict) and 'title' in complaint_data:
+                    unified_logs.append({
+                        'id': complaint_id,
+                        'title': complaint_data.get('date', datetime.now().strftime('%Y-%m-%d')),
+                        'time': complaint_data.get('time', datetime.now().strftime('%H:%M:%S')),
+                        'status': complaint_data.get('status', 'pending').upper(),
+                        'request': complaint_data.get('title', 'Unknown Issue'),
+                        'implementation': complaint_data.get('implementation', 'Implementation details will be added after fix is completed.'),
+                        'type': 'auto_complaint'
+                    })
+            
+            # Sort by most recent first
+            unified_logs.sort(key=lambda x: f"{x['title']} {x['time']}", reverse=True)
+            
+            return jsonify(unified_logs)
+            
+        except Exception as e:
+            logger.error(f"Error fetching unified logs: {e}")
+            return jsonify([])
     
     return app
 

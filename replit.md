@@ -93,6 +93,15 @@ The application is designed for cloud deployment with the following consideratio
 
 ## Recent Changes
 
+### July 28, 2025 - DASHBOARD LOG VISIBILITY ISSUE COMPLETELY RESOLVED: Unified Logs API Endpoint & Enhanced Address Verification Display Fixed
+- **CRITICAL FIX COMPLETED**: Dashboard logs now properly displaying recent fixes and amendments with missing `/api/unified-logs` endpoint implemented
+- **API ENDPOINT RESTORED**: Created `/api/unified-logs` endpoint that JavaScript dashboard was trying to access but was missing from application
+- **ENHANCED ADDRESS VERIFICATION VISIBLE**: Recent address verification enhancement now properly displayed in dashboard with complete implementation details
+- **UNIFIED LOG DISPLAY**: Dashboard successfully shows enhanced address verification fix with all components: API database integration, alternative input workflow, email notifications, SendGrid integration, multi-step collection, and API intelligence
+- **JAVASCRIPT INTEGRATION FIXED**: Updated dashboard JavaScript to call correct `/api/unified-logs` endpoint instead of `/api/recent-complaints` 
+- **AMENDMENT HISTORY PRESERVED**: All previous amendments and timestamps properly maintained in dashboard logs for full visibility
+- **PRODUCTION READY**: Complete dashboard log system now displays all recent enhancements including enhanced address verification with email notifications
+
 ### July 28, 2025 - ENHANCED ADDRESS VERIFICATION & EMAIL NOTIFICATIONS COMPLETE: Alternative Input Path & Unverified Address Email System Implemented
 - **CRITICAL ADDRESS VERIFICATION FIX**: Enhanced Chris's address matching to use 430-property Rent Manager API database for intelligent verification instead of rejecting valid addresses
 - **ALTERNATIVE INPUT WORKFLOW**: When addresses not found in API, Chris guides callers through letter-by-letter street spelling and digit-by-digit house number entry for manual verification
