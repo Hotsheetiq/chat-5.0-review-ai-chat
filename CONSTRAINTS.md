@@ -1,0 +1,27 @@
+# Logging Rules
+
+1. Never overwrite or delete logs from the Request History dashboard.
+2. Only append new entries or update the resolution of a specific log (e.g., log #007).
+3. Never modify or remove the original request text unless explicitly instructed.
+4. Always mirror each log update to the file REQUEST_HISTORY.md.
+5. Logs should be ordered from newest to oldest in the dashboard view.
+
+Before updating the UI or any logs, read this file and confirm you're following the rules.
+
+## Additional Constraints
+
+### Data Structure Management
+- Use Python dictionary/list structures to manage log entries in memory
+- Each log entry must have: id, date, request, resolution
+- When updating, find the dictionary by id and only update the resolution field unless instructed otherwise
+- Write all changes back to both the dashboard and REQUEST_HISTORY.md
+
+### File Handling
+- REQUEST_HISTORY.md should only be appended to, never overwritten
+- Use targeted edits for updating specific log resolutions
+- Maintain chronological order with newest logs first
+
+### Dashboard Integration
+- All log updates must be reflected in the dashboard HTML/Flask template
+- Preserve existing log numbering system (Log #001, #002, etc.)
+- Maintain consistent formatting and styling

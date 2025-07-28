@@ -1,0 +1,65 @@
+I want to harden the way you handle logging for the Request History & Fixes section on the dashboard. Please follow these rules strictly and apply the changes in Python:
+
+✅ 1. Create a Backup File
+Create a file named REQUEST_HISTORY.md in the root of the project.
+
+Each time you log a new request or fix, also append it to this file.
+
+Use this format:
+
+markdown
+Copy
+Edit
+log #008 – July 28, 2025  
+📝 Request: Fix timing of hold message to play immediately after user speaks  
+✅ Resolution: Adjusted audio flow to play hold message before sending request to Grok. Response is now queued and delayed until hold message finishes.
+Do not overwrite previous entries in this file. Only append new logs or update the resolution of a specific existing log using its log ID.
+
+✅ 2. Add Logging Rules in CONSTRAINTS.md
+Create a file named CONSTRAINTS.md and include the following:
+
+markdown
+Copy
+Edit
+# Logging Rules
+
+1. Never overwrite or delete logs from the Request History dashboard.
+2. Only append new entries or update the resolution of a specific log (e.g., log #007).
+3. Never modify or remove the original request text unless explicitly instructed.
+4. Always mirror each log update to the file REQUEST_HISTORY.md.
+5. Logs should be ordered from newest to oldest in the dashboard view.
+Before updating the UI or any logs, read this file and confirm you’re following the rules.
+
+✅ 3. Log Handling in Python
+Use a Python dictionary or list to manage log entries in memory, such as:
+
+python
+Copy
+Edit
+logs = [
+    {
+        "id": 7,
+        "date": "July 27, 2025",
+        "request": "Add status dashboard for service warm-ups.",
+        "resolution": "Completed. Displays Grok, ElevenLabs, Rent Manager, and Twilio status."
+    },
+    ...
+]
+When updating, find the dictionary by id and only update the resolution field unless instructed otherwise.
+
+Write all changes back to both:
+
+The dashboard (HTML or Flask template)
+
+REQUEST_HISTORY.md using file append or targeted edit
+
+✅ 4. Summary
+Going forward:
+
+I will refer to logs by number (e.g., log #009)
+
+You must update only the resolution, not the whole block
+
+You must maintain backup in REQUEST_HISTORY.md
+
+You must follow CONSTRAINTS.md rules on every update
