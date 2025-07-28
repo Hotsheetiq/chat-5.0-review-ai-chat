@@ -25,3 +25,9 @@ Before updating the UI or any logs, read this file and confirm you're following 
 - All log updates must be reflected in the dashboard HTML/Flask template
 - Preserve existing log numbering system (Log #001, #002, etc.)
 - Maintain consistent formatting and styling
+
+### Constraint Documentation (NEW REQUIREMENT)
+- Every log entry must include a constraint_note field documenting rule compliance
+- Format: "Rule #X followed as required" or "Rule #X overridden with user approval"
+- Constraint notes must be visible in both dashboard and REQUEST_HISTORY.md
+- Never make constraint-related changes silently - always document them
