@@ -64,7 +64,8 @@
                         <button class="btn btn-outline-primary btn-sm" onclick="refreshDashboard()">
                             🔄 Refresh
                         </button>
-                        <a href="/" class="btn btn-outline-secondary btn-sm" onclick="goToDashboard()">← Dashboard</a>
+                        <a href="/?cache=false" class="btn btn-outline-secondary btn-sm">← Dashboard</a>
+                        <button class="btn btn-outline-primary btn-sm" onclick="window.location.href = '/?t=' + Date.now()">🏠 Fresh Load</button>
                     </div>
                 </div>
             </div>
