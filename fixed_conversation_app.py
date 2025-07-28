@@ -3184,16 +3184,12 @@ PERSONALITY: Warm, empathetic, and intelligent. Show you're genuinely listening 
         
         return render_template("live_monitoring.html", call_stats=call_stats)
     
-    @app.route("/api/active-calls")
+    @app.route("/api/calls/active")
     def api_active_calls():
         """API endpoint for active calls"""
-        try:
-            from call_monitoring import get_call_monitor
-            monitor = get_call_monitor()
-            return jsonify(monitor.get_active_calls())
-        except Exception as e:
-            logger.error(f"Error getting active calls: {e}")
-            return jsonify([])
+        from call_monitoring import get_call_monitor
+        monitor = get_call_monitor()
+        return jsonify(monitor.get_active_calls())
     
     @app.route("/api/calls/history")
     def api_call_history():
@@ -3607,8 +3603,7 @@ PERSONALITY: Warm, empathetic, and intelligent. Show you're genuinely listening 
                              call_recordings=call_recordings,
                              search_phone=search_phone,
                              search_date=search_date,
-                             active_calls=[],
-                             openai_connected=True)
+                             active_calls=[])
     
     # OLD DASHBOARD ROUTE COMMENTED OUT DUE TO SYNTAX ISSUES
     # @app.route("/old-dashboard")
