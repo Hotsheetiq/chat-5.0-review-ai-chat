@@ -3983,12 +3983,9 @@ PERSONALITY: Warm, empathetic, and intelligent. Show you're genuinely listening 
                                     </div>
                                 </div>
                                 
-                                <!-- Live Complaints Section -->
-                                <div class="mb-4 p-3 border-start border-3 border-warning bg-warning-subtle" style="color: black;">
-                                    <h6 style="color: black;">🚨 Live User Complaints</h6>
-                                    <div id="live-complaints">
-                                        <!-- Dynamic complaints will be inserted here -->
-                                    </div>
+                                <!-- Auto-Generated User Complaints Section -->
+                                <div id="auto-complaints-section">
+                                    <!-- Dynamic complaints will be inserted here in the same format as manual fixes -->
                                 </div>
                                 
                                 <div style="max-height: 400px; overflow-y: auto;">
@@ -4396,36 +4393,35 @@ ISSUE DETAILS: Please describe what specific problem you're experiencing with th
                 updateTime();
                 setInterval(updateTime, 1000);
                 
-                // Load and display live complaints
+                // Load and display complaints in the same format as manual fixes
                 function loadComplaints() {
                     fetch('/api/recent-complaints')
                         .then(response => response.json())
                         .then(complaints => {
-                            const container = document.getElementById('live-complaints');
+                            const container = document.getElementById('auto-complaints-section');
                             if (container && complaints.length > 0) {
                                 container.innerHTML = complaints.map(complaint => `
-                                    <div class="mb-2 p-2 border rounded" style="background-color: #fff3cd; color: black;">
-                                        <div class="d-flex justify-content-between">
-                                            <strong style="color: black;">${complaint.title}</strong>
-                                            <small style="color: #666;">${complaint.time}</small>
+                                    <div class="mb-3 p-3 border-start border-3 ${complaint.status === 'resolved' ? 'border-success bg-success-subtle' : 'border-warning bg-warning-subtle'} fix-item" draggable="true" style="color: black; cursor: move;" data-fix-id="${complaint.id}">
+                                        <div class="d-flex justify-content-between align-items-start">
+                                            <div>
+                                                <strong style="color: black;">${complaint.date}</strong>
+                                                <small style="color: #888; margin-left: 10px;">${complaint.time}</small>
+                                            </div>
+                                            <div class="d-flex align-items-center gap-2">
+                                                <button class="btn btn-sm btn-outline-warning copy-problem-btn" onclick="copyProblemReport(this)" title="Copy Problem Report">
+                                                    📋 Report Issue
+                                                </button>
+                                                <small style="color: #666;">Status: ${complaint.status === 'resolved' ? '✅ RESOLVED' : '⚠️ PENDING'}</small>
+                                            </div>
                                         </div>
-                                        <small style="color: #666;">${complaint.description}</small>
-                                        <div class="mt-1">
-                                            <span class="badge ${complaint.status === 'resolved' ? 'bg-success' : 'bg-warning'}">${complaint.status}</span>
-                                            <span class="badge bg-secondary ms-1">${complaint.category}</span>
-                                        </div>
+                                        <p class="mb-1 mt-2" style="color: black;"><strong>User Complaint:</strong> "${complaint.description}"</p>
+                                        <p class="mb-0" style="color: black;"><strong>Category:</strong> ${complaint.category} | <strong>Source:</strong> ${complaint.source} | <strong>Auto-Detected:</strong> ${complaint.time}</p>
                                     </div>
                                 `).join('');
-                            } else if (container) {
-                                container.innerHTML = '<small style="color: #666;">No complaints logged yet</small>';
                             }
                         })
                         .catch(error => {
                             console.error('Error loading complaints:', error);
-                            const container = document.getElementById('live-complaints');
-                            if (container) {
-                                container.innerHTML = '<small style="color: #999;">Error loading complaints</small>';
-                            }
                         });
                 }
                 
