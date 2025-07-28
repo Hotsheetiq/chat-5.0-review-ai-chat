@@ -499,7 +499,7 @@ def create_app():
             "date": "July 28, 2025",
             "time": "1:22 PM ET",
             "request": "The effect on constraint rules should be documented in every log",
-            "resolution": "UNIVERSAL CONSTRAINT DOCUMENTATION IMPLEMENTED: Added constraint_note field to all 11 existing log entries documenting rule compliance. Enhanced dashboard display to show constraint notes with blue styling. Updated all logs to explicitly document CONSTRAINTS.md rule effects. Complete transparency achieved for all constraint rule impacts.",
+            "resolution": "UNIVERSAL CONSTRAINT DOCUMENTATION IMPLEMENTED: Added constraint_note field to all 11 existing log entries documenting rule compliance. Enhanced dashboard display to show constraint notes with blue styling. Fixed API endpoint to include constraint_note field. Updated all logs to explicitly document CONSTRAINTS.md rule effects. Complete transparency achieved for all constraint rule impacts.",
             "constraint_note": "Rule #2 followed as required (appended new entry). Rule #4 followed as required (mirrored to REQUEST_HISTORY.md)."
         },
         {
@@ -634,7 +634,8 @@ log #{log_entry['id']:03d} – {log_entry['date']}
                     'time': log['time'], 
                     'status': 'COMPLETE',
                     'request': log['request'],
-                    'implementation': log['resolution']
+                    'implementation': log['resolution'],
+                    'constraint_note': log.get('constraint_note', '')
                 })
             
             return jsonify({
