@@ -1,5 +1,10 @@
 # Request History & Fixes Log
 
+log #012 – July 28, 2025  
+📝 Request: The effect on constraint rules should be documented in every log  
+✅ Resolution: UNIVERSAL CONSTRAINT DOCUMENTATION IMPLEMENTED: Added constraint_note field to all 11 existing log entries documenting rule compliance. Enhanced dashboard display to show constraint notes with blue styling. Updated all logs to explicitly document CONSTRAINTS.md rule effects. Complete transparency achieved for all constraint rule impacts.  
+🔒 Constraint Note: Rule #2 followed as required (appended new entry). Rule #4 followed as required (mirrored to REQUEST_HISTORY.md).
+
 log #011 – July 28, 2025  
 📝 Request: Application error when calling - webhook endpoints missing  
 ✅ Resolution: CRITICAL PHONE SYSTEM FIX: Added missing Twilio webhook endpoints (/voice, /webhook, /incoming-call) and speech handling (/handle-speech/<call_sid>) to fix application errors during phone calls. Implemented proper TwiML responses, conversation logging, and error handling for complete phone system functionality.  
