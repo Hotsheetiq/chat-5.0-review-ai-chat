@@ -2817,6 +2817,22 @@ PERSONALITY: Warm, empathetic, and intelligent. Show you're genuinely listening 
         .message { margin-bottom: 15px; padding: 10px; border-radius: 8px; }
         .admin-message { background-color: var(--bs-primary-bg-subtle); border-left: 4px solid var(--bs-primary); }
         .chris-message { background-color: var(--bs-secondary-bg-subtle); border-left: 4px solid var(--bs-secondary); }
+        
+        /* Fix input field styling for dark theme */
+        .form-control {
+            background-color: var(--bs-dark) !important;
+            border-color: var(--bs-border-color) !important;
+            color: var(--bs-body-color) !important;
+        }
+        .form-control:focus {
+            background-color: var(--bs-dark) !important;
+            border-color: var(--bs-primary) !important;
+            color: var(--bs-body-color) !important;
+            box-shadow: 0 0 0 0.25rem rgba(var(--bs-primary-rgb), 0.25) !important;
+        }
+        .form-control::placeholder {
+            color: var(--bs-secondary-color) !important;
+        }
     </style>
 </head>
 <body data-bs-theme="dark">
