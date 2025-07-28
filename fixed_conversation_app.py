@@ -18,60 +18,7 @@ logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
 
 # Global variables for application state
-conversation_history = {
-    "demo_call_001": [
-        {
-            'timestamp': "2025-07-28T18:15:23.000Z",
-            'speaker': 'Caller',
-            'message': "I'm having a heating problem at 29 Port Richmond Avenue",
-            'caller_phone': '(347) 743-0880'
-        },
-        {
-            'timestamp': "2025-07-28T18:15:45.000Z",
-            'speaker': 'Chris',
-            'message': "Great! I found 29 Port Richmond Avenue in our system. What seems to be the issue with the heating?",
-            'caller_phone': '(347) 743-0880'
-        },
-        {
-            'timestamp': "2025-07-28T18:16:12.000Z",
-            'speaker': 'Caller',
-            'message': "The radiator isn't working properly",
-            'caller_phone': '(347) 743-0880'
-        },
-        {
-            'timestamp': "2025-07-28T18:16:25.000Z",
-            'speaker': 'Chris',
-            'message': "I've created service ticket #SV-12345 for your heating issue. Dimitry will contact you soon.",
-            'caller_phone': '(347) 743-0880'
-        }
-    ],
-    "demo_call_002": [
-        {
-            'timestamp': "2025-07-28T16:32:15.000Z",
-            'speaker': 'Caller',
-            'message': "Hi, I have an electrical problem",
-            'caller_phone': '(718) 555-0123'
-        },
-        {
-            'timestamp': "2025-07-28T16:32:28.000Z",
-            'speaker': 'Chris',
-            'message': "Hello! What's the address?",
-            'caller_phone': '(718) 555-0123'
-        },
-        {
-            'timestamp': "2025-07-28T16:32:45.000Z",
-            'speaker': 'Caller',
-            'message': "122 Targee Street, apartment 2",
-            'caller_phone': '(718) 555-0123'
-        },
-        {
-            'timestamp': "2025-07-28T16:33:35.000Z",
-            'speaker': 'Chris',
-            'message': "I've created service ticket #SV-12346 for your electrical issue. Dimitry will contact you within 2-4 hours.",
-            'caller_phone': '(718) 555-0123'
-        }
-    ]
-}
+conversation_history = {}  # Only real phone conversations stored here
 call_recordings = {}
 current_service_issue = None
 
@@ -1500,7 +1447,7 @@ log #{log_entry['id']:03d} – {log_entry['date']}
                     'calls': [],
                     'total_count': 0,
                     'data_type': 'no_calls',
-                    'message': 'No calls have been recorded yet. Call history will appear here after real phone conversations.'
+                    'message': 'No real phone calls recorded yet. Call history will display authentic conversations only.'
                 })
         except Exception as e:
             logger.error(f"Error getting call history: {e}")

@@ -207,3 +207,7 @@ log #033 – July 28, 2025
 log #016 – July 28, 2025  
 📝 Request: This fix works — create a necessary constraint so it's not undone in the future  
 ✅ Resolution: TIMESTAMP ACCURACY CONSTRAINT IMPLEMENTED: Added critical constraint rule requiring all log timestamps to reflect actual implementation time, never future timestamps. Enhanced CONSTRAINTS.md with timestamp verification requirements and Eastern Time format standards. Prevents future timestamp errors.
+
+log #034 – July 28, 2025  
+📝 Request: these call transcripts are fake  
+✅ Resolution: FAKE CALL DATA REMOVED: Eliminated synthetic conversation data from call history. System now shows only authentic phone conversations. Empty call history displays proper message indicating no real calls have been recorded yet.
