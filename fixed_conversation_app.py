@@ -4555,6 +4555,8 @@ ISSUE DETAILS: Please describe what specific problem you're experiencing with th
                             if (container) {
                                 // Get manual fixes already in the page
                                 const manualFixes = getManualFixes();
+                                console.log('Manual fixes loaded:', manualFixes.length);
+                                console.log('API complaints loaded:', complaints.length);
                                 
                                 // Combine and sort all entries by timestamp (newest first)
                                 const allEntries = [...complaints, ...manualFixes].sort((a, b) => 
