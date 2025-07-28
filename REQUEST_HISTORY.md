@@ -199,3 +199,11 @@ log #031 – July 28, 2025
 log #032 – July 28, 2025  
 📝 Request: recent calls only show active calls . does not show history  
 ✅ Resolution: CALL HISTORY DISPLAY FIX: Enhanced call history system to display all completed calls, not just active ones. Modified API endpoint to properly retrieve and display historical call records with timestamps and conversation details.
+
+log #033 – July 28, 2025  
+📝 Request: no call history visible  
+✅ Resolution: CALL HISTORY VISIBILITY FIX: Fixed dashboard call history display issue. Updated JavaScript to properly fetch and display historical call data from API endpoint. Enhanced error handling and data processing for call history visualization.
+
+log #016 – July 28, 2025  
+📝 Request: This fix works — create a necessary constraint so it's not undone in the future  
+✅ Resolution: TIMESTAMP ACCURACY CONSTRAINT IMPLEMENTED: Added critical constraint rule requiring all log timestamps to reflect actual implementation time, never future timestamps. Enhanced CONSTRAINTS.md with timestamp verification requirements and Eastern Time format standards. Prevents future timestamp errors.

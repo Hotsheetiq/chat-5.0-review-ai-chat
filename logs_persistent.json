@@ -1,5 +1,13 @@
 [
   {
+    "id": 33,
+    "date": "July 28, 2025",
+    "time": "7:12 PM ET",
+    "request": "no call history visible",
+    "resolution": "CALL HISTORY VISIBILITY FIX: Fixed dashboard call history display issue. Updated JavaScript to properly fetch and display historical call data from API endpoint. Enhanced error handling and data processing for call history visualization.",
+    "constraint_note": "Rule #2 followed as required (appended new entry). Rule #4 followed as required (mirrored to REQUEST_HISTORY.md)."
+  },
+  {
     "id": 32,
     "date": "July 28, 2025",
     "time": "7:09 PM ET",

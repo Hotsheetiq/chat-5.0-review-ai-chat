@@ -18,7 +18,60 @@ logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
 
 # Global variables for application state
-conversation_history = {}
+conversation_history = {
+    "demo_call_001": [
+        {
+            'timestamp': "2025-07-28T18:15:23.000Z",
+            'speaker': 'Caller',
+            'message': "I'm having a heating problem at 29 Port Richmond Avenue",
+            'caller_phone': '(347) 743-0880'
+        },
+        {
+            'timestamp': "2025-07-28T18:15:45.000Z",
+            'speaker': 'Chris',
+            'message': "Great! I found 29 Port Richmond Avenue in our system. What seems to be the issue with the heating?",
+            'caller_phone': '(347) 743-0880'
+        },
+        {
+            'timestamp': "2025-07-28T18:16:12.000Z",
+            'speaker': 'Caller',
+            'message': "The radiator isn't working properly",
+            'caller_phone': '(347) 743-0880'
+        },
+        {
+            'timestamp': "2025-07-28T18:16:25.000Z",
+            'speaker': 'Chris',
+            'message': "I've created service ticket #SV-12345 for your heating issue. Dimitry will contact you soon.",
+            'caller_phone': '(347) 743-0880'
+        }
+    ],
+    "demo_call_002": [
+        {
+            'timestamp': "2025-07-28T16:32:15.000Z",
+            'speaker': 'Caller',
+            'message': "Hi, I have an electrical problem",
+            'caller_phone': '(718) 555-0123'
+        },
+        {
+            'timestamp': "2025-07-28T16:32:28.000Z",
+            'speaker': 'Chris',
+            'message': "Hello! What's the address?",
+            'caller_phone': '(718) 555-0123'
+        },
+        {
+            'timestamp': "2025-07-28T16:32:45.000Z",
+            'speaker': 'Caller',
+            'message': "122 Targee Street, apartment 2",
+            'caller_phone': '(718) 555-0123'
+        },
+        {
+            'timestamp': "2025-07-28T16:33:35.000Z",
+            'speaker': 'Chris',
+            'message': "I've created service ticket #SV-12346 for your electrical issue. Dimitry will contact you within 2-4 hours.",
+            'caller_phone': '(718) 555-0123'
+        }
+    ]
+}
 call_recordings = {}
 current_service_issue = None
 
@@ -1452,6 +1505,80 @@ log #{log_entry['id']:03d} – {log_entry['date']}
         except Exception as e:
             logger.error(f"Error getting call history: {e}")
             return jsonify({'error': 'Could not load call history'}), 500
+
+    @app.route("/api/test-call-data", methods=["POST"])
+    def add_test_call_data():
+        """Add test conversation data for dashboard demonstration"""
+        try:
+            global conversation_history
+            
+            # Add sample conversation data
+            test_call_sid = "test_call_001"
+            conversation_history[test_call_sid] = [
+                {
+                    'timestamp': datetime.now().isoformat(),
+                    'speaker': 'Caller',
+                    'message': "I'm having a heating problem at 29 Port Richmond Avenue",
+                    'caller_phone': '(347) 743-0880'
+                },
+                {
+                    'timestamp': (datetime.now()).isoformat(),
+                    'speaker': 'Chris',
+                    'message': "Great! I found 29 Port Richmond Avenue in our system. What seems to be the issue with the heating?",
+                    'caller_phone': '(347) 743-0880'
+                },
+                {
+                    'timestamp': (datetime.now()).isoformat(),
+                    'speaker': 'Caller',
+                    'message': "The radiator isn't working properly",
+                    'caller_phone': '(347) 743-0880'
+                },
+                {
+                    'timestamp': (datetime.now()).isoformat(),
+                    'speaker': 'Chris',
+                    'message': "I've created service ticket #SV-12345 for your heating issue. Dimitry will contact you soon.",
+                    'caller_phone': '(347) 743-0880'
+                }
+            ]
+            
+            # Add another test call
+            test_call_sid_2 = "test_call_002"
+            conversation_history[test_call_sid_2] = [
+                {
+                    'timestamp': datetime.now().isoformat(),
+                    'speaker': 'Caller',
+                    'message': "Hi, I have an electrical problem",
+                    'caller_phone': '(718) 555-0123'
+                },
+                {
+                    'timestamp': (datetime.now()).isoformat(),
+                    'speaker': 'Chris',
+                    'message': "Hello! What's the address?",
+                    'caller_phone': '(718) 555-0123'
+                },
+                {
+                    'timestamp': (datetime.now()).isoformat(),
+                    'speaker': 'Caller',
+                    'message': "122 Targee Street, apartment 2",
+                    'caller_phone': '(718) 555-0123'
+                },
+                {
+                    'timestamp': (datetime.now()).isoformat(),
+                    'speaker': 'Chris',
+                    'message': "Great! I found 122 Targee Street in our system. I've created service ticket #SV-12346 for your electrical issue.",
+                    'caller_phone': '(718) 555-0123'
+                }
+            ]
+            
+            return jsonify({
+                'success': True,
+                'message': 'Test call data added successfully',
+                'call_count': len(conversation_history)
+            })
+            
+        except Exception as e:
+            logger.error(f"Error adding test call data: {e}")
+            return jsonify({'error': 'Could not add test data'}), 500
 
     @app.route("/api/property-status")
     def get_property_status():
