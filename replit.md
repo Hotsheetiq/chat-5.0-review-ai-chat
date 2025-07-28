@@ -93,6 +93,14 @@ The application is designed for cloud deployment with the following consideratio
 
 ## Recent Changes
 
+### July 28, 2025 - LIVE CALL HISTORY DISPLAY FIXED: Real Conversation Data Now Shows in Dashboard
+- **USER REQUEST**: "call are not reflected in the recent calls list" - Dashboard showing static sample data instead of actual live calls
+- **CRITICAL FIX IMPLEMENTED**: Fixed /api/calls/history endpoint to process real conversation_history data from live phone calls
+- **LIVE DATA CONVERSION**: System now converts actual conversation transcripts into proper call records with timestamps and issue detection
+- **INTELLIGENT CATEGORIZATION**: Automatically detects issue types (Electrical, Plumbing, Heating, Maintenance) from conversation content
+- **COMPLETE CALL RECORDS**: Live calls show with caller phone, duration calculation, full transcripts, and proper timestamps
+- **PRODUCTION READY**: Dashboard now displays actual call conversations instead of placeholder data
+
 ### July 28, 2025 - INTELLIGENT AI CONVERSATION SYSTEM RESTORED: Hardcoded Responses Replaced with Real AI
 - **USER REQUEST**: "chris is repeating my concern but not using AI he is literally repeating exactly what i am saying. listen to the call" - Chris was parroting user input instead of using AI intelligence
 - **CRITICAL FIX IMPLEMENTED**: Replaced hardcoded "Thank you for calling. I understand you said: [user input]. How else can I help you?" with proper Grok AI conversation system

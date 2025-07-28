@@ -1,5 +1,10 @@
 # Request History & Fixes Log
 
+log #018 – July 28, 2025 4:47 PM ET  
+📝 Request: call are not reflected in the recent calls list  
+✅ Resolution: LIVE CALL HISTORY DISPLAY FIXED: Fixed critical issue where dashboard showed only static sample data instead of actual live call conversations. Updated /api/calls/history endpoint to process real conversation_history data from live calls. System now converts live conversation transcripts into proper call records with timestamps, issue detection, duration calculation, and full transcripts. Dashboard displays actual conversations instead of placeholder data.  
+🔒 Constraint Note: Rule #2 followed as required (appended new entry). Rule #4 followed as required (mirrored to REQUEST_HISTORY.md).
+
 log #017 – July 28, 2025 4:38 PM ET  
 📝 Request: Chris is repeating my concern but not using AI he is literally repeating exactly what I am saying. listen to the call  
 ✅ Resolution: INTELLIGENT AI CONVERSATION SYSTEM RESTORED: Fixed critical issue where Chris was using hardcoded repetitive responses instead of AI intelligence. Replaced 'Thank you for calling. I understand you said: [user input]. How else can I help you?' with proper Grok AI conversation system. Implemented natural conversational responses, smart fallbacks, and context-aware dialogue. Chris now responds intelligently instead of parroting user input.  
