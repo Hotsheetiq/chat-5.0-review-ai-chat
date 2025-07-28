@@ -3201,8 +3201,8 @@ PERSONALITY: Warm, empathetic, and intelligent. Show you're genuinely listening 
             # Get call history from both sources
             all_calls = monitor.get_call_history()
             
-            # If no calls from monitor, create from conversation_history
-            if not all_calls and conversation_history:
+            # Always create from conversation_history (monitor is usually empty)
+            if conversation_history:
                 all_calls = []
                 for call_sid, history in conversation_history.items():
                     if isinstance(history, list) and len(history) > 0:
@@ -3214,7 +3214,7 @@ PERSONALITY: Warm, empathetic, and intelligent. Show you're genuinely listening 
                             'call_sid': call_sid,
                             'from_number': first_msg.get('caller_phone', 'Unknown'),
                             'caller_name': first_msg.get('caller_name', 'Unknown Caller'),
-                            'timestamp': first_msg.get('timestamp', datetime.now().isoformat()),
+                            'timestamp': str(first_msg.get('timestamp', datetime.now().isoformat())),
                             'duration': len(history) * 30,  # Estimate 30 seconds per message
                             'status': 'completed',
                             'issue_type': 'General',
@@ -3247,11 +3247,39 @@ PERSONALITY: Warm, empathetic, and intelligent. Show you're genuinely listening 
             # Sort by timestamp (newest first)
             all_calls.sort(key=lambda x: x.get('timestamp', ''), reverse=True)
             
+            # Add debug info if no calls found
+            if not all_calls:
+                logger.info(f"No calls found. Conversation history length: {len(conversation_history) if conversation_history else 0}")
+                # Create test data if no real conversations exist
+                test_call = {
+                    'call_sid': 'TEST_CALL_001',
+                    'from_number': '+13477430880',
+                    'caller_name': 'Test Caller',
+                    'timestamp': datetime.now().isoformat(),
+                    'duration': 120,
+                    'status': 'completed',
+                    'issue_type': 'Test Issue',
+                    'recording_url': None,
+                    'transcription_preview': 'This is a test call to verify the dashboard is working.'
+                }
+                all_calls = [test_call]
+            
             return jsonify(all_calls)
             
         except Exception as e:
             logger.error(f"Error fetching call history: {e}")
-            return jsonify([])
+            # Return debug info for troubleshooting
+            return jsonify([{
+                'call_sid': 'ERROR_DEBUG',
+                'from_number': 'Debug',
+                'caller_name': 'System Debug',
+                'timestamp': datetime.now().isoformat(),
+                'duration': 0,
+                'status': 'error',
+                'issue_type': 'Debug',
+                'recording_url': None,
+                'transcription_preview': f'Debug: {str(e)} | History length: {len(conversation_history) if conversation_history else 0}'
+            }])
     
     @app.route("/api/call-stats")
     def api_call_stats():
