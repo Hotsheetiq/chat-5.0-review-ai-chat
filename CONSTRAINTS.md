@@ -39,6 +39,49 @@ Before updating the UI or any logs, read this file and confirm you're following 
 - When correcting timestamps, use the actual implementation time, not correction time
 - Before setting any timestamp, verify it's not in the future using current system time
 
+### CRITICAL SYSTEM PROTECTION - Flag System User Access (ABSOLUTE PROTECTION)
+**FLAG MODIFICATION SYSTEM FOR AUTHORIZED USERS - DO NOT DISABLE OR REMOVE**
+
+The following flag system components are CRITICAL and must NEVER be disabled or removed:
+
+1. **API Endpoint (fixed_conversation_app.py lines 908-937)**
+   ```python
+   @app.route("/api/set-flag", methods=["POST"])
+   def set_flag():
+       """API endpoint to update log entry flags"""
+       # Must remain functional for authorized users
+       # NEVER return 403 errors or disable functionality
+   ```
+
+2. **Flag Mode Button (fixed_conversation_app.py lines 186-188)**
+   ```html
+   <button class="btn btn-sm btn-outline-light" onclick="toggleFlagMode()" id="flag-mode-btn">
+       🏳️ Flag Mode
+   </button>
+   ```
+
+3. **JavaScript Functions (fixed_conversation_app.py lines 500-514, 536-571)**
+   ```javascript
+   function toggleFlagMode() {
+       // Must remain operational for flag editing
+   }
+   function setFlag(logId, flagType) {
+       // Must remain operational for flag modification
+   }
+   ```
+
+**VIOLATION WARNING**: 
+- Disabling flag modification breaks user workflow and violates user requirements
+- User confirmed this functionality works and requested protection
+- NEVER replace with "read-only" or security error messages
+
+**PROTECTION RULES**:
+- NEVER disable the `/api/set-flag` endpoint with 403 errors
+- NEVER replace flag editing buttons with "read-only" messages  
+- NEVER disable JavaScript flag modification functions
+- NEVER return security error messages for legitimate flag operations
+- ANY security measures must preserve authorized user access to flag modification
+
 ### CRITICAL SYSTEM PROTECTION - Log #022 (ABSOLUTE PROTECTION)
 **COMPREHENSIVE PROPERTY BACKUP SYSTEM - DO NOT MODIFY OR REMOVE**
 
