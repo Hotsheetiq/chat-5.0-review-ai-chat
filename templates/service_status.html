@@ -65,7 +65,7 @@
                     <small>Services Healthy</small>
                 </div>
                 <div class="col-md-3">
-                    <h3>{{ status.last_updated.strftime('%H:%M') if status.last_updated else 'Unknown' }}</h3>
+                    <h3>{{ status.last_updated.strftime('%-I:%M %p') if status.last_updated else 'Unknown' }}</h3>
                     <small>Last Updated</small>
                 </div>
             </div>
