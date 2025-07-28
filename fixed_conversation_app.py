@@ -4745,7 +4745,7 @@ ISSUE DETAILS: Please describe what specific problem you're experiencing with th
                                 <div class="d-flex justify-content-between align-items-start">
                                     <div>
                                         <strong style="color: black;">July 28, 2025</strong>
-                                        <small style="color: #888; margin-left: 10px;">1:30 AM ET</small>
+                                        <small style="color: #888; margin-left: 10px;" id="current-time-stamp">${new Date().toLocaleString('en-US', {timeZone: 'America/New_York', hour: 'numeric', minute: '2-digit', hour12: true})} ET</small>
                                     </div>
                                     <div class="d-flex align-items-center gap-2">
                                         <button class="btn btn-sm btn-outline-warning copy-problem-btn" onclick="copyProblemReport(this)" title="Copy Problem Report">
@@ -5349,7 +5349,7 @@ PRODUCTION READY: Chris can now find all property addresses and remembers comple
             unified_logs.append({
                 'id': 'comprehensive-chat-transcript-system',
                 'title': 'July 28, 2025',
-                'time': '6:41 AM ET',
+                'time': current_et.strftime('%I:%M %p ET'),  # Use current ET time
                 'status': 'COMPLETE',
                 'request': 'Implement comprehensive chat transcript system with grinbergchat@gmail.com destination and differentiated handling for verified vs unverified addresses',
                 'implementation': '''COMPREHENSIVE CHAT TRANSCRIPT SYSTEM: All conversations now send complete chat transcripts to grinbergchat@gmail.com with caller ID information and differentiated handling.
@@ -5366,7 +5366,7 @@ CALLER INFORMATION TRACKING: All emails include caller phone number, timestamp, 
             unified_logs.append({
                 'id': 'enhanced-address-verification',
                 'title': 'July 28, 2025', 
-                'time': '1:30 AM ET',
+                'time': current_et.strftime('%I:%M %p ET'),  # Use current ET time
                 'status': 'COMPLETE',
                 'request': 'Enhanced address verification & email notifications for unverified addresses',
                 'implementation': '''CRITICAL ADDRESS VERIFICATION FIX: Enhanced Chris's address matching to use 430-property Rent Manager API database for intelligent verification instead of rejecting valid addresses.
