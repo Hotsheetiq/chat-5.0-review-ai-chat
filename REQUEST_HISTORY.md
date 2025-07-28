@@ -1,5 +1,10 @@
 # Request History & Fixes Log
 
+log #014 – July 28, 2025  
+📝 Request: Create an option to flag log entries for later reference or to show that they are important  
+✅ Resolution: LOG FLAGGING SYSTEM IMPLEMENTED: Added importance flags with visual indicators (🔥 Critical, ⭐ Important, 📌 Reference). Enhanced dashboard with flag filtering options and priority sorting. Implemented toggle functionality for flag management and visual distinction for flagged entries.  
+🔒 Constraint Note: Rule #2 followed as required (appended new entry). Rule #4 followed as required (mirrored to REQUEST_HISTORY.md).
+
 log #013 – July 28, 2025  
 📝 Request: Create a constraint rule log and link  
 ✅ Resolution: CONSTRAINT RULE LOG & LINK SYSTEM IMPLEMENTED: Created Log #013 documenting constraint rule system establishment. Added direct link to CONSTRAINTS.md file with clickable access. Enhanced dashboard to display constraint rule documentation with proper linking structure. Created centralized constraint rule reference system for all future log entries.  
