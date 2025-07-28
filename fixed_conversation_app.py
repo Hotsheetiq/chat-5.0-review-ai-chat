@@ -4011,12 +4011,8 @@ PERSONALITY: Warm, empathetic, and intelligent. Show you're genuinely listening 
                                     </div>
                                 </div>
                                 
-                                <!-- Auto-Generated User Complaints Section -->
-                                <div id="auto-complaints-section">
-                                    <!-- Dynamic complaints will be inserted here in the same format as manual fixes -->
-                                </div>
-                                
-                                <div style="max-height: 400px; overflow-y: auto;">
+                                <!-- Unified Request History & Fixes - All entries in one scrollable section -->
+                                <div id="unified-log-section" style="max-height: 500px; overflow-y: auto;">
                                     <div class="mb-3 p-3 border-start border-3 border-success bg-success-subtle fix-item" draggable="true" style="color: black; cursor: move;" data-fix-id="address-matching-repetition-fix">
                                         <div class="d-flex justify-content-between align-items-start">
                                             <div>
@@ -4421,41 +4417,105 @@ ISSUE DETAILS: Please describe what specific problem you're experiencing with th
                 updateTime();
                 setInterval(updateTime, 1000);
                 
-                // Load and display complaints in the same format as manual fixes
-                function loadComplaints() {
+                // Load and display ALL logs (complaints + manual fixes) in unified section
+                function loadUnifiedLogs() {
                     fetch('/api/recent-complaints')
                         .then(response => response.json())
                         .then(complaints => {
-                            const container = document.getElementById('auto-complaints-section');
-                            if (container && complaints.length > 0) {
-                                container.innerHTML = complaints.map(complaint => `
-                                    <div class="mb-3 p-3 border-start border-3 ${complaint.status === 'resolved' ? 'border-success bg-success-subtle' : 'border-warning bg-warning-subtle'} fix-item" draggable="true" style="color: black; cursor: move;" data-fix-id="${complaint.id}">
+                            const container = document.getElementById('unified-log-section');
+                            if (container) {
+                                // Get manual fixes already in the page
+                                const manualFixes = getManualFixes();
+                                
+                                // Combine and sort all entries by timestamp (newest first)
+                                const allEntries = [...complaints, ...manualFixes].sort((a, b) => 
+                                    new Date(b.date || b.timestamp) - new Date(a.date || a.timestamp)
+                                );
+                                
+                                // Render unified list
+                                container.innerHTML = allEntries.map(entry => {
+                                    if (entry.type === 'manual') {
+                                        return entry.html; // Use pre-rendered HTML for manual fixes
+                                    } else {
+                                        return `
+                                    <div class="mb-3 p-3 border-start border-3 ${entry.status === 'resolved' ? 'border-success bg-success-subtle' : 'border-warning bg-warning-subtle'} fix-item" draggable="true" style="color: black; cursor: move;" data-fix-id="${entry.id}">
                                         <div class="d-flex justify-content-between align-items-start">
                                             <div>
-                                                <strong style="color: black;">${complaint.date}</strong>
-                                                <small style="color: #888; margin-left: 10px;">${complaint.time}</small>
+                                                <strong style="color: black;">${entry.date}</strong>
+                                                <small style="color: #888; margin-left: 10px;">${entry.time}</small>
                                             </div>
                                             <div class="d-flex align-items-center gap-2">
                                                 <button class="btn btn-sm btn-outline-warning copy-problem-btn" onclick="copyProblemReport(this)" title="Copy Problem Report">
                                                     📋 Report Issue
                                                 </button>
-                                                <small style="color: #666;">Status: ${complaint.status === 'resolved' ? '✅ RESOLVED' : '⚠️ PENDING'}</small>
+                                                <small style="color: #666;">Status: ${entry.status === 'resolved' ? '✅ RESOLVED' : '⚠️ PENDING'}</small>
                                             </div>
                                         </div>
-                                        <p class="mb-1 mt-2" style="color: black;"><strong>User Complaint:</strong> "${complaint.description}"</p>
-                                        <p class="mb-0" style="color: black;"><strong>Implementation:</strong> ${complaint.implementation || 'Implementation pending...'}</p>
+                                        <p class="mb-1 mt-2" style="color: black;"><strong>User Complaint:</strong> "${entry.description}"</p>
+                                        <p class="mb-0" style="color: black;"><strong>Implementation:</strong> ${entry.implementation || 'Implementation pending...'}</p>
                                     </div>
-                                `).join('');
+                                        `;
+                                    }
+                                }).join('');
                             }
                         })
-                        .catch(error => {
-                            console.error('Error loading complaints:', error);
-                        });
+                        .catch(error => console.error('Error loading unified logs:', error));
                 }
                 
-                // Load complaints immediately and refresh every 5 seconds
-                loadComplaints();
-                setInterval(loadComplaints, 5000);
+                // Extract manual fixes from the page
+                function getManualFixes() {
+                    const manualFixData = [
+                        {
+                            type: 'manual',
+                            date: 'July 28, 2025',
+                            timestamp: '2025-07-28T12:05:00',
+                            html: `<div class="mb-3 p-3 border-start border-3 border-success bg-success-subtle fix-item" draggable="true" style="color: black; cursor: move;" data-fix-id="address-matching-repetition-fix">
+                                <div class="d-flex justify-content-between align-items-start">
+                                    <div>
+                                        <strong style="color: black;">July 28, 2025</strong>
+                                        <small style="color: #888; margin-left: 10px;">12:05 AM ET → 12:16 AM ET</small>
+                                    </div>
+                                    <div class="d-flex align-items-center gap-2">
+                                        <button class="btn btn-sm btn-outline-warning copy-problem-btn" onclick="copyProblemReport(this)" title="Copy Problem Report">
+                                            📋 Report Issue
+                                        </button>
+                                        <small style="color: #666;">Status: ✅ COMPLETE</small>
+                                    </div>
+                                </div>
+                                <p class="mb-1 mt-2" style="color: black;"><strong>Request:</strong> "Chris isn't able to find the address and ask for the correct address instead of finding a close match. The address does exist in the system is he not using API? He also repeats himself. Make it a rule the repeating exact speech is not allowed!"</p>
+                                <p class="mb-0" style="color: black;"><strong>Implementation:</strong> CRITICAL ADDRESS MATCHING FIX - Enhanced address matcher to use API-based intelligent proximity matching instead of asking for corrections when addresses exist in system. Implemented HARD anti-repetition rule preventing identical speech responses within same call.</p>
+                            </div>`,
+                            status: 'resolved'
+                        },
+                        {
+                            type: 'manual',
+                            date: 'July 28, 2025', 
+                            timestamp: '2025-07-28T11:56:00',
+                            html: `<div class="mb-3 p-3 border-start border-3 border-success bg-success-subtle fix-item" draggable="true" style="color: black; cursor: move;" data-fix-id="roach-conversation-memory-fix">
+                                <div class="d-flex justify-content-between align-items-start">
+                                    <div>
+                                        <strong style="color: black;">July 28, 2025</strong>
+                                        <small style="color: #888; margin-left: 10px;">10:45 PM ET → 11:56 PM ET</small>
+                                    </div>
+                                    <div class="d-flex align-items-center gap-2">
+                                        <button class="btn btn-sm btn-outline-warning copy-problem-btn" onclick="copyProblemReport(this)" title="Copy Problem Report">
+                                            📋 Report Issue
+                                        </button>
+                                        <small style="color: #666;">Status: ✅ COMPLETE</small>
+                                    </div>
+                                </div>
+                                <p class="mb-1 mt-2" style="color: black;"><strong>Request:</strong> "Chris doesn't remember roach issue after address confirmation - conversation memory bug"</p>
+                                <p class="mb-0" style="color: black;"><strong>Implementation:</strong> CRITICAL FIX COMPLETE - Added conversation memory checking after address verification. Enhanced memory scanning works across entire call history including first user message.</p>
+                            </div>`,
+                            status: 'resolved'
+                        }
+                    ];
+                    return manualFixData;
+                }
+                
+                // Auto-refresh unified logs every 5 seconds
+                setInterval(loadUnifiedLogs, 5000);
+                loadUnifiedLogs();
             </script>
         </body>
         </html>
