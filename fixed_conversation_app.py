@@ -191,7 +191,9 @@ def create_app():
                         .then(data => {
                             const container = document.getElementById('call-history-section');
                             if (data.calls && data.calls.length > 0) {
-                                container.innerHTML = data.calls.map(call => {
+                                container.innerHTML = data.calls.map((call, index) => {
+                                    const transcriptId = `transcript-${index}`;
+                                    const copyBtnId = `copy-btn-${index}`;
                                     return `<div class="border-bottom pb-3 mb-3">
                                         <div class="row">
                                             <div class="col-md-6">
@@ -214,16 +216,16 @@ def create_app():
                                             </div>
                                             <div class="col-md-6">
                                                 <div class="d-flex justify-content-end gap-2">
-                                                    <button class="btn btn-sm btn-outline-primary" onclick="copyFullTranscript('${call.caller_name}', \`${call.full_transcript}\`)" title="Copy Full Transcript">
+                                                    <button id="${copyBtnId}" class="btn btn-sm btn-outline-primary" title="Copy Full Transcript">
                                                         📋 Copy Transcript
                                                     </button>
-                                                    <button class="btn btn-sm btn-outline-secondary" onclick="toggleTranscript(this)" title="Show/Hide Full Transcript">
+                                                    <button class="btn btn-sm btn-outline-secondary toggle-transcript-btn" data-transcript="${transcriptId}" title="Show/Hide Full Transcript">
                                                         👁️ View Full Text
                                                     </button>
                                                 </div>
                                             </div>
                                         </div>
-                                        <div class="transcript-container mt-3" style="display: none;">
+                                        <div id="${transcriptId}" class="transcript-container mt-3" style="display: none;">
                                             <div class="card">
                                                 <div class="card-header bg-light">
                                                     <h6 class="mb-0">Complete Conversation Transcript</h6>
@@ -233,47 +235,65 @@ def create_app():
                                                 </div>
                                             </div>
                                         </div>
+                                        <script>
+                                            // Store transcript data for this call
+                                            window.transcriptData = window.transcriptData || {};
+                                            window.transcriptData['${transcriptId}'] = ${JSON.stringify(call.full_transcript || 'Transcript not available')};
+                                            window.transcriptData['${copyBtnId}'] = {name: ${JSON.stringify(call.caller_name)}, transcript: ${JSON.stringify(call.full_transcript || 'Transcript not available')}};
+                                        </script>
                                     </div>`;
                                 }).join('');
                             } else {
                                 container.innerHTML = '<div class="alert alert-info">No recent calls.</div>';
                             }
                         })
+                            // Add event listeners after content is loaded
+                            setTimeout(() => {
+                                // Add toggle event listeners
+                                document.querySelectorAll('.toggle-transcript-btn').forEach(button => {
+                                    button.addEventListener('click', function(e) {
+                                        e.preventDefault();
+                                        const transcriptId = this.getAttribute('data-transcript');
+                                        const container = document.getElementById(transcriptId);
+                                        if (container && container.style.display === 'none') {
+                                            container.style.display = 'block';
+                                            this.innerHTML = '👁️ Hide Full Text';
+                                            this.classList.remove('btn-outline-secondary');
+                                            this.classList.add('btn-secondary');
+                                        } else if (container) {
+                                            container.style.display = 'none';
+                                            this.innerHTML = '👁️ View Full Text';
+                                            this.classList.remove('btn-secondary');
+                                            this.classList.add('btn-outline-secondary');
+                                        }
+                                    });
+                                });
+
+                                // Add copy event listeners
+                                document.querySelectorAll('[id^="copy-btn-"]').forEach(button => {
+                                    button.addEventListener('click', function(e) {
+                                        e.preventDefault();
+                                        const data = window.transcriptData && window.transcriptData[this.id];
+                                        if (data) {
+                                            const fullText = `Call with ${data.name}\\n\\n${data.transcript}`;
+                                            navigator.clipboard.writeText(fullText).then(() => {
+                                                this.innerHTML = '✅ Copied';
+                                                setTimeout(() => {
+                                                    this.innerHTML = '📋 Copy Transcript';
+                                                }, 2000);
+                                            }).catch(err => {
+                                                console.error('Failed to copy transcript:', err);
+                                                alert('Failed to copy transcript to clipboard');
+                                            });
+                                        }
+                                    });
+                                });
+                            }, 50);
+                        })
                         .catch(error => {
                             console.error('Error loading call history:', error);
                             document.getElementById('call-history-section').innerHTML = '<div class="alert alert-warning">Error loading call history.</div>';
                         });
-                }
-
-                // Toggle transcript visibility
-                function toggleTranscript(button) {
-                    const container = button.closest('.border-bottom').querySelector('.transcript-container');
-                    if (container.style.display === 'none') {
-                        container.style.display = 'block';
-                        button.innerHTML = '👁️ Hide Full Text';
-                        button.classList.remove('btn-outline-secondary');
-                        button.classList.add('btn-secondary');
-                    } else {
-                        container.style.display = 'none';
-                        button.innerHTML = '👁️ View Full Text';
-                        button.classList.remove('btn-secondary');
-                        button.classList.add('btn-outline-secondary');
-                    }
-                }
-
-                // Copy full transcript to clipboard
-                function copyFullTranscript(callerName, transcript) {
-                    const fullText = `Call with ${callerName}\\n\\n${transcript}`;
-                    navigator.clipboard.writeText(fullText).then(() => {
-                        // Find the button that was clicked and update it temporarily
-                        event.target.textContent = '✅ Copied';
-                        setTimeout(() => {
-                            event.target.innerHTML = '📋 Copy Transcript';
-                        }, 2000);
-                    }).catch(err => {
-                        console.error('Failed to copy transcript:', err);
-                        alert('Failed to copy transcript to clipboard');
-                    });
                 }
 
                 // Copy problem report functionality
@@ -293,11 +313,15 @@ def create_app():
                     });
                 }
 
-                // Auto-refresh every 5 seconds
+                // Auto-refresh every 30 seconds (longer interval to avoid conflicts with open transcripts)
                 setInterval(() => {
-                    loadUnifiedLogs();
-                    loadCallHistory();
-                }, 5000);
+                    // Only refresh if no transcripts are currently open
+                    const openTranscripts = document.querySelectorAll('.transcript-container[style*="block"]');
+                    if (openTranscripts.length === 0) {
+                        loadUnifiedLogs();
+                        loadCallHistory();
+                    }
+                }, 30000);
                 
                 // Initial load
                 loadUnifiedLogs();
