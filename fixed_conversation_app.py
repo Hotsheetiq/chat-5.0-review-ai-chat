@@ -2521,7 +2521,16 @@ PERSONALITY: Warm, empathetic, and intelligent. Show you're genuinely listening 
                                                     
                                                     # Apply anti-repetition check
                                                     response_text = prevent_exact_repetition(call_sid, response_text)
-                                                    return response_text
+                                                    
+                                                    # CRITICAL: Return proper TwiML response instead of plain text
+                                                    main_voice = create_voice_response(response_text)
+                                                    return f"""<?xml version="1.0" encoding="UTF-8"?>
+                                                    <Response>
+                                                        {main_voice}
+                                                        <Gather input="speech dtmf" timeout="8" speechTimeout="4" dtmfTimeout="2" language="en-US" action="/handle-input/{call_sid}" method="POST">
+                                                        </Gather>
+                                                        <Redirect>/handle-speech/{call_sid}</Redirect>
+                                                    </Response>"""
                                             else:
                                                 # Lower confidence - ask for confirmation
                                                 response_text = f"I heard {user_input} but couldn't find that exact address. Did you mean {best_match}? Please confirm the correct address."
@@ -2734,7 +2743,16 @@ PERSONALITY: Warm, empathetic, and intelligent. Show you're genuinely listening 
                                     
                                     # Apply anti-repetition check
                                     response_text = prevent_exact_repetition(call_sid, response_text)
-                                    return response_text  # CRITICAL: Return immediately to prevent repetitive questions
+                                    
+                                    # CRITICAL: Return proper TwiML response instead of plain text
+                                    main_voice = create_voice_response(response_text)
+                                    return f"""<?xml version="1.0" encoding="UTF-8"?>
+                                    <Response>
+                                        {main_voice}
+                                        <Gather input="speech dtmf" timeout="8" speechTimeout="4" dtmfTimeout="2" language="en-US" action="/handle-input/{call_sid}" method="POST">
+                                        </Gather>
+                                        <Redirect>/handle-speech/{call_sid}</Redirect>
+                                    </Response>"""
                                 else:
                                     # Look for any issues mentioned in full conversation history
                                     all_issues = []
@@ -2769,7 +2787,16 @@ PERSONALITY: Warm, empathetic, and intelligent. Show you're genuinely listening 
                                         
                                         # Apply anti-repetition check
                                         response_text = prevent_exact_repetition(call_sid, response_text)
-                                        return response_text  # CRITICAL: Return immediately to prevent repetitive questions
+                                        
+                                        # CRITICAL: Return proper TwiML response instead of plain text
+                                        main_voice = create_voice_response(response_text)
+                                        return f"""<?xml version="1.0" encoding="UTF-8"?>
+                                        <Response>
+                                            {main_voice}
+                                            <Gather input="speech dtmf" timeout="8" speechTimeout="4" dtmfTimeout="2" language="en-US" action="/handle-input/{call_sid}" method="POST">
+                                            </Gather>
+                                            <Redirect>/handle-speech/{call_sid}</Redirect>
+                                        </Response>"""
                                     else:
                                         # CRITICAL FIX: Check conversation memory for previous issue before asking "What's the issue?"
                                         conversation_messages = conversation_history.get(call_sid, [])
