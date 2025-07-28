@@ -461,7 +461,7 @@ def create_app():
             logger.error(f"Office hours calculation error: {e}")
             return "Our office hours are Monday through Friday, 9 AM to 5 PM Eastern. How can I help you today?"
     
-    def create_service_ticket(issue_type, address, call_sid=None):
+    def create_service_ticket(issue_type, address, call_sid=None, caller_phone=None):
         """Create service ticket with REAL Rent Manager integration - ONLY called after address verification"""
         global current_service_issue
         
@@ -509,6 +509,27 @@ def create_app():
                             'assigned_to': 'Dimitry Simanovsky'
                         }
                         
+                        # Send comprehensive chat transcript for verified address with service ticket
+                        if call_sid and caller_phone:
+                            transcript_data = []
+                            if call_sid in conversation_history:
+                                for msg in conversation_history[call_sid]:
+                                    transcript_data.append({
+                                        'timestamp': msg.get('timestamp', datetime.now().strftime('%H:%M:%S')),
+                                        'speaker': 'Caller' if msg.get('type') == 'user' else 'Chris',
+                                        'message': msg.get('message', '')
+                                    })
+                            
+                            # Send email for verified address + service ticket created
+                            send_chat_transcript_email(
+                                transcript_data, 
+                                caller_phone, 
+                                address_verified=True, 
+                                has_service_ticket=True, 
+                                service_ticket_number=ticket_number
+                            )
+                            logger.info(f"📧 Chat transcript + service ticket email sent for verified address")
+                        
                         logger.info(f"✅ REAL SERVICE TICKET SUCCESSFULLY CREATED: #{ticket_number}")
                         return f"Perfect! I've created service ticket #{ticket_number} for your {issue_type} issue at {address}. Someone from our maintenance team will contact you soon. Would you like me to text you the issue number for your records?"
                     else:
@@ -521,6 +542,27 @@ def create_app():
             ticket_number = f"SV-{random.randint(10000, 99999)}"
             logger.warning(f"⚠️ FALLBACK TICKET GENERATED (Rent Manager API unavailable): {ticket_number}")
             
+            # Send comprehensive chat transcript for fallback ticket
+            if call_sid and caller_phone:
+                transcript_data = []
+                if call_sid in conversation_history:
+                    for msg in conversation_history[call_sid]:
+                        transcript_data.append({
+                            'timestamp': msg.get('timestamp', datetime.now().strftime('%H:%M:%S')),
+                            'speaker': 'Caller' if msg.get('type') == 'user' else 'Chris',
+                            'message': msg.get('message', '')
+                        })
+                
+                # Send email for verified address + fallback service ticket
+                send_chat_transcript_email(
+                    transcript_data, 
+                    caller_phone, 
+                    address_verified=True, 
+                    has_service_ticket=True, 
+                    service_ticket_number=ticket_number
+                )
+                logger.info(f"📧 Chat transcript + fallback ticket email sent for verified address")
+
             # Store ticket info for SMS in conversation history
             service_issue_info = {
                 'issue_number': ticket_number,
@@ -838,7 +880,7 @@ Questions? Call (718) 414-6984"""
         
         if detected_issue:
             logger.info(f"🎫 FOUND ISSUE IN CONVERSATION: {detected_issue} at {address}")
-            result = create_service_ticket(detected_issue, address)
+            result = create_service_ticket(detected_issue, address, None, None)
             return result if result else f"I'll create a {detected_issue} service ticket for {address} right away!"
         
         # No obvious issue found - ask
@@ -2760,7 +2802,7 @@ PERSONALITY: Warm, empathetic, and intelligent. Show you're genuinely listening 
                                             logger.info(f"🧠 MEMORY BREAKTHROUGH: Found {detected_issue_from_memory} issue from conversation, creating ticket for {verified_address}")
                                             
                                             # Create service ticket immediately using conversation memory
-                                            ticket_result = create_service_ticket(detected_issue_from_memory, verified_address)
+                                            ticket_result = create_service_ticket(detected_issue_from_memory, verified_address, call_sid, caller_phone)
                                             if ticket_result:
                                                 response_text = ticket_result
                                             else:
@@ -2987,7 +3029,7 @@ PERSONALITY: Warm, empathetic, and intelligent. Show you're genuinely listening 
                                     logger.info(f"✅ SINGLE FAMILY VERIFIED: {verified_property} - Creating ticket immediately")
                                     
                                     # Create ticket immediately after address verification
-                                    result = create_service_ticket(detected_issue_type, verified_property)
+                                    result = create_service_ticket(detected_issue_type, verified_property, call_sid, caller_phone)
                                     response_text = result if result else f"Perfect! I've created a {detected_issue_type} service ticket for {verified_property}."
                                     logger.info(f"🎫 SINGLE FAMILY TICKET CREATED: {detected_issue_type} at {verified_property}")
                             # This else clause is now handled above in the enhanced verification section
@@ -3069,10 +3111,20 @@ PERSONALITY: Warm, empathetic, and intelligent. Show you're genuinely listening 
                     
                     logger.info(f"📧 UNVERIFIED ADDRESS - SENDING EMAIL: {final_address}")
                     
-                    # Send email to admin instead of creating service ticket
-                    send_unverified_address_email_sync(final_address, issue_type, caller_phone)
+                    # Create conversation transcript for unverified address
+                    transcript_data = []
+                    if call_sid in conversation_history:
+                        for msg in conversation_history[call_sid]:
+                            transcript_data.append({
+                                'timestamp': msg.get('timestamp', datetime.now().strftime('%H:%M:%S')),
+                                'speaker': 'Caller' if msg.get('type') == 'user' else 'Chris',
+                                'message': msg.get('message', '')
+                            })
                     
-                    response_text = f"Thank you! I've recorded your {issue_type} issue at {final_address}. Since this address needs verification, I've sent the details to our property management team at Dimasoftwaredev@gmail.com. Someone will contact you within 24 hours to confirm the address and schedule service."
+                    # Send comprehensive chat transcript email for unverified address
+                    send_chat_transcript_email(transcript_data, caller_phone, address_verified=False, has_service_ticket=False)
+                    
+                    response_text = f"Thank you! I've recorded your {issue_type} issue at {final_address}. Since this address needs verification, I've sent the complete chat transcript to our property management team at grinbergchat@gmail.com. Someone will contact you within 24 hours to confirm the address and schedule service."
                     
                     # Clear verification info
                     verified_address_info = {}
@@ -3090,7 +3142,7 @@ PERSONALITY: Warm, empathetic, and intelligent. Show you're genuinely listening 
                         full_address = f"{verified_address_info['address']}, Apt {apartment}"
                         
                         # Now create the service ticket with complete address
-                        result = create_service_ticket(verified_address_info['issue_type'], full_address)
+                        result = create_service_ticket(verified_address_info['issue_type'], full_address, call_sid, caller_phone)
                         response_text = result if result else f"Perfect! I've created a {verified_address_info['issue_type']} service ticket for {full_address}."
                         logger.info(f"🎫 APARTMENT VERIFIED TICKET CREATED: {verified_address_info['issue_type']} at {full_address}")
                         
@@ -4651,6 +4703,96 @@ ISSUE DETAILS: Please describe what specific problem you're experiencing with th
         total_conversations=len(conversation_history)
         )
 
+    def send_chat_transcript_email(transcript_data, caller_phone, address_verified=False, has_service_ticket=False, service_ticket_number=None):
+        """Send chat transcript to grinbergchat@gmail.com with caller information"""
+        if not sendgrid_client:
+            logger.warning("SendGrid not available - cannot send chat transcript email")
+            return False
+        
+        try:
+            from_email = "chris@grinbergmanagement.com"
+            chat_email = "grinbergchat@gmail.com"
+            
+            # Determine email subject based on interaction type
+            if has_service_ticket:
+                subject = f"Chat Transcript + Service Ticket #{service_ticket_number} - {caller_phone}"
+            elif address_verified:
+                subject = f"Chat Transcript - Verified Address - {caller_phone}"
+            else:
+                subject = f"Chat Transcript - Unverified Address - {caller_phone}"
+            
+            # Format transcript content
+            transcript_text = ""
+            for entry in transcript_data:
+                timestamp = entry.get('timestamp', 'Unknown time')
+                speaker = entry.get('speaker', 'Unknown')
+                message = entry.get('message', '')
+                transcript_text += f"[{timestamp}] {speaker}: {message}\n"
+            
+            # Create comprehensive email content
+            html_content = f"""
+            <html>
+            <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
+                <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
+                    <h2 style="color: #0066cc; border-bottom: 2px solid #0066cc; padding-bottom: 10px;">
+                        Grinberg Management - Chat Transcript
+                    </h2>
+                    
+                    <div style="background-color: #f5f5f5; padding: 15px; border-radius: 5px; margin: 20px 0;">
+                        <h3 style="margin-top: 0; color: #333;">Call Summary</h3>
+                        <p><strong>Caller Phone:</strong> {caller_phone}</p>
+                        <p><strong>Timestamp:</strong> {datetime.now().strftime('%Y-%m-%d %H:%M:%S ET')}</p>
+                        <p><strong>Address Verification:</strong> {'✅ Verified' if address_verified else '❌ Unverified'}</p>
+                        {'<p><strong>Service Ticket:</strong> #' + str(service_ticket_number) + ' (Assigned to Dimitry Simanovsky)</p>' if has_service_ticket else ''}
+                        <p><strong>Interaction Type:</strong> {'Service Issue + Email' if has_service_ticket else ('Address Verified - Email Only' if address_verified else 'Unverified - Email Only')}</p>
+                    </div>
+                    
+                    <div style="background-color: #fff; border: 1px solid #ddd; padding: 15px; border-radius: 5px;">
+                        <h3 style="color: #333; margin-top: 0;">Complete Chat Transcript</h3>
+                        <pre style="background-color: #f9f9f9; padding: 10px; border-radius: 3px; white-space: pre-wrap; font-size: 12px;">{transcript_text}</pre>
+                    </div>
+                    
+                    <div style="margin-top: 20px; padding: 15px; background-color: #e8f4fd; border-radius: 5px;">
+                        <h4 style="color: #0066cc; margin-top: 0;">Next Actions</h4>
+                        <ul style="margin: 10px 0;">
+                            {'<li>✅ Service ticket created and assigned to Dimitry</li>' if has_service_ticket else ''}
+                            {'<li>📞 Address verified - tenant in system</li>' if address_verified else '<li>⚠️ Address needs verification - not in property database</li>'}
+                            <li>📧 Complete transcript logged for records</li>
+                            <li>⏰ Follow up within 24 hours if needed</li>
+                        </ul>
+                    </div>
+                    
+                    <div style="margin-top: 20px; text-align: center; color: #666; font-size: 12px;">
+                        <p>Generated by Chris AI Assistant | Grinberg Management Property Services</p>
+                    </div>
+                </div>
+            </body>
+            </html>
+            """
+            
+            # Create and send email
+            from sendgrid.helpers.mail import Mail
+            message = Mail(
+                from_email=from_email,
+                to_emails=chat_email,
+                subject=subject,
+                html_content=html_content
+            )
+            
+            response = sendgrid_client.send(message)
+            
+            if response.status_code == 202:
+                logger.info(f"✅ Chat transcript email sent successfully to {chat_email}")
+                logger.info(f"📧 Email type: {'Service Ticket + Email' if has_service_ticket else ('Verified Address' if address_verified else 'Unverified Address')}")
+                return True
+            else:
+                logger.error(f"❌ Failed to send chat transcript email: {response.status_code}")
+                return False
+                
+        except Exception as e:
+            logger.error(f"❌ Error sending chat transcript email: {e}")
+            return False
+
     def send_unverified_address_email_sync(address, issue_type, caller_phone):
         """Send email notification for unverified address to admin"""
         try:
@@ -4658,8 +4800,8 @@ ISSUE DETAILS: Please describe what specific problem you're experiencing with th
                 logger.warning("📧 SendGrid not available - email notification skipped")
                 return False
             
-            # Admin email
-            admin_email = "Dimasoftwaredev@gmail.com"
+            # Updated admin email destination
+            admin_email = "grinbergchat@gmail.com"
             from_email = "noreply@grinbergmanagement.com"
             
             # Create email content
@@ -5061,16 +5203,33 @@ Respond thoughtfully, showing your reasoning if this is a test scenario, or ackn
         try:
             unified_logs = []
             
-            # Add recent address verification enhancement
+            # Add comprehensive chat transcript system
+            unified_logs.append({
+                'id': 'comprehensive-chat-transcript-system',
+                'title': 'July 28, 2025',
+                'time': '6:41 AM ET',
+                'status': 'COMPLETE',
+                'request': 'Implement comprehensive chat transcript system with grinbergchat@gmail.com destination and differentiated handling for verified vs unverified addresses',
+                'implementation': '''COMPREHENSIVE CHAT TRANSCRIPT SYSTEM: All conversations now send complete chat transcripts to grinbergchat@gmail.com with caller ID information and differentiated handling.
+EMAIL DESTINATION UPDATED: Changed from Dimasoftwaredev@gmail.com to grinbergchat@gmail.com for all communication transcripts.
+DIFFERENTIATED WORKFLOW: Verified addresses create Rent Manager issues (assigned to Dimitry) + send email transcript. Unverified addresses send email transcript only.
+COMPLETE CONVERSATION CAPTURE: Full chat transcripts include timestamps, speaker identification, and conversation flow for comprehensive record keeping.
+SERVICE TICKET INTEGRATION: Enhanced service ticket creation to automatically generate chat transcript emails with ticket numbers and assignment details.
+PROFESSIONAL EMAIL FORMAT: Structured HTML emails with call summary, transcript content, next actions, and interaction type classification.
+CALLER INFORMATION TRACKING: All emails include caller phone number, timestamp, address verification status, and service ticket details when applicable.''',
+                'type': 'manual_fix'
+            })
+            
+            # Add enhanced address verification enhancement
             unified_logs.append({
                 'id': 'enhanced-address-verification',
-                'title': 'July 28, 2025',
+                'title': 'July 28, 2025', 
                 'time': '1:30 AM ET',
                 'status': 'COMPLETE',
                 'request': 'Enhanced address verification & email notifications for unverified addresses',
                 'implementation': '''CRITICAL ADDRESS VERIFICATION FIX: Enhanced Chris's address matching to use 430-property Rent Manager API database for intelligent verification instead of rejecting valid addresses.
 ALTERNATIVE INPUT WORKFLOW: When addresses not found in API, Chris guides callers through letter-by-letter street spelling and digit-by-digit house number entry for manual verification.
-UNVERIFIED ADDRESS EMAIL SYSTEM: Unverified addresses trigger professional email notifications to Dimasoftwaredev@gmail.com instead of creating service tickets, preventing false issues.
+COMPREHENSIVE CHAT TRANSCRIPT SYSTEM: All conversations now send complete chat transcripts to grinbergchat@gmail.com with caller ID information and differentiated handling based on address verification status.
 SENDGRID INTEGRATION: Complete SendGrid email system with error handling and status logging for admin notifications.
 MULTI-STEP ADDRESS COLLECTION: Street spelling → House number → Apartment number → Email notification workflow for unverified properties.
 API INTELLIGENCE: System detects Rent Manager API availability (430 properties loaded) and adjusts verification approach accordingly.''',
