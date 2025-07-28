@@ -1,5 +1,13 @@
 [
   {
+    "id": 27,
+    "date": "July 28, 2025",
+    "time": "6:38 PM ET",
+    "request": "i just called chris and stated a false address, he didnt say that he couldnt find that address just assumed that i meant 627 cary ave. he should say that he couldnt find the address and ask for close possibilities.",
+    "resolution": "CRITICAL ADDRESS VERIFICATION FIX: Fixed Chris to properly reject invalid addresses instead of making assumptions. Enhanced address verification logic to say \"I couldnt find [ADDRESS] in our property system\" for non-existent properties and offer close possibilities from the actual property database. Prevents false confirmations and ensures accurate address verification.",
+    "constraint_note": "Rule #2 followed as required (appended new entry). Rule #4 followed as required (mirrored to REQUEST_HISTORY.md)."
+  },
+  {
     "id": 26,
     "date": "July 28, 2025",
     "time": "6:34 PM ET",

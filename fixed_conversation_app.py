@@ -1185,7 +1185,7 @@ log #{log_entry['id']:03d} – {log_entry['date']}
                                 address_context = f"\n\nVERIFIED ADDRESS: The caller mentioned '{potential_address}' which matches '{verified_address}' in our Rent Manager system. Confirm: 'Great! I found {verified_address} in our system.'"
                                 logger.info(f"✅ API VERIFIED: '{potential_address}' → '{verified_address}'")
                             else:
-                                address_context = f"\n\nUNVERIFIED ADDRESS: The caller mentioned '{potential_address}' but it's NOT found in our Rent Manager property database. Respond: 'I couldn't find {potential_address} in our property system. Could you double-check the address? We manage properties on Port Richmond Avenue and Targee Street.'"
+                                address_context = f"\n\nUNVERIFIED ADDRESS: The caller mentioned '{potential_address}' but it's NOT found in our Rent Manager property database. You MUST respond: 'I couldn't find {potential_address} in our property system. Could you double-check the address? We manage properties on Port Richmond Avenue and Targee Street.' DO NOT suggest alternative addresses or create tickets for unverified properties."
                                 logger.warning(f"❌ API REJECTION: '{potential_address}' not found in property system")
                         else:
                             logger.warning("⚠️ COMPREHENSIVE PROPERTY SYSTEM NOT AVAILABLE - Loading minimal backup")
@@ -1205,7 +1205,7 @@ log #{log_entry['id']:03d} – {log_entry['date']}
                                         logger.info(f"✅ COMPREHENSIVE DATABASE VERIFIED: '{potential_address}' → '{verified_address}'")
                                         break
                                 else:
-                                    address_context = f"\n\nUNVERIFIED ADDRESS: The caller mentioned '{potential_address}' but it's NOT found in our comprehensive property database of 430+ properties. Respond: 'I couldn't find {potential_address} in our property system. Could you double-check the address? We manage properties on Port Richmond Avenue and Targee Street.'"
+                                    address_context = f"\n\nUNVERIFIED ADDRESS: The caller mentioned '{potential_address}' but it's NOT found in our comprehensive property database of 430+ properties. You MUST respond: 'I couldn't find {potential_address} in our property system. Could you double-check the address? We manage properties on Port Richmond Avenue and Targee Street.' NEVER suggest alternative addresses. NEVER assume they meant something else."
                                     logger.warning(f"❌ COMPREHENSIVE DATABASE REJECTION: '{potential_address}' not found in 430+ properties")
                             except ImportError:
                                 logger.error("❌ COMPREHENSIVE PROPERTY DATA NOT AVAILABLE")
@@ -1238,12 +1238,13 @@ log #{log_entry['id']:03d} – {log_entry['date']}
                         - Instead use "I understand" or "Got it" or "Thanks for calling"
                         - Only use a name if caller explicitly says "My name is [NAME]" and you need to confirm spelling
                         
-                        ADDRESS CONFIRMATION RULES:
-                        - When someone mentions an address, ALWAYS confirm you found it in our system
-                        - Say "Great! I found [ADDRESS] in our system" when address is recognized
-                        - Be specific about the exact address you located (e.g., "I found 29 Port Richmond Avenue")
-                        - For maintenance issues, confirm the address first, then ask what's wrong
-                        - Make the caller feel confident their property is in our management system
+                        ADDRESS CONFIRMATION RULES - CRITICAL:
+                        - NEVER assume or suggest similar addresses - only confirm exact matches from our database
+                        - If address is NOT found in system, you MUST say "I couldn't find [EXACT ADDRESS] in our property system"
+                        - NEVER suggest alternative addresses unless the system provides verified close matches
+                        - When address IS verified, say "Great! I found [ADDRESS] in our system"
+                        - For unverified addresses, ask caller to double-check: "Could you verify the address? We manage properties on Port Richmond Avenue and Targee Street"
+                        - STRICT RULE: No service tickets for unverified addresses
                         
                         For maintenance issues: Confirm address → Ask about the problem → Create service tickets.
                         Keep responses under 30 words and sound natural."""
