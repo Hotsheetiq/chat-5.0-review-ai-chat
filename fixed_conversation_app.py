@@ -4550,37 +4550,20 @@ ISSUE DETAILS: Please describe what specific problem you're experiencing with th
                 function loadUnifiedLogs() {
                     fetch('/api/unified-logs')
                         .then(response => response.json())
-                        .then(complaints => {
+                        .then(allEntries => {
                             const container = document.getElementById('unified-log-section');
-                            if (container) {
-                                // Get manual fixes already in the page
-                                const manualFixes = getManualFixes();
-                                console.log('Manual fixes loaded:', manualFixes.length);
-                                console.log('API complaints loaded:', complaints.length);
+                            if (container && allEntries) {
+                                console.log('Total unified entries loaded:', allEntries.length);
+                                console.log('First 3 entries:', allEntries.slice(0, 3).map(e => ({ type: e.type, title: e.title, time: e.time })));
                                 
-                                // Combine and sort all entries by timestamp (newest first)
-                                const allEntries = [...complaints, ...manualFixes].sort((a, b) => 
-                                    new Date(b.date || b.timestamp) - new Date(a.date || a.timestamp)
-                                );
-                                
-                                console.log('Total entries after combine:', allEntries.length);
-                                console.log('First 3 entries:', allEntries.slice(0, 3).map(e => ({ type: e.type, timestamp: e.timestamp || e.date, date: e.date })));
-                                
-                                // Render unified list with log numbers
+                                // Render unified list with log numbers - all entries use same format
                                 container.innerHTML = allEntries.map((entry, index) => {
                                     const logNumber = String(index + 1).padStart(3, '0');
-                                    if (entry.type === 'manual' || entry.type === 'manual_fix') {
-                                        // Add log number to manual fixes
-                                        return entry.html.replace(
-                                            /<strong style="color: black;">([^<]+)<\/strong>/,
-                                            `<strong style="color: black;">Log #${logNumber} - $1</strong>`
-                                        );
-                                    } else {
-                                        return `
+                                    return `
                                     <div class="mb-3 p-3 border-start border-3 ${entry.status === 'RESOLVED' || entry.status === 'COMPLETE' ? 'border-success bg-success-subtle' : 'border-warning bg-warning-subtle'} fix-item" style="color: black;" data-fix-id="${entry.id}">
                                         <div class="d-flex justify-content-between align-items-start">
                                             <div>
-                                                <strong style="color: black;">Log #${logNumber} - ${entry.title || entry.date || 'Unknown Date'}</strong>
+                                                <strong style="color: black;">Log #${logNumber} - ${entry.title || 'Unknown Date'}</strong>
                                                 <small style="color: #888; margin-left: 10px;">${entry.time || 'Unknown Time'}</small>
                                             </div>
                                             <div class="d-flex align-items-center gap-2">
@@ -4590,25 +4573,24 @@ ISSUE DETAILS: Please describe what specific problem you're experiencing with th
                                                 <small style="color: #666;">Status: ${(entry.status === 'RESOLVED' || entry.status === 'COMPLETE') ? '✅ ' + entry.status : '⚠️ ' + (entry.status || 'PENDING')}</small>
                                             </div>
                                         </div>
-                                        <p class="mb-1 mt-2" style="color: black;"><strong>Request:</strong> "${entry.request || entry.description || 'No description available'}"</p>
+                                        <p class="mb-1 mt-2" style="color: black;"><strong>Request:</strong> "${entry.request || 'No description available'}"</p>
                                         <p class="mb-0" style="color: black;"><strong>Implementation:</strong> ${entry.implementation || 'Implementation pending...'}</p>
-                                    </div>
-                                        `;
-                                    }
+                                    </div>`;
                                 }).join('');
                             }
                         })
-                        .catch(error => console.error('Error loading unified logs:', error));
+                        .catch(error => {
+                            console.error('Error loading unified logs:', error);
+                            const container = document.getElementById('unified-log-section');
+                            if (container) {
+                                container.innerHTML = '<div class="alert alert-warning">Error loading request logs. Please refresh the page.</div>';
+                            }
+                        });
                 }
                 
-                // Extract manual fixes from the page
-                function getManualFixes() {
-                    const manualFixData = [
-                        {
-                            type: 'manual',
-                            date: 'July 28, 2025',
-                            timestamp: '2025-07-28T10:45:00',
-                            html: `<div class="mb-3 p-3 border-start border-3 border-success bg-success-subtle fix-item" style="color: black;" data-fix-id="enhanced-call-flow-system">
+                // Auto-refresh unified logs every 5 seconds
+                setInterval(loadUnifiedLogs, 5000);
+                loadUnifiedLogs();
                                 <div class="d-flex justify-content-between align-items-start">
                                     <div>
                                         <strong style="color: black;">July 28, 2025</strong>
