@@ -229,7 +229,7 @@ def create_app():
                                                     <h6 class="mb-0">Complete Conversation Transcript</h6>
                                                 </div>
                                                 <div class="card-body">
-                                                    <pre class="transcript-text" style="white-space: pre-wrap; font-family: 'Courier New', monospace; font-size: 0.9em; line-height: 1.4; margin: 0; color: #333;">${call.full_transcript || 'Transcript not available'}</pre>
+                                                    <pre class="transcript-text" style="white-space: pre-wrap; font-family: 'Courier New', monospace; font-size: 0.9em; line-height: 1.4; margin: 0; color: #ffffff; background-color: #2b2b2b; padding: 15px; border-radius: 6px;">${call.full_transcript || 'Transcript not available'}</pre>
                                                 </div>
                                             </div>
                                         </div>
