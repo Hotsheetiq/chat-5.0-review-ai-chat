@@ -191,9 +191,20 @@ def create_app():
                         .then(data => {
                             const container = document.getElementById('call-history-section');
                             if (data.calls && data.calls.length > 0) {
+                                // Store transcript data globally first
+                                window.transcriptData = {};
+                                
                                 container.innerHTML = data.calls.map((call, index) => {
                                     const transcriptId = `transcript-${index}`;
                                     const copyBtnId = `copy-btn-${index}`;
+                                    
+                                    // Store data in global object
+                                    window.transcriptData[transcriptId] = call.full_transcript || 'Transcript not available';
+                                    window.transcriptData[copyBtnId] = {
+                                        name: call.caller_name || 'Unknown Caller', 
+                                        transcript: call.full_transcript || 'Transcript not available'
+                                    };
+                                    
                                     return `<div class="border-bottom pb-3 mb-3">
                                         <div class="row">
                                             <div class="col-md-6">
@@ -231,16 +242,10 @@ def create_app():
                                                     <h6 class="mb-0">Complete Conversation Transcript</h6>
                                                 </div>
                                                 <div class="card-body">
-                                                    <pre class="transcript-text" style="white-space: pre-wrap; font-family: 'Courier New', monospace; font-size: 0.9em; line-height: 1.4; margin: 0; color: #ffffff; background-color: #2b2b2b; padding: 15px; border-radius: 6px;">${call.full_transcript || 'Transcript not available'}</pre>
+                                                    <pre class="transcript-text" style="white-space: pre-wrap; font-family: 'Courier New', monospace; font-size: 0.9em; line-height: 1.4; margin: 0; color: #ffffff; background-color: #2b2b2b; padding: 15px; border-radius: 6px;">${call.full_transcript ? call.full_transcript.replace(/</g, '&lt;').replace(/>/g, '&gt;') : 'Transcript not available'}</pre>
                                                 </div>
                                             </div>
                                         </div>
-                                        <script>
-                                            // Store transcript data for this call
-                                            window.transcriptData = window.transcriptData || {};
-                                            window.transcriptData['${transcriptId}'] = ${JSON.stringify(call.full_transcript || 'Transcript not available')};
-                                            window.transcriptData['${copyBtnId}'] = {name: ${JSON.stringify(call.caller_name)}, transcript: ${JSON.stringify(call.full_transcript || 'Transcript not available')}};
-                                        </script>
                                     </div>`;
                                 }).join('');
                             } else {
