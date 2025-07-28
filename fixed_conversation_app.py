@@ -180,9 +180,9 @@ def create_app():
                                         <option value="reference">📌 Reference Only</option>
                                         <option value="unflagged">No Flag</option>
                                     </select>
-                                    <button class="btn btn-sm btn-outline-light" onclick="toggleFlagMode()" id="flag-mode-btn">
-                                        🏳️ Flag Mode
-                                    </button>
+                                    <small class="text-muted">
+                                        🔒 Flags are read-only for security
+                                    </small>
                                 </div>
                             </div>
                             <div class="card-body" style="max-height: 400px; overflow-y: auto;">
@@ -495,19 +495,8 @@ def create_app():
                 let flagModeActive = false;
                 
                 function toggleFlagMode() {
-                    flagModeActive = !flagModeActive;
-                    const flagSelectors = document.querySelectorAll('.flag-selector');
-                    const modeBtn = document.getElementById('flag-mode-btn');
-                    
-                    if (flagModeActive) {
-                        flagSelectors.forEach(selector => selector.style.display = 'block');
-                        modeBtn.textContent = '❌ Exit Flag Mode';
-                        modeBtn.className = 'btn btn-sm btn-outline-danger';
-                    } else {
-                        flagSelectors.forEach(selector => selector.style.display = 'none');
-                        modeBtn.textContent = '🏳️ Flag Mode';
-                        modeBtn.className = 'btn btn-sm btn-outline-light';
-                    }
+                    // Flag editing disabled for security
+                    showNotification('Flag editing has been disabled for security reasons. Flags are read-only.', 'error');
                 }
                 
                 function filterByFlag() {
@@ -531,40 +520,8 @@ def create_app():
                 }
                 
                 function setFlag(logId, flagType) {
-                    console.log('Setting flag:', logId, flagType);
-                    
-                    // Send API request to update flag
-                    fetch(`/api/set-flag`, {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json'
-                        },
-                        body: JSON.stringify({
-                            log_id: logId,
-                            flag: flagType
-                        })
-                    })
-                    .then(response => {
-                        console.log('Response status:', response.status);
-                        return response.json();
-                    })
-                    .then(data => {
-                        console.log('Response data:', data);
-                        if (data.success) {
-                            // Reload logs to show updated flag
-                            loadUnifiedLogs();
-                            
-                            // Show success notification
-                            const flagName = flagType ? getFlagName(flagType) : 'removed';
-                            showNotification(`Flag ${flagName} applied to ${logId}`, 'success');
-                        } else {
-                            showNotification('Failed to update flag: ' + (data.message || 'Unknown error'), 'error');
-                        }
-                    })
-                    .catch(error => {
-                        console.error('Error updating flag:', error);
-                        showNotification('Error updating flag: ' + error.message, 'error');
-                    });
+                    // Flag editing disabled for security
+                    showNotification('Flag editing has been disabled for security reasons. Flags are read-only.', 'error');
                 }
                 
                 function getFlagName(flagType) {
@@ -947,34 +904,11 @@ log #{log_entry['id']:03d} – {log_entry['date']}
 
     @app.route("/api/set-flag", methods=["POST"])
     def set_flag():
-        """API endpoint to update log entry flags"""
-        try:
-            data = request.get_json()
-            log_id = data.get('log_id', '').replace('log_', '')  # Remove log_ prefix
-            flag_value = data.get('flag', '')
-            
-            # Find and update the log entry
-            log_updated = False
-            for log in request_history_logs:
-                if str(log['id']).zfill(3) == log_id:
-                    if flag_value:
-                        log['flag'] = flag_value
-                    else:
-                        log.pop('flag', None)  # Remove flag if empty
-                    log_updated = True
-                    
-                    # Update REQUEST_HISTORY.md with flag information
-                    append_to_request_history_file(log)
-                    break
-            
-            if log_updated:
-                return jsonify({'success': True, 'message': f'Flag updated for {log_id}'})
-            else:
-                return jsonify({'success': False, 'message': 'Log entry not found'}), 404
-                
-        except Exception as e:
-            logger.error(f"Error setting flag: {e}")
-            return jsonify({'success': False, 'message': 'Error updating flag'}), 500
+        """API endpoint to update log entry flags - DISABLED FOR SECURITY"""
+        return jsonify({
+            'success': False, 
+            'message': 'Flag modification disabled. Flags are read-only to prevent unauthorized changes.'
+        }), 403
 
     @app.route("/voice", methods=["GET", "POST"])
     @app.route("/webhook", methods=["GET", "POST"])
