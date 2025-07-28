@@ -2674,6 +2674,67 @@ PERSONALITY: Warm, empathetic, and intelligent. Show you're genuinely listening 
                 <Say voice="Polly.Matthew-Neural">Please call our office at 718-414-6984 for assistance.</Say>
             </Response>"""
     
+    @app.route("/warmup-status")
+    def warmup_status():
+        """Display comprehensive warm-up system status"""
+        try:
+            from service_warmup import get_warmup_status
+            status = get_warmup_status()
+            
+            return render_template_string('''
+<!DOCTYPE html>
+<html>
+<head>
+    <title>🔥 Service Warm-up Status</title>
+    <link href="https://cdn.replit.com/agent/bootstrap-agent-dark-theme.min.css" rel="stylesheet">
+    <meta http-equiv="refresh" content="30">
+</head>
+<body data-bs-theme="dark">
+    <div class="container mt-4">
+        <h2>🔥 Automated Service Warm-up System</h2>
+        <p class="text-secondary">Background processes keeping all services active to eliminate cold start delays</p>
+        
+        <div class="row">
+            {% for service_name, info in status.items() %}
+            <div class="col-md-6 mb-3">
+                <div class="card">
+                    <div class="card-body">
+                        <h5 class="card-title">{{ service_name.replace('_', ' ').title() }}</h5>
+                        <p class="card-text">
+                            <strong>Status:</strong> 
+                            <span class="badge {% if info['status'] == 'active' %}bg-success{% else %}bg-warning{% endif %}">
+                                {{ info['status'] }}
+                            </span><br>
+                            <strong>Interval:</strong> {{ info['interval_minutes'] }} minutes<br>
+                            <strong>Last Warm-up:</strong> {{ info['last_warmup'] or 'Never' }}<br>
+                            <strong>Next Warm-up:</strong> {{ info['next_warmup'] }}
+                        </p>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        
+        <div class="alert alert-info">
+            <h6>🔧 Warm-up System Details:</h6>
+            <ul class="mb-0">
+                <li><strong>Twilio Webhook:</strong> Keeps webhook routes active in memory</li>
+                <li><strong>Replit Backend:</strong> Prevents cold starts on backend routes</li>
+                <li><strong>Grok AI:</strong> Pre-warms AI models for instant responses</li>
+                <li><strong>ElevenLabs:</strong> Keeps voice synthesis models loaded</li>
+                <li><strong>Rent Manager API:</strong> Maintains authentication tokens</li>
+            </ul>
+        </div>
+        
+        <a href="/dashboard" class="btn btn-primary">← Back to Dashboard</a>
+        <button onclick="location.reload()" class="btn btn-secondary">🔄 Refresh Status</button>
+    </div>
+</body>
+</html>
+            ''', status=status)
+        except Exception as e:
+            return f"<h1>Warm-up Status Error</h1><p>Error getting warm-up status: {e}</p>"
+
     @app.route("/")
     def dashboard():
         """Simple dashboard showing system status"""

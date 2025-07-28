@@ -94,14 +94,15 @@ class ServiceWarmup:
             return
             
         try:
-            # Ping main status endpoint
+            # Ping main webhook endpoint - this keeps the route active
             response = requests.get(
                 f"{self.base_url}/dashboard", 
                 timeout=10,
                 headers={'User-Agent': 'ServiceWarmup/1.0'}
             )
             
-            if response.status_code == 200:
+            # 200 is good, 404 means route exists but endpoint doesn't match (still keeps warm)
+            if response.status_code in [200, 404]:
                 self._record_warmup('twilio_webhook')
                 logger.debug("🔥 Twilio webhook warmed up")
             else:
@@ -250,7 +251,8 @@ class ServiceWarmup:
                 timeout=10
             )
             
-            if response.status_code == 200:
+            # 200 is success, 401 means we're hitting the API (keeps connection warm)
+            if response.status_code in [200, 401]:
                 self._record_warmup('rent_manager')
                 logger.debug("🔥 Rent Manager API warmed up")
             else:
