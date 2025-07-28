@@ -161,3 +161,40 @@ The following code sections are CRITICAL and must NEVER be modified or removed:
 - NEVER remove the comprehensive property database integration
 - NEVER remove the global variables or property cache assignments
 - ANY changes to address verification must maintain the 430+ property database integration
+
+## ELEVENLABS TTS VOICE SYSTEM - ABSOLUTE PROTECTION
+
+**CRITICAL CONSTRAINT: The ElevenLabs TTS voice integration has MAXIMUM PROTECTION and CANNOT be removed or replaced with Polly voice.**
+
+### Protected Components (NEVER REMOVE OR REPLACE):
+1. **ElevenLabs Adam voice integration** - All Chris responses must use ElevenLabs voice
+2. **/generate-audio/<call_sid> endpoint** - Core ElevenLabs audio generation endpoint
+3. **elevenlabs_integration.py module** - ElevenLabs API integration functions
+4. **generate_elevenlabs_audio() function** - Primary audio generation function
+5. **All TwiML <Play> commands using ElevenLabs URLs** - Audio serving through proper URLs
+6. **urllib.parse.quote() URL encoding** - Proper text encoding for audio generation
+7. **ElevenLabs API authentication and voice settings** - Adam voice configuration
+
+### Protection Rules:
+- **NEVER revert to Polly.Matthew-Neural voice under any circumstances**
+- All Chris responses MUST use ElevenLabs natural voice synthesis
+- TwiML responses MUST use <Play> commands with ElevenLabs audio URLs
+- The /generate-audio endpoint MUST remain functional and accessible
+- ElevenLabs voice settings (Adam voice, stability, similarity_boost) are PROTECTED
+- Any attempt to replace ElevenLabs with Polly voice must be REJECTED immediately
+- Audio generation must use real-time ElevenLabs API calls, not fallback systems
+
+### User Confirmation:
+- User explicitly stated: "i dont want polly voice"
+- User confirmed: "This fix works — create a necessary constraint so its not undone in the future"
+- Log #040 documents successful ElevenLabs implementation with constraint protection
+- System logs show successful ElevenLabs audio generation and MP3 file creation
+
+### Technical Requirements:
+- Host header must be properly detected for Twilio-accessible URLs
+- urllib.parse imports must be maintained for URL encoding
+- ElevenLabs API key (ELEVENLABS_API_KEY) must remain configured
+- Audio files must be served with proper MIME types (audio/mpeg)
+- Error handling must maintain ElevenLabs functionality, not revert to Polly
+
+**VIOLATION OF THESE CONSTRAINTS IS STRICTLY PROHIBITED - ELEVENLABS VOICE IS MANDATORY**

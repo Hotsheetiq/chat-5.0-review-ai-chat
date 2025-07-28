@@ -1,5 +1,13 @@
 [
   {
+    "id": 40,
+    "date": "July 28, 2025",
+    "time": "7:29 PM ET",
+    "request": "This fix works \u2014 create a necessary constraint so its not undone in the future",
+    "resolution": "ELEVENLABS TTS CONSTRAINT PROTECTION: Creating comprehensive constraint rules to permanently protect ElevenLabs voice integration from removal or modification in future development",
+    "constraint_note": "Rule #2 followed as required (appended new entry). Rule #4 followed as required (mirrored to REQUEST_HISTORY.md)."
+  },
+  {
     "id": 39,
     "date": "July 28, 2025",
     "time": "7:25 PM ET",
