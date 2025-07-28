@@ -72,6 +72,22 @@ try:
     
     logger.info("Rent Manager API, Service Handler, and Address Matcher initialized successfully")
     
+    # Initialize SendGrid for email notifications
+    try:
+        from sendgrid import SendGridAPIClient
+        from sendgrid.helpers.mail import Mail
+        
+        SENDGRID_API_KEY = os.environ.get('SENDGRID_API_KEY')
+        if SENDGRID_API_KEY:
+            sendgrid_client = SendGridAPIClient(api_key=SENDGRID_API_KEY)
+            logger.info("✅ SendGrid client initialized successfully")
+        else:
+            sendgrid_client = None
+            logger.warning("⚠️ SENDGRID_API_KEY not found - email notifications disabled")
+    except ImportError:
+        sendgrid_client = None
+        logger.warning("⚠️ SendGrid not installed - email notifications disabled")
+    
     # Set SMS environment variable if missing
     if not os.environ.get('TWILIO_PHONE_NUMBER'):
         os.environ['TWILIO_PHONE_NUMBER'] = '+18886411102'
@@ -2928,10 +2944,28 @@ PERSONALITY: Warm, empathetic, and intelligent. Show you're genuinely listening 
                                     verified_property = "31 Port Richmond Avenue"
                                     logger.info(f"✅ SPEECH CORRECTION: 3140 → 31 Port Richmond Avenue")
                             
-                            # If no match found, it's a fake address
+                            # If no match found, check if using Rent Manager API and offer alternative input path
                             if not verified_property:
-                                logger.error(f"❌ FAKE ADDRESS REJECTED: '{potential_address}' - Not in property system")
-                            
+                                logger.error(f"❌ ADDRESS NOT FOUND: '{potential_address}' - Not in property system")
+                                # Check if address matcher has real API properties loaded
+                                if hasattr(address_matcher, 'properties') and len(getattr(address_matcher, 'properties', [])) > 0:
+                                    logger.info(f"🔍 RENT MANAGER API ACTIVE: {len(address_matcher.properties)} properties loaded")
+                                    # API is working but address not found - offer alternative input
+                                    response_text = f"I couldn't find '{potential_address}' in our property system using our database. Let me help you enter this more carefully. Can you spell the street name letter by letter? For example, say 'P-O-R-T' for Port."
+                                    
+                                    # Store unverified address info for alternative input workflow
+                                    verified_address_info = {
+                                        'issue_type': detected_issue_type,
+                                        'unverified_address': potential_address,
+                                        'waiting_for_street_spelling': True,
+                                        'alternative_input_mode': True
+                                    }
+                                    logger.info(f"🔤 STARTING ALTERNATIVE INPUT: Street spelling for '{potential_address}'")
+                                else:
+                                    logger.warning(f"⚠️ RENT MANAGER API NOT AVAILABLE: Using fallback address list")
+                                    # API not available, use fallback response
+                                    response_text = f"I couldn't find '{potential_address}' in our property system. We manage 29 Port Richmond Avenue, 31 Port Richmond Avenue, and 122 Targee Street. Could you say your correct address again?"
+                                
                             if verified_property:
                                 # ADDRESS VERIFIED - Check if this is a multi-unit property that needs apartment number
                                 multi_unit_properties = ["29 Port Richmond Avenue", "31 Port Richmond Avenue"]  # Multi-unit properties
@@ -2943,7 +2977,6 @@ PERSONALITY: Warm, empathetic, and intelligent. Show you're genuinely listening 
                                     logger.info(f"✅ MULTI-UNIT ADDRESS VERIFIED: {verified_property} - Requesting apartment number")
                                     
                                     # Store verified info for ticket creation
-                                    global verified_address_info
                                     verified_address_info = {
                                         'issue_type': detected_issue_type,
                                         'address': verified_property,
@@ -2957,9 +2990,7 @@ PERSONALITY: Warm, empathetic, and intelligent. Show you're genuinely listening 
                                     result = create_service_ticket(detected_issue_type, verified_property)
                                     response_text = result if result else f"Perfect! I've created a {detected_issue_type} service ticket for {verified_property}."
                                     logger.info(f"🎫 SINGLE FAMILY TICKET CREATED: {detected_issue_type} at {verified_property}")
-                            else:
-                                response_text = f"I couldn't find '{potential_address}' in our property system. We manage 29 Port Richmond Avenue, 31 Port Richmond Avenue, and 122 Targee Street. Could you say your correct address again?"
-                                logger.error(f"❌ FAKE ADDRESS BLOCKED: '{potential_address}' rejected - not in property system")
+                            # This else clause is now handled above in the enhanced verification section
 
                 # PRIORITY 5: General admin actions fallback (training mode only)
                 if not response_text and call_sid in training_sessions and is_potential_admin:
@@ -2974,8 +3005,81 @@ PERSONALITY: Warm, empathetic, and intelligent. Show you're genuinely listening 
                     else:
                         logger.info(f"🔧 NO ADMIN FALLBACK MATCHED for: '{user_input}'")
                 
-                # PRIORITY 4: Check for apartment number response (after address verification)
-                if not response_text and verified_address_info.get('waiting_for_apartment'):
+                # PRIORITY 4: Check for alternative address input workflow (street spelling, house number)
+                if not response_text and verified_address_info.get('waiting_for_street_spelling'):
+                    # User is spelling out street name letter by letter
+                    import re
+                    # Extract letters from input (P-O-R-T or P O R T or PORT)
+                    letters = re.findall(r'[A-Za-z]', user_input.upper())
+                    if letters:
+                        street_spelled = ''.join(letters)
+                        logger.info(f"🔤 STREET SPELLING RECEIVED: {letters} → {street_spelled}")
+                        
+                        # Store spelled street and ask for house number
+                        verified_address_info['spelled_street'] = street_spelled
+                        verified_address_info['waiting_for_street_spelling'] = False
+                        verified_address_info['waiting_for_house_number'] = True
+                        
+                        response_text = f"Got it, {street_spelled}. Now can you tell me the house number one digit at a time? For example, say '2-9' for 29."
+                        logger.info(f"🏠 REQUESTING HOUSE NUMBER for street: {street_spelled}")
+                    else:
+                        response_text = "I didn't catch the letters. Can you spell the street name again, letter by letter? For example, 'P-O-R-T' for Port."
+                        logger.info(f"🔤 STREET SPELLING NOT RECOGNIZED: {user_input}")
+                
+                elif not response_text and verified_address_info.get('waiting_for_house_number'):
+                    # User is giving house number digit by digit
+                    import re
+                    # Extract digits from input (2-9 or 2 9 or 29)
+                    digits = re.findall(r'[0-9]', user_input)
+                    if digits:
+                        house_number = ''.join(digits)
+                        spelled_street = verified_address_info.get('spelled_street', '')
+                        reconstructed_address = f"{house_number} {spelled_street}"
+                        logger.info(f"🏠 HOUSE NUMBER RECEIVED: {digits} → {house_number}")
+                        logger.info(f"🏗️ RECONSTRUCTED ADDRESS: {reconstructed_address}")
+                        
+                        # Ask for apartment number if this looks like a multi-unit building
+                        verified_address_info['waiting_for_house_number'] = False
+                        verified_address_info['waiting_for_apartment_manual'] = True
+                        verified_address_info['reconstructed_address'] = reconstructed_address
+                        
+                        response_text = f"Perfect! So that's {reconstructed_address}. Do you have an apartment number? If not, just say 'no apartment'."
+                        logger.info(f"🏠 REQUESTING APARTMENT for: {reconstructed_address}")
+                    else:
+                        response_text = "I didn't catch the numbers. Can you tell me the house number one digit at a time? For example, '2-9' for 29."
+                        logger.info(f"🏠 HOUSE NUMBER NOT RECOGNIZED: {user_input}")
+                
+                elif not response_text and verified_address_info.get('waiting_for_apartment_manual'):
+                    # User is providing apartment number or saying no apartment
+                    reconstructed_address = verified_address_info.get('reconstructed_address', '')
+                    issue_type = verified_address_info.get('issue_type', 'maintenance')
+                    
+                    if 'no apartment' in user_input.lower() or 'no apt' in user_input.lower():
+                        final_address = reconstructed_address
+                    else:
+                        # Extract apartment info
+                        import re
+                        apt_pattern = r'(\d+[A-Z]?|\w+)'
+                        apt_match = re.search(apt_pattern, user_input, re.IGNORECASE)
+                        if apt_match:
+                            apartment = apt_match.group(1)
+                            final_address = f"{reconstructed_address}, Apt {apartment}"
+                        else:
+                            final_address = reconstructed_address
+                    
+                    logger.info(f"📧 UNVERIFIED ADDRESS - SENDING EMAIL: {final_address}")
+                    
+                    # Send email to admin instead of creating service ticket
+                    send_unverified_address_email_sync(final_address, issue_type, caller_phone)
+                    
+                    response_text = f"Thank you! I've recorded your {issue_type} issue at {final_address}. Since this address needs verification, I've sent the details to our property management team at Dimasoftwaredev@gmail.com. Someone will contact you within 24 hours to confirm the address and schedule service."
+                    
+                    # Clear verification info
+                    verified_address_info = {}
+                    logger.info(f"📧 EMAIL SENT for unverified address: {final_address}")
+                
+                # PRIORITY 5: Check for apartment number response (after address verification)
+                elif not response_text and verified_address_info.get('waiting_for_apartment'):
                     # User provided apartment number after address verification
                     import re
                     apt_pattern = r'(\d+[A-Z]?|\w+)'
@@ -4524,6 +4628,69 @@ ISSUE DETAILS: Please describe what specific problem you're experiencing with th
         call_count=len([c for c in conversation_history.keys()]),
         total_conversations=len(conversation_history)
         )
+
+    def send_unverified_address_email_sync(address, issue_type, caller_phone):
+        """Send email notification for unverified address to admin"""
+        try:
+            if 'sendgrid_client' not in globals() or sendgrid_client is None:
+                logger.warning("📧 SendGrid not available - email notification skipped")
+                return False
+            
+            # Admin email
+            admin_email = "Dimasoftwaredev@gmail.com"
+            from_email = "noreply@grinbergmanagement.com"
+            
+            # Create email content
+            subject = f"Unverified Address Service Request - {address}"
+            
+            email_content = f"""
+            <h2>Unverified Address Service Request</h2>
+            
+            <p><strong>A service request was submitted for an address that could not be verified in our property database.</strong></p>
+            
+            <h3>Request Details:</h3>
+            <ul>
+                <li><strong>Address:</strong> {address}</li>
+                <li><strong>Issue Type:</strong> {issue_type.title()}</li>
+                <li><strong>Caller Phone:</strong> {caller_phone}</li>
+                <li><strong>Date/Time:</strong> {datetime.now().strftime('%Y-%m-%d %H:%M:%S')} ET</li>
+            </ul>
+            
+            <h3>Required Actions:</h3>
+            <ol>
+                <li>Verify if this address is a Grinberg Management property</li>
+                <li>If verified, add to property database</li>
+                <li>Contact caller at {caller_phone} to confirm address and schedule service</li>
+                <li>If not our property, inform caller appropriately</li>
+            </ol>
+            
+            <p><strong>Timeline:</strong> Please respond within 24 hours as promised to the caller.</p>
+            
+            <hr>
+            <p><small>This email was automatically generated by Chris AI Assistant</small></p>
+            """
+            
+            # Create and send email
+            from sendgrid.helpers.mail import Mail
+            message = Mail(
+                from_email=from_email,
+                to_emails=admin_email,
+                subject=subject,
+                html_content=email_content
+            )
+            
+            response = sendgrid_client.send(message)
+            
+            if response.status_code == 202:
+                logger.info(f"📧 EMAIL SENT SUCCESSFULLY to {admin_email} for unverified address: {address}")
+                return True
+            else:
+                logger.error(f"📧 EMAIL SEND FAILED: Status {response.status_code}")
+                return False
+                
+        except Exception as e:
+            logger.error(f"📧 EMAIL SEND ERROR: {e}")
+            return False
     
     @app.route("/admin-training")
     def admin_training():

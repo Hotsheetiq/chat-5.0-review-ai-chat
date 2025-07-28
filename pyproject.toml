@@ -22,4 +22,6 @@ dependencies = [
     "gevent>=25.5.1",
     "requests>=2.32.4",
     "asyncio>=3.4.3",
+    "sendgrid>=6.12.4",
+    "sqlalchemy>=2.0.41",
 ]
