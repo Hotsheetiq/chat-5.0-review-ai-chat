@@ -5531,15 +5531,9 @@ API INTELLIGENCE: System detects Rent Manager API availability (430 properties l
             if 'recent_complaints' in complaint_tracker:
                 for complaint_data in complaint_tracker['recent_complaints']:
                     if isinstance(complaint_data, dict) and 'title' in complaint_data:
-                        # Convert timestamp to Eastern time if available
-                        complaint_time = complaint_data.get('time', current_et.strftime('%I:%M %p ET'))
-                        if not 'ET' in complaint_time:
-                            # If time doesn't have timezone, assume it needs ET conversion
-                            try:
-                                # Parse and convert to ET
-                                complaint_time = current_et.strftime('%I:%M %p ET')
-                            except:
-                                complaint_time = current_et.strftime('%I:%M %p ET')
+                        # Preserve historical timestamps - do NOT override with current time
+                        complaint_time = complaint_data.get('time', 'Unknown Time')
+                        # Keep the original historical timestamp as-is
                         
                         # Assign priority based on complaint type and content
                         priority = 3  # Default priority
