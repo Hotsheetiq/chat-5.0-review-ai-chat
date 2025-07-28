@@ -3259,9 +3259,45 @@ Respond thoughtfully, showing your reasoning if this is a test scenario, or ackn
     # Add the continue processing route
     add_hold_processing_route(app, handle_speech_internal)
     
+    @app.route('/status')
+    def service_status_dashboard():
+        """Enhanced service monitoring dashboard"""
+        try:
+            from enhanced_service_warmup import get_warmup_status
+            status_data = get_warmup_status()
+        except Exception as e:
+            # Fallback to basic status
+            logger.error(f"Enhanced status error: {e}")
+            status_data = {
+                'system_status': 'unknown',
+                'last_updated': datetime.now(),
+                'services': {
+                    'grok_ai': {'is_healthy': False, 'last_error': 'Status unavailable', 'needs_attention': True, 'success_rate': 0, 'consecutive_failures': 0},
+                    'elevenlabs': {'is_healthy': False, 'last_error': 'Status unavailable', 'needs_attention': True, 'success_rate': 0, 'consecutive_failures': 0},
+                    'twilio': {'is_healthy': False, 'last_error': 'Status unavailable', 'needs_attention': True, 'success_rate': 0, 'consecutive_failures': 0},
+                    'rent_manager': {'is_healthy': False, 'last_error': 'Status unavailable', 'needs_attention': True, 'success_rate': 0, 'consecutive_failures': 0}
+                }
+            }
+        
+        return render_template('service_status.html', status=status_data)
+
+    @app.route('/warmup-status')
+    def warmup_status_api():
+        """API endpoint for warmup status (JSON)"""
+        try:
+            from enhanced_service_warmup import get_warmup_status
+            return jsonify(get_warmup_status())
+        except Exception as e:
+            return jsonify({
+                'error': str(e),
+                'system_status': 'error',
+                'last_updated': datetime.now().isoformat()
+            }), 500
+
     return app
 
 if __name__ == "__main__":
     app = create_app()
     port = int(os.environ.get("PORT", 5000))
     app.run(host="0.0.0.0", port=port, debug=True)
+
