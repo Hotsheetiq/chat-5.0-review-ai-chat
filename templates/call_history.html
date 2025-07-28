@@ -85,8 +85,8 @@
                     <small>Service Requests</small>
                 </div>
                 <div class="col-md-3">
-                    <h4>{{ moment().format('h:mm A') if moment else 'Now' }}</h4>
-                    <small>Last Updated</small>
+                    <h4 id="current-time">Loading...</h4>
+                    <small>Current Time (ET)</small>
                 </div>
             </div>
         </div>
@@ -211,11 +211,39 @@
 
         <!-- Footer with Auto-refresh Info -->
         <div class="mt-4 text-center text-muted">
-            <small>Page automatically refreshes every 60 seconds • Last updated: {{ moment().format('h:mm:ss A') if moment else 'Now' }}</small>
+            <small>Page automatically refreshes every 60 seconds • Last updated: <span id="last-updated">Now</span></small>
         </div>
     </div>
 
     <script>
+        // Update time display in Eastern Time
+        function updateTime() {
+            const now = new Date();
+            const options = {
+                timeZone: 'America/New_York',
+                hour: 'numeric',
+                minute: '2-digit',
+                hour12: true
+            };
+            const easternTime = now.toLocaleString('en-US', options);
+            document.getElementById('current-time').textContent = easternTime;
+            
+            // Update last updated time
+            const lastUpdatedOptions = {
+                timeZone: 'America/New_York',
+                hour: 'numeric',
+                minute: '2-digit',
+                second: '2-digit',
+                hour12: true
+            };
+            const lastUpdatedTime = now.toLocaleString('en-US', lastUpdatedOptions);
+            document.getElementById('last-updated').textContent = lastUpdatedTime;
+        }
+        
+        // Update time every second
+        updateTime();
+        setInterval(updateTime, 1000);
+        
         // Auto-refresh active calls every 30 seconds for live data
         setTimeout(() => {
             if (!document.hidden) {

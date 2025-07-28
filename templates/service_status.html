@@ -65,8 +65,8 @@
                     <small>Services Healthy</small>
                 </div>
                 <div class="col-md-3">
-                    <h3>{{ status.last_updated.strftime('%-I:%M %p') if status.last_updated else 'Unknown' }}</h3>
-                    <small>Last Updated</small>
+                    <h3 id="current-time">{{ status.last_updated.strftime('%-I:%M %p') if status.last_updated else 'Unknown' }}</h3>
+                    <small>Current Time (ET)</small>
                 </div>
             </div>
         </div>
@@ -240,6 +240,26 @@
             console.error('All navigation methods failed');
             alert('Navigation failed. Please manually click your browser\'s back button or go to the main page.');
         }
+
+        // Update time display in Eastern Time
+        function updateTime() {
+            const now = new Date();
+            const options = {
+                timeZone: 'America/New_York',
+                hour: 'numeric',
+                minute: '2-digit',
+                hour12: true
+            };
+            const easternTime = now.toLocaleString('en-US', options);
+            const timeElement = document.getElementById('current-time');
+            if (timeElement) {
+                timeElement.textContent = easternTime;
+            }
+        }
+        
+        // Update time every second
+        updateTime();
+        setInterval(updateTime, 1000);
     </script>
 </body>
 </html>

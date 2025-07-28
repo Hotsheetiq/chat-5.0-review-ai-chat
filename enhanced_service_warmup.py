@@ -325,9 +325,14 @@ class EnhancedServiceWarmup:
     
     def get_status_summary(self) -> Dict[str, Any]:
         """Get comprehensive status summary for monitoring dashboard"""
+        # Use Eastern Time for dashboard display
+        import pytz
+        eastern = pytz.timezone('US/Eastern')
+        eastern_now = datetime.now(eastern)
+        
         summary = {
             'system_status': 'healthy' if self.running else 'stopped',
-            'last_updated': datetime.now(),
+            'last_updated': eastern_now,
             'services': {}
         }
         
