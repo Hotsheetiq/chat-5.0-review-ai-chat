@@ -85,10 +85,10 @@ try:
     else:
         logger.warning("⚠️ AI Speech Intelligence initialization failed")
         
-    # Initialize Service Warm-up System
-    from service_warmup import initialize_warmup_system
-    initialize_warmup_system()
-    logger.info("🔥 Service warm-up system started - all services will stay active")
+    # Initialize Enhanced Service Warm-up System
+    from enhanced_service_warmup import start_enhanced_warmup
+    start_enhanced_warmup()
+    logger.info("🔥 Enhanced service warm-up system started - all services will stay active")
     
     # Initialize Call Monitoring System
     from call_monitoring import get_call_monitor

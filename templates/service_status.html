@@ -109,7 +109,7 @@
                         <strong>Last Success:</strong><br>
                         <small>
                             {% if service_data.last_success %}
-                                {{ service_data.last_success | strftime('%-m/%-d/%Y %-I:%M %p') }}
+                                {{ service_data.last_success.strftime('%-m/%-d/%Y %-I:%M %p') }}
                             {% else %}
                                 Never
                             {% endif %}
@@ -140,7 +140,7 @@
                     {% if service_name == 'rent_manager' and service_data.token_refreshed %}
                     <div class="metric">
                         <strong>Token Refreshed:</strong><br>
-                        <small class="text-info">{{ service_data.token_refreshed | strftime('%-m/%-d/%Y %-I:%M %p') }}</small>
+                        <small class="text-info">{{ service_data.token_refreshed.strftime('%-m/%-d/%Y %-I:%M %p') if service_data.token_refreshed else 'Never' }}</small>
                     </div>
                     {% endif %}
 

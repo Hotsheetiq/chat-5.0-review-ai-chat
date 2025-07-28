@@ -147,10 +147,11 @@ class EnhancedServiceWarmup:
             # Use the same Grok AI instance from main app
             grok_ai = GrokAI()
             
-            # Send a minimal warm-up request (fix parameter issue)
+            # Send a minimal warm-up request with proper message format
+            test_messages = [{"role": "user", "content": "Hello"}]
             response = grok_ai.generate_response(
-                "warm-up test", 
-                [],
+                test_messages,
+                max_tokens=10,
                 timeout=5.0
             )
             
