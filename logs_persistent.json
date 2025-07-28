@@ -1,5 +1,13 @@
 [
   {
+    "id": 31,
+    "date": "July 28, 2025",
+    "time": "6:49 PM ET",
+    "request": "chris report a technical issue as soon as i state my problem",
+    "resolution": "CRITICAL TECHNICAL ERROR FIX: Fixed re module import scope error causing technical issues when stating problems. Moved import to proper location to prevent variable access errors during speech processing.",
+    "constraint_note": "Rule #2 followed as required (appended new entry). Rule #4 followed as required (mirrored to REQUEST_HISTORY.md)."
+  },
+  {
     "id": 30,
     "date": "July 28, 2025",
     "time": "6:45 PM ET",

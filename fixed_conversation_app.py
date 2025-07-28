@@ -1221,7 +1221,6 @@ log #{log_entry['id']:03d} – {log_entry['date']}
             # MANDATORY PRE-CHECK: Force rejection for unverified addresses BEFORE AI processing
             if "ABSOLUTE REJECTION REQUIRED" in address_context:
                 # Extract the invalid address from the context
-                import re
                 address_match = re.search(r"mentioned '([^']+)'", address_context)
                 if address_match:
                     invalid_address = address_match.group(1)
