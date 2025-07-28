@@ -1,0 +1,78 @@
+[2025-07-28 08:17:34 +0000] [21048] [INFO] Starting gunicorn 23.0.0
+[2025-07-28 08:17:34 +0000] [21048] [INFO] Listening at: http://0.0.0.0:5000 (21048)
+[2025-07-28 08:17:34 +0000] [21048] [INFO] Using worker: sync
+[2025-07-28 08:17:34 +0000] [21048] [INFO] Handling signal: winchd: 21060
+INFO:fixed_conversation_app:✅ OpenAI client initialized successfully
+INFO:fixed_conversation_app:🏢 INITIALIZING COMPREHENSIVE PROPERTY BACKUP SYSTEM...
+[2025-07-28 08:17:35 +0000] [21048] [INFO] Handling signal: winch
+[2025-07-28 08:17:35 +0000] [21048] [INFO] Handling signal: winch
+[2025-07-28 08:17:35 +0000] [21048] [INFO] Handling signal: winch
+[2025-07-28 08:17:35 +0000] [21048] [INFO] Handling signal: winch
+WARNING:rent_manager:Rent Manager API session limit reached - using existing session management
+ERROR:rent_manager:Failed to retrieve properties
+WARNING:property_backup_system:⚠️ API returned empty properties - using backup
+INFO:property_backup_system:📋 BACKUP LOADED: 430 properties from backup file
+INFO:fixed_conversation_app:✅ COMPREHENSIVE BACKUP ACTIVE: Address matcher loaded with 430 properties
+INFO:fixed_conversation_app:📊 ✅ No new addresses detected since last update
+INFO:fixed_conversation_app:Rent Manager API, Service Handler, and Address Matcher initialized successfully
+INFO:fixed_conversation_app:✅ SendGrid client initialized successfully
+INFO:fixed_conversation_app:✅ TWILIO_PHONE_NUMBER set for SMS functionality
+INFO:grok_integration:✅ Grok AI client initialized successfully
+[2025-07-28 08:17:35 +0000] [21048] [INFO] Handling signal: winch
+[2025-07-28 08:17:35 +0000] [21048] [INFO] Handling signal: winch
+[2025-07-28 08:17:35 +0000] [21048] [INFO] Handling signal: winch
+[2025-07-28 08:17:35 +0000] [21048] [INFO] Handling signal: winch
+[2025-07-28 08:17:35 +0000] [21048] [INFO] Handling signal: winch
+[2025-07-28 08:17:35 +0000] [21048] [INFO] Handling signal: winch
+[2025-07-28 08:17:35 +0000] [21048] [INFO] Handling signal: winch
+[2025-07-28 08:17:35 +0000] [21048] [INFO] Handling signal: winch
+[2025-07-28 08:17:35 +0000] [21048] [INFO] Handling signal: winch
+[2025-07-28 08:17:35 +0000] [21048] [INFO] Handling signal: winch
+[2025-07-28 08:17:35 +0000] [21048] [INFO] Handling signal: winch
+[2025-07-28 08:17:35 +0000] [21048] [INFO] Handling signal: winch
+[2025-07-28 08:17:36 +0000] [21048] [INFO] Handling signal: winch
+[2025-07-28 08:17:36 +0000] [21048] [INFO] Handling signal: winch
+[2025-07-28 08:17:36 +0000] [21048] [INFO] Handling signal: winch
+INFO:httpx:HTTP Request: POST https://api.x.ai/v1/chat/completions "HTTP/1.1 200 OK"
+INFO:grok_integration:🚀 Grok AI pre-warmed - first responses will be faster
+INFO:fixed_conversation_app:✅ Grok AI initialized successfully
+INFO:grok_integration:✅ Grok AI client initialized successfully
+[2025-07-28 08:17:36 +0000] [21048] [INFO] Handling signal: winch
+[2025-07-28 08:17:36 +0000] [21048] [INFO] Handling signal: winch
+[2025-07-28 08:17:36 +0000] [21048] [INFO] Handling signal: winch
+[2025-07-28 08:17:36 +0000] [21048] [INFO] Handling signal: winch
+[2025-07-28 08:17:36 +0000] [21048] [INFO] Handling signal: winch
+[2025-07-28 08:17:36 +0000] [21048] [INFO] Handling signal: winch
+[2025-07-28 08:17:36 +0000] [21048] [INFO] Handling signal: winch
+[2025-07-28 08:17:36 +0000] [21048] [INFO] Handling signal: winch
+[2025-07-28 08:17:36 +0000] [21048] [INFO] Handling signal: winch
+INFO:httpx:HTTP Request: POST https://api.x.ai/v1/chat/completions "HTTP/1.1 200 OK"
+INFO:grok_integration:🚀 Grok AI pre-warmed - first responses will be faster
+INFO:ai_speech_intelligence:✅ AI Speech Intelligence initialized
+INFO:fixed_conversation_app:✅ AI Speech Intelligence initialized successfully
+INFO:enhanced_service_warmup:🔥 Starting enhanced service warm-up system...
+INFO:enhanced_service_warmup:✅ All enhanced warm-up threads started
+INFO:fixed_conversation_app:🔥 Enhanced service warm-up system started - all services will stay active
+INFO:grok_integration:✅ Grok AI client initialized successfully
+INFO:fixed_conversation_app:📞 Call monitoring system initialized
+INFO:fixed_conversation_app:📝 USER COMPLAINT LOGGED: Chris reports technical issue during live calls
+INFO:fixed_conversation_app:📝 NEW COMPLAINT TRACKED: i still dont see it. why isnt it bieng added automatically and logged automatically
+INFO:fixed_conversation_app:📝 NEW COMPLAINT TRACKED: chris is not able to find the address i provided, is he using rent manager api?
+INFO:fixed_conversation_app:📝 NEW COMPLAINT TRACKED: great but again i dont see this fix in our log
+WARNING:enhanced_call_flow:⚠️ ElevenLabs not available - using fallback hold messages
+INFO:enhanced_call_flow:✅ ENHANCED CALL FLOW ROUTES ADDED
+WARNING:enhanced_call_flow:⚠️ ElevenLabs not available - using fallback hold messages
+INFO:fixed_conversation_app:✅ ENHANCED CALL FLOW SYSTEM INITIALIZED
+INFO:enhanced_service_warmup:🚀 Twilio webhook endpoint pre-warmed successfully
+INFO:enhanced_service_warmup:✅ twilio warm-up successful
+INFO:enhanced_service_warmup:🚀 ElevenLabs voice model pre-warmed successfully
+INFO:enhanced_service_warmup:✅ elevenlabs warm-up successful
+INFO:httpx:HTTP Request: POST https://api.x.ai/v1/chat/completions "HTTP/1.1 200 OK"
+INFO:grok_integration:🚀 Grok AI pre-warmed - first responses will be faster
+INFO:httpx:HTTP Request: POST https://api.x.ai/v1/chat/completions "HTTP/1.1 200 OK"
+INFO:grok_integration:✅ Using Grok 2 - optimized for speed
+INFO:enhanced_service_warmup:🚀 Grok AI pre-warmed successfully
+INFO:enhanced_service_warmup:✅ grok_ai warm-up successful
+WARNING:rent_manager:Rent Manager API session limit reached - using existing session management
+WARNING:enhanced_service_warmup:⚠️ Rent Manager auth skipped (likely session limit) - using existing sessions
+INFO:enhanced_service_warmup:✅ rent_manager warm-up successful

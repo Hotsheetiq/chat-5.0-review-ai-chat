@@ -4563,6 +4563,9 @@ ISSUE DETAILS: Please describe what specific problem you're experiencing with th
                                     new Date(b.date || b.timestamp) - new Date(a.date || a.timestamp)
                                 );
                                 
+                                console.log('Total entries after combine:', allEntries.length);
+                                console.log('First 3 entries:', allEntries.slice(0, 3).map(e => ({ type: e.type, timestamp: e.timestamp || e.date, date: e.date })));
+                                
                                 // Render unified list
                                 container.innerHTML = allEntries.map(entry => {
                                     if (entry.type === 'manual') {
