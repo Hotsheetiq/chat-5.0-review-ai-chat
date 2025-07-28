@@ -11,6 +11,8 @@ import os
 import logging
 import requests
 import re
+import time
+import threading
 from datetime import datetime
 import random
 import pytz
@@ -1291,7 +1293,7 @@ PERSONALITY: Warm, empathetic, and intelligent. Show you're genuinely listening 
 
     @app.route("/handle-speech/<call_sid>", methods=["POST"])
     def handle_speech(call_sid):
-        """Handle speech input with FIXED conversation flow"""
+        """Handle speech input with IMMEDIATE hold message system"""
         try:
             user_input = request.values.get("SpeechResult", "").strip()
             dtmf_input = request.values.get("Digits", "").strip()
@@ -1314,7 +1316,29 @@ PERSONALITY: Warm, empathetic, and intelligent. Show you're genuinely listening 
                         <Redirect>/handle-speech/{call_sid}</Redirect>
                     </Response>"""
             
-            return handle_speech_internal(call_sid, user_input, caller_phone, speech_confidence)
+            # CRITICAL FIX: Determine immediately if this needs hold message
+            if should_use_immediate_hold_message(user_input):
+                logger.info(f"🔄 IMMEDIATE HOLD: Playing hold message while processing '{user_input[:50]}...'")
+                
+                # Start AI processing IMMEDIATELY in background thread
+                import threading
+                processing_thread = threading.Thread(
+                    target=start_ai_processing_with_buffer,
+                    args=(call_sid, user_input, caller_phone, speech_confidence)
+                )
+                processing_thread.daemon = True
+                processing_thread.start()
+                
+                # Return hold message TwiML IMMEDIATELY - no waiting
+                hold_audio_url = "https://3442ef02-e255-4239-86b6-df0f7a6e4975-00-1w63nn4pu7btq.picard.replit.dev/static/please_hold.mp3"
+                return f"""<?xml version="1.0" encoding="UTF-8"?>
+                <Response>
+                    <Play>{hold_audio_url}</Play>
+                    <Redirect>/get-buffered-response/{call_sid}</Redirect>
+                </Response>"""
+            else:
+                # Simple requests get immediate processing without hold message
+                return handle_speech_internal(call_sid, user_input, caller_phone, speech_confidence)
             
         except Exception as e:
             logger.error(f"Speech handling error: {e}")
@@ -1328,15 +1352,71 @@ PERSONALITY: Warm, empathetic, and intelligent. Show you're genuinely listening 
                 </Gather>
             </Response>"""
     
-    def process_delayed_response(call_sid, user_input, caller_phone, speech_confidence):
-        """Process complex requests in background to prevent blocking user experience"""
+    # Global response buffer for hold message timing
+    response_buffer = {}
+    
+    def should_use_immediate_hold_message(user_input: str) -> bool:
+        """Determine if request should use immediate hold message"""
+        if not user_input or len(user_input.strip()) < 3:
+            return False
+            
+        user_lower = user_input.lower().strip()
+        
+        # Instant responses (no hold message needed)
+        instant_patterns = [
+            "hello", "hi", "hey", "yes", "no", "thank you", "thanks", "bye",
+            "are you open", "office hours", "goodbye", "what time", "when"
+        ]
+        
+        if any(pattern in user_lower for pattern in instant_patterns) and len(user_input.split()) <= 3:
+            return False
+        
+        # Complex requests that benefit from hold message
+        complex_patterns = [
+            "I have", "problem", "issue", "broken", "not working", "maintenance", 
+            "service", "repair", "fix", "apartment", "unit", "building", "street", 
+            "avenue", "address", "rat", "mouse", "leak", "electric", "heat", "cold",
+            "plumbing", "toilet", "water", "appliance", "washing", "dryer"
+        ]
+        
+        return any(pattern in user_lower for pattern in complex_patterns) or len(user_input.split()) > 6
+    
+    def start_ai_processing_with_buffer(call_sid, user_input, caller_phone, speech_confidence):
+        """Start AI processing and buffer response for seamless playback after hold message"""
         try:
-            logger.info(f"🔄 BACKGROUND PROCESSING: {user_input} for call {call_sid}")
-            # This would handle complex operations like tenant lookup, API calls, etc.
-            # For now, just log that we're processing
-            # In future, could update conversation state or prepare next response
+            logger.info(f"🚀 BACKGROUND AI PROCESSING STARTED for call {call_sid}: '{user_input[:50]}...'")
+            start_time = time.time()
+            
+            # Process the request using existing internal handler
+            ai_response = handle_speech_internal(call_sid, user_input, caller_phone, speech_confidence)
+            
+            processing_time = time.time() - start_time
+            logger.info(f"✅ AI PROCESSING COMPLETED in {processing_time:.2f}s - response buffered for {call_sid}")
+            
+            # Store the response in buffer for retrieval after hold message
+            response_buffer[call_sid] = {
+                'response': ai_response,
+                'timestamp': time.time(),
+                'processing_time': processing_time
+            }
+            
         except Exception as e:
-            logger.error(f"Background processing error: {e}")
+            logger.error(f"❌ Background AI processing error for {call_sid}: {e}")
+            # Store error response in buffer
+            error_response = f"""<?xml version="1.0" encoding="UTF-8"?>
+            <Response>
+                <Say voice="Polly.Matthew-Neural">I'm sorry, I had a technical issue. How can I help you?</Say>
+                <Gather input="speech dtmf" timeout="8" speechTimeout="4" dtmfTimeout="2" language="en-US" action="/handle-input/{call_sid}" method="POST">
+                </Gather>
+                <Redirect>/handle-speech/{call_sid}</Redirect>
+            </Response>"""
+            
+            response_buffer[call_sid] = {
+                'response': error_response,
+                'timestamp': time.time(),
+                'processing_time': 0,
+                'error': str(e)
+            }
     
     def prewarm_systems_for_call(call_sid, caller_phone):
         """Pre-warm systems during greeting to reduce first response delay"""
@@ -3943,6 +4023,61 @@ Respond thoughtfully, showing your reasoning if this is a test scenario, or ackn
                     "rent_manager": {"success_count": 1, "consecutive_failures": None, "last_success_time": datetime.now().isoformat()}
                 }
             })
+
+    @app.route("/get-buffered-response/<call_sid>", methods=["POST", "GET"])
+    def get_buffered_response(call_sid):
+        """Retrieve buffered AI response after hold message completes"""
+        try:
+            logger.info(f"🎯 RETRIEVING BUFFERED RESPONSE for call {call_sid}")
+            
+            # Wait for buffered response (up to 6 seconds total)
+            max_wait = 6.0
+            start_wait = time.time()
+            
+            while call_sid not in response_buffer:
+                if time.time() - start_wait > max_wait:
+                    logger.warning(f"⏰ TIMEOUT waiting for buffered response for {call_sid}")
+                    break
+                time.sleep(0.1)  # Check every 100ms
+            
+            if call_sid in response_buffer:
+                buffered_data = response_buffer[call_sid]
+                response = buffered_data['response']
+                processing_time = buffered_data.get('processing_time', 0)
+                total_time = time.time() - buffered_data['timestamp']
+                
+                logger.info(f"✅ SEAMLESS RESPONSE DELIVERY: AI processed in {processing_time:.2f}s, total flow in {total_time:.2f}s")
+                
+                # Clean up buffer
+                del response_buffer[call_sid]
+                
+                return response
+            else:
+                # Fallback if no buffered response
+                logger.warning(f"❌ No buffered response found for {call_sid} - using fallback")
+                fallback_text = "I'm processing your request. How can I help you?"
+                fallback_voice = create_voice_response(fallback_text)
+                
+                return f"""<?xml version="1.0" encoding="UTF-8"?>
+                <Response>
+                    {fallback_voice}
+                    <Gather input="speech dtmf" timeout="8" speechTimeout="4" dtmfTimeout="2" language="en-US" action="/handle-input/{call_sid}" method="POST">
+                    </Gather>
+                    <Redirect>/handle-speech/{call_sid}</Redirect>
+                </Response>"""
+                
+        except Exception as e:
+            logger.error(f"❌ Error retrieving buffered response for {call_sid}: {e}")
+            error_text = "I'm sorry, there was a technical issue. How can I help you?"
+            error_voice = create_voice_response(error_text)
+            
+            return f"""<?xml version="1.0" encoding="UTF-8"?>
+            <Response>
+                {error_voice}
+                <Gather input="speech dtmf" timeout="8" speechTimeout="4" dtmfTimeout="2" language="en-US" action="/handle-input/{call_sid}" method="POST">
+                </Gather>
+                <Redirect>/handle-speech/{call_sid}</Redirect>
+            </Response>"""
 
     return app
 
