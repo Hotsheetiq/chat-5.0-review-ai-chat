@@ -1152,10 +1152,11 @@ log #{log_entry['id']:03d} – {log_entry['date']}
             address_context = ""
             verified_address = None
             
-            # Check if this looks like an address mention
+            # Check if this looks like an address mention - capture ALL possible addresses
             address_patterns = [
                 r'(\d+)\s+([a-zA-Z\s]+(?:street|avenue|ave|st|road|rd|lane|ln|drive|dr|place|pl))',
-                r'(\d+)\s+(port\s+richmond|targee|richmond)',
+                r'(\d+)\s+(port\s+richmond|targee|richmond|cary|hylan|victory|forest|bay)',
+                r'(\d+)\s+([a-zA-Z]+)\s+(ave|street|st)',  # Catch "628 cary ave" specifically
             ]
             
             for pattern in address_patterns:
@@ -1185,8 +1186,8 @@ log #{log_entry['id']:03d} – {log_entry['date']}
                                 address_context = f"\n\nVERIFIED ADDRESS: The caller mentioned '{potential_address}' which matches '{verified_address}' in our Rent Manager system. Confirm: 'Great! I found {verified_address} in our system.'"
                                 logger.info(f"✅ API VERIFIED: '{potential_address}' → '{verified_address}'")
                             else:
-                                address_context = f"\n\nUNVERIFIED ADDRESS: The caller mentioned '{potential_address}' but it's NOT found in our Rent Manager property database. You MUST respond: 'I couldn't find {potential_address} in our property system. Could you double-check the address? We manage properties on Port Richmond Avenue and Targee Street.' DO NOT suggest alternative addresses or create tickets for unverified properties."
-                                logger.warning(f"❌ API REJECTION: '{potential_address}' not found in property system")
+                                address_context = f"\n\nABSOLUTE REJECTION REQUIRED: The caller mentioned '{potential_address}' which is NOT in our database. YOU MUST SAY EXACTLY: 'I couldn't find {potential_address} in our property system. Could you double-check the address? We manage properties on Port Richmond Avenue and Targee Street.' CRITICAL: Do not suggest any other addresses. Do not assume they meant anything else. REJECT COMPLETELY."
+                                logger.warning(f"❌ ABSOLUTE API REJECTION: '{potential_address}' not found - must reject completely")
                         else:
                             logger.warning("⚠️ COMPREHENSIVE PROPERTY SYSTEM NOT AVAILABLE - Loading minimal backup")
                             # Load comprehensive properties as fallback
@@ -1205,8 +1206,8 @@ log #{log_entry['id']:03d} – {log_entry['date']}
                                         logger.info(f"✅ COMPREHENSIVE DATABASE VERIFIED: '{potential_address}' → '{verified_address}'")
                                         break
                                 else:
-                                    address_context = f"\n\nUNVERIFIED ADDRESS: The caller mentioned '{potential_address}' but it's NOT found in our comprehensive property database of 430+ properties. You MUST respond: 'I couldn't find {potential_address} in our property system. Could you double-check the address? We manage properties on Port Richmond Avenue and Targee Street.' NEVER suggest alternative addresses. NEVER assume they meant something else."
-                                    logger.warning(f"❌ COMPREHENSIVE DATABASE REJECTION: '{potential_address}' not found in 430+ properties")
+                                    address_context = f"\n\nABSOLUTE REJECTION REQUIRED: The caller mentioned '{potential_address}' which is NOT in our 430+ property database. YOU MUST SAY EXACTLY: 'I couldn't find {potential_address} in our property system. Could you double-check the address? We manage properties on Port Richmond Avenue and Targee Street.' CRITICAL: Do not suggest any other addresses. Do not assume they meant anything else. REJECT COMPLETELY and ask for verification."
+                                    logger.warning(f"❌ ABSOLUTE DATABASE REJECTION: '{potential_address}' not found - must reject completely")
                             except ImportError:
                                 logger.error("❌ COMPREHENSIVE PROPERTY DATA NOT AVAILABLE")
                                 address_context = f"\n\nERROR FALLBACK: Could not verify address due to system issue. Ask: 'Let me help you with that address. Can you please repeat it slowly?'"
