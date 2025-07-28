@@ -5346,6 +5346,7 @@ Respond thoughtfully, showing your reasoning if this is a test scenario, or ackn
                 'title': 'July 28, 2025',
                 'time': current_et.strftime('%I:%M %p ET'),  # Use current ET time
                 'status': 'COMPLETE',
+                'priority': 5,  # 5-star priority for critical system
                 'request': 'All 430 addresses are essential and should be hardcoded for backup along with their unit numbers - comprehensive property database with new address detection',
                 'implementation': '''COMPREHENSIVE PROPERTY BACKUP SYSTEM: Implemented complete backup system for all 430+ Grinberg Management properties with unit numbers and automatic new address detection.
 COMPLETE ADDRESS DATABASE: Created comprehensive_property_data.py with extensive property database including Port Richmond Avenue (29-45), Targee Street (122-200), Richmond Avenue, Forest Avenue, Victory Boulevard, Bay Street, Hylan Boulevard, Manor Road, and additional Staten Island properties.
@@ -5364,6 +5365,7 @@ PRODUCTION READY: Chris now has access to comprehensive property database with i
                 'title': 'July 28, 2025',
                 'time': current_et.strftime('%I:%M %p ET'),  # Use current ET time
                 'status': 'COMPLETE',
+                'priority': 4,  # 4-star priority for major feature
                 'request': 'Implement comprehensive chat transcript system with grinbergchat@gmail.com destination and differentiated handling for verified vs unverified addresses',
                 'implementation': '''COMPREHENSIVE CHAT TRANSCRIPT SYSTEM: All conversations now send complete chat transcripts to grinbergchat@gmail.com with caller ID information and differentiated handling.
 EMAIL DESTINATION UPDATED: Changed from Dimasoftwaredev@gmail.com to grinbergchat@gmail.com for all communication transcripts.
@@ -5381,6 +5383,7 @@ CALLER INFORMATION TRACKING: All emails include caller phone number, timestamp, 
                 'title': 'July 28, 2025', 
                 'time': current_et.strftime('%I:%M %p ET'),  # Use current ET time
                 'status': 'COMPLETE',
+                'priority': 4,  # 4-star priority for major enhancement
                 'request': 'Enhanced address verification & email notifications for unverified addresses',
                 'implementation': '''CRITICAL ADDRESS VERIFICATION FIX: Enhanced Chris's address matching to use 430-property Rent Manager API database for intelligent verification instead of rejecting valid addresses.
 ALTERNATIVE INPUT WORKFLOW: When addresses not found in API, Chris guides callers through letter-by-letter street spelling and digit-by-digit house number entry for manual verification.
@@ -5405,11 +5408,24 @@ API INTELLIGENCE: System detects Rent Manager API availability (430 properties l
                             except:
                                 complaint_time = current_et.strftime('%I:%M %p ET')
                         
+                        # Assign priority based on complaint type and content
+                        priority = 3  # Default priority
+                        complaint_title = complaint_data.get('title', 'Unknown Issue').lower()
+                        
+                        # Higher priority for critical system issues
+                        if any(keyword in complaint_title for keyword in ['technical issue', 'not working', 'error', 'failed', 'crash']):
+                            priority = 4
+                        elif any(keyword in complaint_title for keyword in ['cant find', 'address', 'api', 'session limit']):
+                            priority = 4
+                        elif any(keyword in complaint_title for keyword in ['complaint tracking', 'not logged', 'not see']):
+                            priority = 3
+                        
                         unified_logs.append({
                             'id': complaint_data.get('id', f"complaint_{current_et.strftime('%Y%m%d_%H%M%S')}"),
                             'title': complaint_data.get('date', f'July 28, 2025'),  # Use proper date field
                             'time': complaint_time,  # Use properly converted ET time
                             'status': complaint_data.get('status', 'RESOLVED').upper(),  # Use status field
+                            'priority': priority,  # Dynamic priority based on complaint content
                             'request': complaint_data.get('title', 'Unknown Issue'),  # Use title field
                             'implementation': complaint_data.get('implementation', 'Implementation details will be added after fix is completed.'),
                             'type': 'auto_complaint'
