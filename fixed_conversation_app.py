@@ -1465,9 +1465,12 @@ log #{log_entry['id']:03d} – {log_entry['date']}
                     'call_status': 'Completed'  # All historical calls are completed
                 })
             
-            # Return live calls if available, otherwise indicate no real calls
+            # Sort calls by timestamp (most recent first) before returning
             if live_calls:
-                logger.info(f"Returning {len(live_calls)} real call records from conversation history")
+                # Sort by timestamp - most recent calls first
+                live_calls.sort(key=lambda x: x['timestamp'], reverse=True)
+                
+                logger.info(f"Returning {len(live_calls)} real call records from conversation history (sorted by most recent)")
                 return jsonify({
                     'calls': live_calls,
                     'total_count': len(live_calls),

@@ -1,1 +1,64 @@
-{"conversations": {"test_call_12345": [{"timestamp": "2025-07-28T22:45:00.000Z", "speaker": "Caller", "message": "I have a heating issue at 29 Port Richmond Avenue", "caller_phone": "(347) 743-0880"}, {"timestamp": "2025-07-28T22:45:15.000Z", "speaker": "Chris", "message": "Great! I found 29 Port Richmond Avenue in our system. What seems to be the issue?", "caller_phone": "(347) 743-0880"}]}, "last_updated": "2025-07-28T22:45:30.000Z", "total_calls": 1}
+{
+  "conversations": {
+    "test_call_12345": [
+      {
+        "timestamp": "2025-07-28T22:45:00.000Z",
+        "speaker": "Caller",
+        "message": "I have a heating issue at 29 Port Richmond Avenue",
+        "caller_phone": "(347) 743-0880"
+      },
+      {
+        "timestamp": "2025-07-28T22:45:15.000Z",
+        "speaker": "Chris",
+        "message": "Great! I found 29 Port Richmond Avenue in our system. What seems to be the issue?",
+        "caller_phone": "(347) 743-0880"
+      }
+    ],
+    "CA07a81614ffe6e378fb5ea5010ed48d7d": [
+      {
+        "timestamp": "2025-07-28T23:18:28.310702",
+        "speaker": "Caller",
+        "message": "are you guys open right now?",
+        "caller_phone": "Anonymous"
+      },
+      {
+        "timestamp": "2025-07-28T23:18:30.001014",
+        "speaker": "Chris",
+        "message": "Yes, we're open! How can I help you today?",
+        "caller_phone": "Anonymous"
+      },
+      {
+        "timestamp": "2025-07-28T23:18:41.811598",
+        "speaker": "Caller",
+        "message": "alec heating problem.",
+        "caller_phone": "Anonymous"
+      },
+      {
+        "timestamp": "2025-07-28T23:18:42.595167",
+        "speaker": "Chris",
+        "message": "Thanks for calling. Can you verify your address first?",
+        "caller_phone": "Anonymous"
+      },
+      {
+        "timestamp": "2025-07-28T23:18:58.310367",
+        "speaker": "Caller",
+        "message": "628 terry avenue.",
+        "caller_phone": "Anonymous"
+      },
+      {
+        "timestamp": "2025-07-28T23:18:59.166018",
+        "speaker": "Chris",
+        "message": "Great! I found 627 Cary Avenue in our system. What's the issue?",
+        "caller_phone": "Anonymous"
+      },
+      {
+        "timestamp": "2025-07-28T23:19:07.369301",
+        "speaker": "Caller",
+        "message": "",
+        "caller_phone": "Anonymous"
+      }
+    ]
+  },
+  "last_updated": "2025-07-28T19:19:07.369630-04:00",
+  "total_calls": 2
+}

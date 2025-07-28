@@ -215,3 +215,7 @@ log #034 – July 28, 2025
 log #035 – July 28, 2025  
 📝 Request: why are historical calls not visible right now ? can they be?  
 ✅ Resolution: HISTORICAL CALL PERSISTENCE INVESTIGATION: Checking conversation storage system and implementing persistent call history to preserve real phone conversations across system restarts.
+
+log #036 – July 28, 2025  
+📝 Request: sort call log to reflect the most recent one on top  
+✅ Resolution: CALL HISTORY SORTING FIX: Modified call history API to sort conversations by timestamp in descending order. Most recent calls now display at the top of the dashboard call history section.

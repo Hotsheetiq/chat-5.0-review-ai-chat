@@ -1,5 +1,13 @@
 [
   {
+    "id": 36,
+    "date": "July 28, 2025",
+    "time": "7:20 PM ET",
+    "request": "sort call log to reflect the most recent one on top",
+    "resolution": "CALL HISTORY SORTING FIX: Modified call history API to sort conversations by timestamp in descending order. Most recent calls now display at the top of the dashboard call history section.",
+    "constraint_note": "Rule #2 followed as required (appended new entry). Rule #4 followed as required (mirrored to REQUEST_HISTORY.md)."
+  },
+  {
     "id": 35,
     "date": "July 28, 2025",
     "time": "7:15 PM ET",
