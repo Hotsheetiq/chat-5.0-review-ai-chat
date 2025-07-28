@@ -2963,7 +2963,14 @@ PERSONALITY: Warm, empathetic, and intelligent. Show you're genuinely listening 
 
     @app.route("/")
     def dashboard():
-        """Simple dashboard showing system status"""
+        """Simple dashboard showing system status with real-time Eastern time"""
+        from datetime import datetime
+        import pytz
+        
+        # Get current Eastern time for display
+        eastern = pytz.timezone('US/Eastern')
+        current_eastern = datetime.now(eastern)
+        
         return render_template_string("""
         <!DOCTYPE html>
         <html>
@@ -2973,7 +2980,13 @@ PERSONALITY: Warm, empathetic, and intelligent. Show you're genuinely listening 
         </head>
         <body>
             <div class="container mt-5">
-                <h1 class="text-center mb-4">Chris - Voice Assistant Dashboard</h1>
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <h1>Chris - Voice Assistant Dashboard</h1>
+                    <div class="text-end">
+                        <h3 id="current-time">{{ current_eastern.strftime('%-I:%M %p') }}</h3>
+                        <small class="text-muted">Current Time (ET)</small>
+                    </div>
+                </div>
                 
                 <div class="row">
                     <div class="col-md-6">
@@ -3037,9 +3050,32 @@ PERSONALITY: Warm, empathetic, and intelligent. Show you're genuinely listening 
                     </div>
                 </div>
             </div>
+
+            <script>
+                // Update time display in Eastern Time
+                function updateTime() {
+                    const now = new Date();
+                    const options = {
+                        timeZone: 'America/New_York',
+                        hour: 'numeric',
+                        minute: '2-digit',
+                        hour12: true
+                    };
+                    const easternTime = now.toLocaleString('en-US', options);
+                    const timeElement = document.getElementById('current-time');
+                    if (timeElement) {
+                        timeElement.textContent = easternTime;
+                    }
+                }
+                
+                // Update time every second
+                updateTime();
+                setInterval(updateTime, 1000);
+            </script>
         </body>
         </html>
         """, 
+        current_eastern=current_eastern,
         call_count=len([c for c in conversation_history.keys()]),
         total_conversations=len(conversation_history)
         )

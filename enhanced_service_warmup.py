@@ -337,18 +337,46 @@ class EnhancedServiceWarmup:
         }
         
         for service_name, status in self.service_status.items():
+            # Convert last_success to Eastern Time if it exists
+            last_success_et = None
+            if status['last_success']:
+                import pytz
+                eastern = pytz.timezone('US/Eastern')
+                if status['last_success'].tzinfo is None:
+                    # Assume UTC if no timezone info
+                    utc_time = pytz.utc.localize(status['last_success'])
+                    last_success_et = utc_time.astimezone(eastern)
+                else:
+                    last_success_et = status['last_success'].astimezone(eastern)
+            
+            # Fix health status - if no successes and has failures, mark as unhealthy
+            actual_is_healthy = (
+                status['is_healthy'] and 
+                status['total_successes'] > 0 and 
+                status['consecutive_failures'] < self.failure_threshold
+            )
+            
             service_summary = {
-                'is_healthy': status['is_healthy'],
-                'last_success': status['last_success'] if status['last_success'] else None,  # Keep as datetime object for template
+                'is_healthy': actual_is_healthy,
+                'last_success': last_success_et,  # Eastern Time for template
                 'last_error': status['last_error'],
                 'consecutive_failures': status['consecutive_failures'],
                 'success_rate': round((status['total_successes'] / max(status['total_attempts'], 1)) * 100, 1),
-                'needs_attention': status['consecutive_failures'] >= self.failure_threshold
+                'needs_attention': (status['consecutive_failures'] >= self.failure_threshold) or (status['total_successes'] == 0 and status['total_attempts'] > 0)
             }
             
-            # Add special fields for rent manager
+            # Add special fields for rent manager - convert to Eastern Time
             if service_name == 'rent_manager' and status.get('token_refreshed'):
-                service_summary['token_refreshed'] = status['token_refreshed']  # Keep as datetime object for template
+                token_refreshed_et = None
+                if status['token_refreshed']:
+                    import pytz
+                    eastern = pytz.timezone('US/Eastern')
+                    if status['token_refreshed'].tzinfo is None:
+                        utc_time = pytz.utc.localize(status['token_refreshed'])
+                        token_refreshed_et = utc_time.astimezone(eastern)
+                    else:
+                        token_refreshed_et = status['token_refreshed'].astimezone(eastern)
+                service_summary['token_refreshed'] = token_refreshed_et
             
             summary['services'][service_name] = service_summary
         
