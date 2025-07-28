@@ -3194,9 +3194,64 @@ PERSONALITY: Warm, empathetic, and intelligent. Show you're genuinely listening 
     @app.route("/api/calls/history")
     def api_call_history():
         """API endpoint for call history"""
-        from call_monitoring import get_call_monitor
-        monitor = get_call_monitor()
-        return jsonify(monitor.get_call_history())
+        try:
+            from call_monitoring import get_call_monitor
+            monitor = get_call_monitor()
+            
+            # Get call history from both sources
+            all_calls = monitor.get_call_history()
+            
+            # If no calls from monitor, create from conversation_history
+            if not all_calls and conversation_history:
+                all_calls = []
+                for call_sid, history in conversation_history.items():
+                    if isinstance(history, list) and len(history) > 0:
+                        # Create call record from conversation history
+                        first_msg = history[0]
+                        last_msg = history[-1] if len(history) > 1 else first_msg
+                        
+                        call_record = {
+                            'call_sid': call_sid,
+                            'from_number': first_msg.get('caller_phone', 'Unknown'),
+                            'caller_name': first_msg.get('caller_name', 'Unknown Caller'),
+                            'timestamp': first_msg.get('timestamp', datetime.now().isoformat()),
+                            'duration': len(history) * 30,  # Estimate 30 seconds per message
+                            'status': 'completed',
+                            'issue_type': 'General',
+                            'recording_url': None,
+                            'transcription_preview': ''
+                        }
+                        
+                        # Extract issue type and transcription preview
+                        for msg in history:
+                            if isinstance(msg, dict) and 'content' in msg:
+                                content = msg.get('content', '')
+                                
+                                # Detect issue type
+                                content_lower = content.lower()
+                                if any(word in content_lower for word in ['electrical', 'power', 'electricity']):
+                                    call_record['issue_type'] = 'Electrical'
+                                elif any(word in content_lower for word in ['plumbing', 'toilet', 'water', 'leak']):
+                                    call_record['issue_type'] = 'Plumbing'
+                                elif any(word in content_lower for word in ['heating', 'heat', 'cold']):
+                                    call_record['issue_type'] = 'Heating'
+                                elif any(word in content_lower for word in ['service', 'ticket', 'issue']):
+                                    call_record['issue_type'] = 'Service Request'
+                                
+                                # Build transcription preview
+                                if not call_record['transcription_preview']:
+                                    call_record['transcription_preview'] = content[:100] + '...' if len(content) > 100 else content
+                        
+                        all_calls.append(call_record)
+            
+            # Sort by timestamp (newest first)
+            all_calls.sort(key=lambda x: x.get('timestamp', ''), reverse=True)
+            
+            return jsonify(all_calls)
+            
+        except Exception as e:
+            logger.error(f"Error fetching call history: {e}")
+            return jsonify([])
     
     @app.route("/api/call-stats")
     def api_call_stats():
@@ -3268,6 +3323,8 @@ PERSONALITY: Warm, empathetic, and intelligent. Show you're genuinely listening 
                 'active_issues': 0
             })
     
+
+    
     @app.route("/call-history")
     def call_history_page():
         """Call history dashboard page"""
@@ -3279,8 +3336,55 @@ PERSONALITY: Warm, empathetic, and intelligent. Show you're genuinely listening 
             search_query = request.args.get('search', '')
             search_date = request.args.get('date', '')
             
-            # Get call history
+            # Get call history from both CallMonitor and conversation_history
             all_calls = monitor.get_call_history()
+            
+            # If no calls from monitor, create from conversation_history
+            if not all_calls and conversation_history:
+                all_calls = []
+                for call_sid, history in conversation_history.items():
+                    if isinstance(history, list) and len(history) > 0:
+                        # Create call record from conversation history
+                        first_msg = history[0]
+                        last_msg = history[-1] if len(history) > 1 else first_msg
+                        
+                        call_record = {
+                            'call_sid': call_sid,
+                            'from_number': first_msg.get('caller_phone', 'Unknown'),
+                            'caller_name': first_msg.get('caller_name', 'Unknown Caller'),
+                            'start_time': first_msg.get('timestamp', datetime.now().isoformat()),
+                            'end_time': last_msg.get('timestamp', datetime.now().isoformat()),
+                            'duration': len(history) * 30,  # Estimate 30 seconds per message
+                            'status': 'completed',
+                            'transcription': [],
+                            'issue_type': 'General',
+                            'recording_url': None
+                        }
+                        
+                        # Extract transcription from conversation
+                        for msg in history:
+                            if isinstance(msg, dict) and 'content' in msg:
+                                content = msg.get('content', '')
+                                speaker = 'assistant' if msg.get('role') == 'assistant' else 'caller'
+                                call_record['transcription'].append({
+                                    'timestamp': msg.get('timestamp', ''),
+                                    'speaker': speaker,
+                                    'text': content,
+                                    'duration_seconds': 0
+                                })
+                                
+                                # Detect issue type
+                                content_lower = content.lower()
+                                if any(word in content_lower for word in ['electrical', 'power', 'electricity']):
+                                    call_record['issue_type'] = 'Electrical'
+                                elif any(word in content_lower for word in ['plumbing', 'toilet', 'water', 'leak']):
+                                    call_record['issue_type'] = 'Plumbing'
+                                elif any(word in content_lower for word in ['heating', 'heat', 'cold']):
+                                    call_record['issue_type'] = 'Heating'
+                                elif any(word in content_lower for word in ['service', 'ticket', 'issue']):
+                                    call_record['issue_type'] = 'Service Request'
+                        
+                        all_calls.append(call_record)
             
             # Filter calls based on search criteria
             filtered_calls = []
