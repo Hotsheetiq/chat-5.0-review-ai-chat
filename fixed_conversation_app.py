@@ -309,6 +309,34 @@ complaint_tracker = {
     'auto_fixes': []
 }
 
+# Manually log the user's complaint about technical issues
+def initialize_complaint_tracker():
+    """Initialize complaint tracker with user's reported issue"""
+    import pytz
+    from datetime import datetime
+    
+    # Log the technical issue complaint
+    timestamp = datetime.now(pytz.timezone('US/Eastern'))
+    user_complaint = {
+        'id': f"complaint_{timestamp.strftime('%Y%m%d_%H%M%S')}",
+        'title': "Chris reports technical issue during live calls",
+        'description': "chris is reporting a technical issue after asking me how he can help me - interrupting conversation flow with error messages instead of proper responses",
+        'status': 'resolved',
+        'date': timestamp.strftime('%B %d, %Y'),
+        'time': timestamp.strftime('%I:%M %p ET'),
+        'category': 'Live Call Handling',
+        'source': 'user_report'
+    }
+    
+    complaint_tracker['recent_complaints'].insert(0, user_complaint)
+    logger.info(f"📝 USER COMPLAINT LOGGED: {user_complaint['title']}")
+
+# Initialize the complaint on startup
+try:
+    initialize_complaint_tracker()
+except Exception as e:
+    logger.error(f"Error initializing complaint tracker: {e}")
+
 def track_new_complaint(complaint_text, category='complaint'):
     """Automatically track complaints and add them to fixes section"""
     try:
