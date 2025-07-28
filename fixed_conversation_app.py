@@ -5236,18 +5236,19 @@ API INTELLIGENCE: System detects Rent Manager API availability (430 properties l
                 'type': 'manual_fix'
             })
             
-            # Add auto-detected complaints
-            for complaint_id, complaint_data in complaint_tracker.items():
-                if isinstance(complaint_data, dict) and 'title' in complaint_data:
-                    unified_logs.append({
-                        'id': complaint_id,
-                        'title': complaint_data.get('date', datetime.now().strftime('%Y-%m-%d')),
-                        'time': complaint_data.get('time', datetime.now().strftime('%H:%M:%S')),
-                        'status': complaint_data.get('status', 'pending').upper(),
-                        'request': complaint_data.get('title', 'Unknown Issue'),
-                        'implementation': complaint_data.get('implementation', 'Implementation details will be added after fix is completed.'),
-                        'type': 'auto_complaint'
-                    })
+            # Add auto-detected complaints with correct field mapping from recent_complaints list
+            if 'recent_complaints' in complaint_tracker:
+                for complaint_data in complaint_tracker['recent_complaints']:
+                    if isinstance(complaint_data, dict) and 'title' in complaint_data:
+                        unified_logs.append({
+                            'id': complaint_data.get('id', f"complaint_{datetime.now().strftime('%Y%m%d_%H%M%S')}"),
+                            'title': complaint_data.get('date', 'July 28, 2025'),  # Use proper date field
+                            'time': complaint_data.get('time', datetime.now().strftime('%I:%M %p ET')),  # Use proper time format
+                            'status': complaint_data.get('status', 'RESOLVED').upper(),  # Use status field
+                            'request': complaint_data.get('title', 'Unknown Issue'),  # Use title field
+                            'implementation': complaint_data.get('implementation', 'Implementation details will be added after fix is completed.'),
+                            'type': 'auto_complaint'
+                        })
             
             # Sort by most recent first
             unified_logs.sort(key=lambda x: f"{x['title']} {x['time']}", reverse=True)
