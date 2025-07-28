@@ -4566,16 +4566,21 @@ ISSUE DETAILS: Please describe what specific problem you're experiencing with th
                                 console.log('Total entries after combine:', allEntries.length);
                                 console.log('First 3 entries:', allEntries.slice(0, 3).map(e => ({ type: e.type, timestamp: e.timestamp || e.date, date: e.date })));
                                 
-                                // Render unified list
-                                container.innerHTML = allEntries.map(entry => {
+                                // Render unified list with log numbers
+                                container.innerHTML = allEntries.map((entry, index) => {
+                                    const logNumber = String(index + 1).padStart(3, '0');
                                     if (entry.type === 'manual' || entry.type === 'manual_fix') {
-                                        return entry.html; // Use pre-rendered HTML for manual fixes
+                                        // Add log number to manual fixes
+                                        return entry.html.replace(
+                                            /<strong style="color: black;">([^<]+)<\/strong>/,
+                                            `<strong style="color: black;">Log #${logNumber} - $1</strong>`
+                                        );
                                     } else {
                                         return `
                                     <div class="mb-3 p-3 border-start border-3 ${entry.status === 'RESOLVED' || entry.status === 'COMPLETE' ? 'border-success bg-success-subtle' : 'border-warning bg-warning-subtle'} fix-item" style="color: black;" data-fix-id="${entry.id}">
                                         <div class="d-flex justify-content-between align-items-start">
                                             <div>
-                                                <strong style="color: black;">${entry.title || entry.date || 'Unknown Date'}</strong>
+                                                <strong style="color: black;">Log #${logNumber} - ${entry.title || entry.date || 'Unknown Date'}</strong>
                                                 <small style="color: #888; margin-left: 10px;">${entry.time || 'Unknown Time'}</small>
                                             </div>
                                             <div class="d-flex align-items-center gap-2">
