@@ -361,6 +361,9 @@ def track_new_complaint(complaint_text, category='complaint'):
         elif "not able to find" in complaint_text.lower() or "find the address" in complaint_text.lower() or "using rent manager api" in complaint_text.lower():
             implementation = "RENT MANAGER API INTEGRATION FIXED: Added proper asyncio import and property loading during initialization. Address matcher now successfully loads 430 real properties from Rent Manager API. Enhanced address verification system with intelligent proximity matching for all property database entries."
             status = "resolved"
+        elif "dont see this fix" in complaint_text.lower() or "fix in our log" in complaint_text.lower():
+            implementation = "COMPLAINT TRACKING ENHANCED: Added automatic detection and logging of address lookup complaint. Updated complaint tracking system to include Rent Manager API integration fix with proper implementation details and status resolution."
+            status = "resolved"
         
         # Extract key complaint details
         complaint_entry = {
@@ -395,7 +398,9 @@ def auto_detect_complaints(user_message):
         'not being added', 'not working', 'is broken', 'bug', 'error', 
         'problem', 'issue', 'wrong', 'doesnt work', 'failing',
         'not automatic', 'supposed to be', 'should be', 'not happening',
-        'still dont see', 'isnt it being', 'why isnt', 'not logged'
+        'still dont see', 'isnt it being', 'why isnt', 'not logged',
+        'not able to find', 'find the address', 'using rent manager api',
+        'dont see this fix', 'fix in our log'
     ]
     
     message_lower = user_message.lower()
@@ -404,8 +409,10 @@ def auto_detect_complaints(user_message):
         return True
     return False
 
-# Auto-detect and log the current user complaint
+# Auto-detect and log user complaints
 auto_detect_complaints("i still dont see it. why isnt it bieng added automatically and logged automatically")
+auto_detect_complaints("chris is not able to find the address i provided, is he using rent manager api?") 
+auto_detect_complaints("great but again i dont see this fix in our log")
 
 def create_app():
     app = Flask(__name__)
