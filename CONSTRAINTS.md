@@ -6,6 +6,34 @@
 4. Always mirror each log update to the file REQUEST_HISTORY.md.
 5. Logs should be ordered from newest to oldest in the dashboard view.
 
+## CRITICAL PROTECTION: AUTOMATIC LOGGING SYSTEM (ABSOLUTE CONSTRAINT)
+
+**AUTOMATIC REQUEST LOGGING SYSTEM - DO NOT REMOVE OR DISABLE**
+
+The following automatic logging components are CRITICAL and must NEVER be removed or disabled:
+
+### Protected Functions:
+- `auto_log_request()` - automatically captures user requests and creates log entries
+- `load_logs_from_file()` - loads persistent logs from JSON storage
+- `save_logs_to_file()` - saves logs to persistent JSON storage
+- `append_new_log()` - adds new log entries with persistence
+
+### Protected API Endpoint:
+- `/api/auto-log-request` - enables automatic logging via HTTP POST requests
+
+### Protected Files:
+- `logs_persistent.json` - maintains log persistence across server restarts
+
+### Protected Features:
+- Sequential ID generation system (ensures proper log numbering)
+- Eastern Time timestamp integration (accurate time tracking)
+- Persistent JSON storage (survives server restarts)
+- Automatic constraint note addition (rule compliance documentation)
+
+**JUSTIFICATION**: User confirmed "This fix works — create a necessary constraint so it's not undone in the future"
+
+**VIOLATION WARNING**: Removing or disabling automatic logging breaks the user's request tracking workflow and violates established user requirements.
+
 Before updating the UI or any logs, read this file and confirm you're following the rules.
 
 ## Additional Constraints

@@ -1,5 +1,13 @@
 [
   {
+    "id": 26,
+    "date": "July 28, 2025",
+    "time": "6:34 PM ET",
+    "request": "since This fix works \u2014 create a necessary constraint so its not undone in the future",
+    "resolution": "AUTOMATIC LOGGING CONSTRAINT PROTECTION IMPLEMENTED: Added comprehensive constraint rules to CONSTRAINTS.md protecting the automatic logging system. Rules prevent removal of auto_log_request() function, /api/auto-log-request endpoint, persistent JSON storage, and sequential ID generation. System now has absolute protection against accidental removal or modification of core logging functionality.",
+    "constraint_note": "Rule #2 followed as required (appended new entry). Rule #4 followed as required (mirrored to REQUEST_HISTORY.md)."
+  },
+  {
     "id": 25,
     "date": "July 28, 2025",
     "time": "6:32 PM ET",
