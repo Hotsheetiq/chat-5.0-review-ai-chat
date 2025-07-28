@@ -611,6 +611,18 @@ def create_app():
         """Constraint rules documentation page"""
         return render_template("constraints.html")
 
+    @app.route("/live-monitoring")
+    def live_monitoring():
+        """Live monitoring page for real-time call oversight"""
+        # Provide template variables for live monitoring
+        call_stats = {
+            "today_total": len(conversation_history),
+            "active_count": 0,  # No active calls currently
+            "avg_duration": "0:00",
+            "service_requests": 0
+        }
+        return render_template("live_monitoring.html", call_stats=call_stats)
+
     @app.route("/api/warmup-status", methods=["GET"])
     def get_warmup_status():
         """API endpoint for service warmup status"""
@@ -1212,132 +1224,86 @@ log #{log_entry['id']:03d} – {log_entry['date']}
                 elif any(word in transcript_lower for word in ['maintenance', 'repair', 'broken', 'fix']):
                     issue_type = "Maintenance"
                 
-                # Calculate duration
+                # Calculate duration and format timestamp correctly
                 try:
                     from datetime import datetime
+                    import pytz
+                    
+                    # Parse timestamps and convert to Eastern Time
                     start_dt = datetime.fromisoformat(messages[0]['timestamp'].replace('Z', '+00:00'))
                     end_dt = datetime.fromisoformat(messages[-1]['timestamp'].replace('Z', '+00:00'))
+                    
+                    # Convert to Eastern Time
+                    eastern = pytz.timezone('US/Eastern')
+                    start_et = start_dt.astimezone(eastern)
+                    end_et = end_dt.astimezone(eastern)
+                    
+                    # Calculate actual duration
                     duration_seconds = (end_dt - start_dt).total_seconds()
                     duration = f"{int(duration_seconds // 60)}:{int(duration_seconds % 60):02d}"
-                    display_time = start_dt.strftime('July %d, 2025 - %I:%M %p ET')
-                except:
+                    
+                    # Format display time in Eastern Time
+                    display_time = start_et.strftime('July %d, 2025 - %I:%M %p ET')
+                except Exception as e:
+                    logger.error(f"Error calculating call duration: {e}")
                     duration = "0:00"
-                    display_time = "Unknown time"
+                    # Use current Eastern time as fallback
+                    try:
+                        import pytz
+                        eastern = pytz.timezone('US/Eastern')
+                        now_et = datetime.now(eastern)
+                        display_time = now_et.strftime('July %d, 2025 - %I:%M %p ET')
+                    except:
+                        display_time = "Time unavailable"
+                
+                # Determine if call is completed by checking for call end indicators
+                call_completed = False
+                last_message = messages[-1].get('message', '').lower()
+                if any(indicator in last_message for indicator in ['call ended', 'goodbye', 'have a great day', 'call completed', 'thank you']):
+                    call_completed = True
+                    
+                # Extract caller name from conversation if available
+                caller_name = "Unknown Caller"
+                for msg in messages:
+                    if 'my name is' in msg.get('message', '').lower():
+                        # Extract name after "my name is"
+                        try:
+                            name_part = msg['message'].lower().split('my name is')[1].strip()
+                            caller_name = name_part.split()[0].title()
+                        except:
+                            pass
+                        break
+                
+                # Set appropriate service ticket status
+                service_ticket_status = "Completed" if call_completed else "In Progress"
                 
                 live_calls.append({
-                    'caller_name': 'Live Caller',
+                    'caller_name': caller_name,
                     'caller_phone': caller_phone,
                     'timestamp': display_time,
                     'issue_type': issue_type,
                     'duration': duration,
-                    'service_ticket': 'Pending',
-                    'full_transcript': full_transcript
+                    'service_ticket': service_ticket_status,
+                    'full_transcript': full_transcript,
+                    'call_status': 'Completed' if call_completed else 'Active'
                 })
             
-            # Return live calls if available, otherwise use sample data
+            # Return live calls if available, otherwise indicate no real calls
             if live_calls:
+                logger.info(f"Returning {len(live_calls)} real call records from conversation history")
                 return jsonify({
                     'calls': live_calls,
-                    'total_count': len(live_calls)
+                    'total_count': len(live_calls),
+                    'data_type': 'real_calls'
                 })
             else:
-                # Sample data for demonstration when no live calls exist
-                sample_calls = [
-                {
-                    'caller_name': 'Maria Rodriguez',
-                    'caller_phone': '(718) 555-0123',
-                    'timestamp': 'July 28, 2025 - 2:30 PM ET',
-                    'issue_type': 'Electrical',
-                    'duration': '4:32',
-                    'service_ticket': 'SV-12345',
-                    'full_transcript': """[14:30:15] Caller: Hello Chris, I have an electrical issue in my apartment at 29 Port Richmond Avenue.
-
-[14:30:22] Chris: Good afternoon! I understand you have an electrical issue at 29 Port Richmond Avenue. Can you tell me more about what's happening with the electrical system?
-
-[14:30:35] Caller: The power keeps going out in my kitchen. It's been happening for two days now. The lights flicker and then everything shuts off.
-
-[14:30:48] Chris: I'm sorry to hear about the electrical problems. That sounds like it could be a circuit breaker issue or wiring problem. For safety, please avoid using any appliances in the kitchen until this is resolved. Let me create a service ticket for you right away.
-
-[14:31:05] Caller: Yes, please. This is really inconvenient and I'm worried about safety.
-
-[14:31:12] Chris: Absolutely, electrical issues need immediate attention. I've created service ticket #SV-12345 for your electrical problem at 29 Port Richmond Avenue. Dimitry Simanovsky has been assigned and will contact you within 2-4 hours. Would you like me to text you the service ticket details?
-
-[14:31:28] Caller: Yes, please text me the information. My number is 718-555-0123.
-
-[14:31:35] Chris: Perfect! I've sent you a text with service ticket #SV-12345 details. Dimitry will prioritize this as an electrical emergency. Is there anything else I can help you with today?
-
-[14:31:48] Caller: No, that's everything. Thank you so much for the quick help.
-
-[14:31:55] Chris: You're very welcome! Stay safe and Dimitry will be in touch soon. Have a great day!
-
-[14:32:02] Call ended."""
-                },
-                {
-                    'caller_name': 'John Smith', 
-                    'caller_phone': '(347) 555-0456',
-                    'timestamp': 'July 28, 2025 - 1:15 PM ET',
-                    'issue_type': 'Plumbing',
-                    'duration': '3:18',
-                    'service_ticket': 'SV-12344',
-                    'full_transcript': """[13:15:08] Caller: Hi Chris, my kitchen sink is not draining properly at 122 Targee Street.
-
-[13:15:18] Chris: Hello! I can help you with that plumbing issue at 122 Targee Street. Can you describe what's happening with the drainage?
-
-[13:15:30] Caller: The water just sits there and drains very slowly. It's been getting worse over the past week.
-
-[13:15:42] Chris: That sounds like a clog in the drain line. Have you tried using a plunger or any drain cleaning products?
-
-[13:15:55] Caller: I tried some liquid drain cleaner but it didn't help much. The water still backs up when I use the sink.
-
-[13:16:08] Chris: I understand. For persistent drainage issues like this, we'll need a professional to clear the blockage properly. Let me create a service request for you.
-
-[13:16:22] Caller: That would be great. When can someone come take a look?
-
-[13:16:30] Chris: I've created service ticket #SV-12344 for your plumbing issue at 122 Targee Street. Dimitry Simanovsky has been assigned and will contact you within 2-4 hours to schedule a visit. 
-
-[13:16:45] Caller: Perfect. Do I need to be home for the repair?
-
-[13:16:52] Chris: Yes, someone will need to be present to provide access to the apartment. Dimitry will coordinate a convenient time with you when he calls.
-
-[13:17:05] Caller: Sounds good. Thank you for setting this up so quickly.
-
-[13:17:12] Chris: You're welcome! Is there anything else I can help you with today?
-
-[13:17:18] Caller: No, that covers everything. Thanks again!
-
-[13:17:26] Call ended."""
-                },
-                {
-                    'caller_name': 'Sarah Johnson',
-                    'caller_phone': '(929) 555-0789',
-                    'timestamp': 'July 28, 2025 - 11:45 AM ET',
-                    'issue_type': 'General Inquiry',
-                    'duration': '2:05',
-                    'service_ticket': 'None',
-                    'full_transcript': """[11:45:12] Caller: Hi, I'm calling to ask about the office hours for rent payments.
-
-[11:45:20] Chris: Good morning! I'd be happy to help with information about office hours. Our main office is open Monday through Friday, 9 AM to 5 PM Eastern Time.
-
-[11:45:35] Caller: Great. And can I drop off my rent check during those hours?
-
-[11:45:42] Chris: Yes, absolutely! You can drop off rent payments at the office during business hours. We're also set up to accept online payments if that's more convenient for you.
-
-[11:45:58] Caller: That's helpful. Where exactly is the office located?
-
-[11:46:05] Chris: I'd be happy to provide you with the exact office address and directions. Let me transfer you to someone who can give you all the location details and payment options.
-
-[11:46:20] Caller: That would be perfect. Thank you!
-
-[11:46:25] Chris: You're very welcome! I'm connecting you now. Have a great day!
-
-[11:46:32] Call transferred to office."""
-                }
-            ]
-            
-            return jsonify({
-                'calls': sample_calls,
-                'total_count': len(sample_calls)
-            })
+                logger.info("No real call conversations found - returning empty call history")
+                return jsonify({
+                    'calls': [],
+                    'total_count': 0,
+                    'data_type': 'no_calls',
+                    'message': 'No calls have been recorded yet. Call history will appear here after real phone conversations.'
+                })
         except Exception as e:
             logger.error(f"Error getting call history: {e}")
             return jsonify({'error': 'Could not load call history'}), 500

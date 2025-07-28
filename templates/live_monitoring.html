@@ -208,9 +208,22 @@
             `).join('');
         }
         
-        function updateCallHistory(calls) {
+        function updateCallHistory(data) {
             const container = document.getElementById('call-history');
             
+            // Handle new API response format
+            if (data.data_type === 'no_calls') {
+                container.innerHTML = `
+                    <div class="alert alert-info text-center">
+                        <h6>📭 No Call History Yet</h6>
+                        <p class="mb-0">${data.message}</p>
+                        <small class="text-muted">Completed calls will appear here after phone conversations end.</small>
+                    </div>
+                `;
+                return;
+            }
+            
+            const calls = data.calls || [];
             if (calls.length === 0) {
                 container.innerHTML = '<p class="text-muted">No recent calls</p>';
                 return;
@@ -220,13 +233,14 @@
                 <div class="col-lg-4 mb-3">
                     <div class="card call-card completed">
                         <div class="card-header d-flex justify-content-between align-items-center">
-                            <h6 class="mb-0">📞 ${call.from_number}</h6>
-                            <small class="text-muted">${formatDuration(call.duration)}s</small>
+                            <h6 class="mb-0">📞 ${call.caller_phone || call.from_number || 'Unknown'}</h6>
+                            <small class="text-muted">${call.duration || '0:00'}</small>
                         </div>
                         <div class="card-body">
                             <p><strong>Caller:</strong> ${call.caller_name || 'Unknown'}</p>
                             <p><strong>Issue:</strong> ${call.issue_type || 'General inquiry'}</p>
-                            <p><strong>Status:</strong> <span class="badge bg-success">${call.status}</span></p>
+                            <p><strong>Status:</strong> <span class="badge bg-${call.call_status === 'Completed' ? 'success' : 'info'}">${call.call_status || call.service_ticket || 'Completed'}</span></p>
+                            <p><strong>Time:</strong> ${call.timestamp || 'Unknown time'}</p>
                             
                             <div class="recording-controls">
                                 ${call.recording_url ? 
