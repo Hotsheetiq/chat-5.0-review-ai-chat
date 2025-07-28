@@ -1218,7 +1218,36 @@ log #{log_entry['id']:03d} – {log_entry['date']}
                     
                     break
 
-            # Generate intelligent AI response using Grok
+            # MANDATORY PRE-CHECK: Force rejection for unverified addresses BEFORE AI processing
+            if "ABSOLUTE REJECTION REQUIRED" in address_context:
+                # Extract the invalid address from the context
+                import re
+                address_match = re.search(r"mentioned '([^']+)'", address_context)
+                if address_match:
+                    invalid_address = address_match.group(1)
+                    # FORCE REJECTION - bypass AI completely
+                    response_text = f"I couldn't find {invalid_address} in our property system. Could you double-check the address? We manage properties on Port Richmond Avenue and Targee Street."
+                    logger.warning(f"🚫 FORCED REJECTION: '{invalid_address}' - bypassing AI to prevent assumptions")
+                    
+                    # Store forced rejection response
+                    conversation_history[call_sid].append({
+                        'timestamp': datetime.now().isoformat(),
+                        'speaker': 'Chris',
+                        'message': response_text,
+                        'caller_phone': caller_phone,
+                        'forced_rejection': True
+                    })
+                    
+                    # Return TwiML immediately - no AI processing
+                    return f"""<?xml version="1.0" encoding="UTF-8"?>
+                    <Response>
+                        <Say voice="Polly.Matthew-Neural">{response_text}</Say>
+                        <Gather input="speech" timeout="8" speechTimeout="4" action="/handle-speech/{call_sid}" method="POST">
+                        </Gather>
+                        <Redirect>/handle-speech/{call_sid}</Redirect>
+                    </Response>"""
+
+            # Generate intelligent AI response using Grok (only for verified addresses)
             try:
                 # Import Grok AI
                 from grok_integration import GrokAI

@@ -1,5 +1,13 @@
 [
   {
+    "id": 30,
+    "date": "July 28, 2025",
+    "time": "6:45 PM ET",
+    "request": "doesnt work , he still doesnt ask me if i meant 627 cary just assumes thats what i meant",
+    "resolution": "MANDATORY PRE-AI ADDRESS REJECTION: Implemented pre-processing address rejection that bypasses AI completely for invalid addresses. System now forces rejection response before AI can make assumptions. Added hard-coded rejection responses that cannot be overridden by AI logic.",
+    "constraint_note": "Rule #2 followed as required (appended new entry). Rule #4 followed as required (mirrored to REQUEST_HISTORY.md)."
+  },
+  {
     "id": 29,
     "date": "July 28, 2025",
     "time": "6:43 PM ET",
