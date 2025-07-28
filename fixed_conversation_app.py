@@ -184,7 +184,7 @@ def create_app():
                         });
                 }
 
-                // Load call history
+                // Load call history with full transcripts
                 function loadCallHistory() {
                     fetch('/api/calls/history')
                         .then(response => response.json())
@@ -192,13 +192,47 @@ def create_app():
                             const container = document.getElementById('call-history-section');
                             if (data.calls && data.calls.length > 0) {
                                 container.innerHTML = data.calls.map(call => {
-                                    return `<div class="border-bottom pb-2 mb-2">
-                                        <div class="d-flex justify-content-between">
-                                            <strong>${call.caller_name || 'Unknown Caller'}</strong>
-                                            <small class="text-muted">${call.timestamp}</small>
+                                    return `<div class="border-bottom pb-3 mb-3">
+                                        <div class="row">
+                                            <div class="col-md-6">
+                                                <div class="d-flex justify-content-between align-items-start">
+                                                    <div>
+                                                        <strong class="text-primary">${call.caller_name || 'Unknown Caller'}</strong>
+                                                        <div class="text-muted small">${call.caller_phone}</div>
+                                                    </div>
+                                                    <div class="text-end">
+                                                        <div class="small text-muted">${call.timestamp}</div>
+                                                        <div class="small">Duration: ${call.duration || 'Unknown'}</div>
+                                                    </div>
+                                                </div>
+                                                <div class="mt-2">
+                                                    <span class="badge bg-secondary">${call.issue_type || 'General'}</span>
+                                                    ${call.service_ticket && call.service_ticket !== 'None' ? 
+                                                        `<span class="badge bg-success ms-1">Ticket: ${call.service_ticket}</span>` : 
+                                                        '<span class="badge bg-info ms-1">No Ticket</span>'}
+                                                </div>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <div class="d-flex justify-content-end gap-2">
+                                                    <button class="btn btn-sm btn-outline-primary" onclick="copyFullTranscript('${call.caller_name}', \`${call.full_transcript}\`)" title="Copy Full Transcript">
+                                                        📋 Copy Transcript
+                                                    </button>
+                                                    <button class="btn btn-sm btn-outline-secondary" onclick="toggleTranscript(this)" title="Show/Hide Full Transcript">
+                                                        👁️ View Full Text
+                                                    </button>
+                                                </div>
+                                            </div>
                                         </div>
-                                        <div class="text-muted">${call.caller_phone} - ${call.issue_type || 'General'}</div>
-                                        <div class="small">${call.transcript_preview || 'No transcript available'}</div>
+                                        <div class="transcript-container mt-3" style="display: none;">
+                                            <div class="card">
+                                                <div class="card-header bg-light">
+                                                    <h6 class="mb-0">Complete Conversation Transcript</h6>
+                                                </div>
+                                                <div class="card-body">
+                                                    <pre class="transcript-text" style="white-space: pre-wrap; font-family: 'Courier New', monospace; font-size: 0.9em; line-height: 1.4; margin: 0; color: #333;">${call.full_transcript || 'Transcript not available'}</pre>
+                                                </div>
+                                            </div>
+                                        </div>
                                     </div>`;
                                 }).join('');
                             } else {
@@ -209,6 +243,37 @@ def create_app():
                             console.error('Error loading call history:', error);
                             document.getElementById('call-history-section').innerHTML = '<div class="alert alert-warning">Error loading call history.</div>';
                         });
+                }
+
+                // Toggle transcript visibility
+                function toggleTranscript(button) {
+                    const container = button.closest('.border-bottom').querySelector('.transcript-container');
+                    if (container.style.display === 'none') {
+                        container.style.display = 'block';
+                        button.innerHTML = '👁️ Hide Full Text';
+                        button.classList.remove('btn-outline-secondary');
+                        button.classList.add('btn-secondary');
+                    } else {
+                        container.style.display = 'none';
+                        button.innerHTML = '👁️ View Full Text';
+                        button.classList.remove('btn-secondary');
+                        button.classList.add('btn-outline-secondary');
+                    }
+                }
+
+                // Copy full transcript to clipboard
+                function copyFullTranscript(callerName, transcript) {
+                    const fullText = `Call with ${callerName}\\n\\n${transcript}`;
+                    navigator.clipboard.writeText(fullText).then(() => {
+                        // Find the button that was clicked and update it temporarily
+                        event.target.textContent = '✅ Copied';
+                        setTimeout(() => {
+                            event.target.innerHTML = '📋 Copy Transcript';
+                        }, 2000);
+                    }).catch(err => {
+                        console.error('Failed to copy transcript:', err);
+                        alert('Failed to copy transcript to clipboard');
+                    });
                 }
 
                 // Copy problem report functionality
@@ -336,23 +401,98 @@ def create_app():
 
     @app.route("/api/calls/history", methods=["GET"])
     def get_call_history():
-        """API endpoint for call history"""
+        """API endpoint for call history with full transcripts"""
         try:
-            # Sample call history data
+            # Enhanced call history with complete conversation transcripts
             sample_calls = [
                 {
                     'caller_name': 'Maria Rodriguez',
                     'caller_phone': '(718) 555-0123',
                     'timestamp': 'July 28, 2025 - 2:30 PM ET',
                     'issue_type': 'Electrical',
-                    'transcript_preview': 'Hello Chris, I have an electrical issue in my apartment...'
+                    'duration': '4:32',
+                    'service_ticket': 'SV-12345',
+                    'full_transcript': """[14:30:15] Caller: Hello Chris, I have an electrical issue in my apartment at 29 Port Richmond Avenue.
+
+[14:30:22] Chris: Good afternoon! I understand you have an electrical issue at 29 Port Richmond Avenue. Can you tell me more about what's happening with the electrical system?
+
+[14:30:35] Caller: The power keeps going out in my kitchen. It's been happening for two days now. The lights flicker and then everything shuts off.
+
+[14:30:48] Chris: I'm sorry to hear about the electrical problems. That sounds like it could be a circuit breaker issue or wiring problem. For safety, please avoid using any appliances in the kitchen until this is resolved. Let me create a service ticket for you right away.
+
+[14:31:05] Caller: Yes, please. This is really inconvenient and I'm worried about safety.
+
+[14:31:12] Chris: Absolutely, electrical issues need immediate attention. I've created service ticket #SV-12345 for your electrical problem at 29 Port Richmond Avenue. Dimitry Simanovsky has been assigned and will contact you within 2-4 hours. Would you like me to text you the service ticket details?
+
+[14:31:28] Caller: Yes, please text me the information. My number is 718-555-0123.
+
+[14:31:35] Chris: Perfect! I've sent you a text with service ticket #SV-12345 details. Dimitry will prioritize this as an electrical emergency. Is there anything else I can help you with today?
+
+[14:31:48] Caller: No, that's everything. Thank you so much for the quick help.
+
+[14:31:55] Chris: You're very welcome! Stay safe and Dimitry will be in touch soon. Have a great day!
+
+[14:32:02] Call ended."""
                 },
                 {
                     'caller_name': 'John Smith', 
                     'caller_phone': '(347) 555-0456',
                     'timestamp': 'July 28, 2025 - 1:15 PM ET',
                     'issue_type': 'Plumbing',
-                    'transcript_preview': 'Hi, my kitchen sink is not draining properly...'
+                    'duration': '3:18',
+                    'service_ticket': 'SV-12344',
+                    'full_transcript': """[13:15:08] Caller: Hi Chris, my kitchen sink is not draining properly at 122 Targee Street.
+
+[13:15:18] Chris: Hello! I can help you with that plumbing issue at 122 Targee Street. Can you describe what's happening with the drainage?
+
+[13:15:30] Caller: The water just sits there and drains very slowly. It's been getting worse over the past week.
+
+[13:15:42] Chris: That sounds like a clog in the drain line. Have you tried using a plunger or any drain cleaning products?
+
+[13:15:55] Caller: I tried some liquid drain cleaner but it didn't help much. The water still backs up when I use the sink.
+
+[13:16:08] Chris: I understand. For persistent drainage issues like this, we'll need a professional to clear the blockage properly. Let me create a service request for you.
+
+[13:16:22] Caller: That would be great. When can someone come take a look?
+
+[13:16:30] Chris: I've created service ticket #SV-12344 for your plumbing issue at 122 Targee Street. Dimitry Simanovsky has been assigned and will contact you within 2-4 hours to schedule a visit. 
+
+[13:16:45] Caller: Perfect. Do I need to be home for the repair?
+
+[13:16:52] Chris: Yes, someone will need to be present to provide access to the apartment. Dimitry will coordinate a convenient time with you when he calls.
+
+[13:17:05] Caller: Sounds good. Thank you for setting this up so quickly.
+
+[13:17:12] Chris: You're welcome! Is there anything else I can help you with today?
+
+[13:17:18] Caller: No, that covers everything. Thanks again!
+
+[13:17:26] Call ended."""
+                },
+                {
+                    'caller_name': 'Sarah Johnson',
+                    'caller_phone': '(929) 555-0789',
+                    'timestamp': 'July 28, 2025 - 11:45 AM ET',
+                    'issue_type': 'General Inquiry',
+                    'duration': '2:05',
+                    'service_ticket': 'None',
+                    'full_transcript': """[11:45:12] Caller: Hi, I'm calling to ask about the office hours for rent payments.
+
+[11:45:20] Chris: Good morning! I'd be happy to help with information about office hours. Our main office is open Monday through Friday, 9 AM to 5 PM Eastern Time.
+
+[11:45:35] Caller: Great. And can I drop off my rent check during those hours?
+
+[11:45:42] Chris: Yes, absolutely! You can drop off rent payments at the office during business hours. We're also set up to accept online payments if that's more convenient for you.
+
+[11:45:58] Caller: That's helpful. Where exactly is the office located?
+
+[11:46:05] Chris: I'd be happy to provide you with the exact office address and directions. Let me transfer you to someone who can give you all the location details and payment options.
+
+[11:46:20] Caller: That would be perfect. Thank you!
+
+[11:46:25] Chris: You're very welcome! I'm connecting you now. Have a great day!
+
+[11:46:32] Call transferred to office."""
                 }
             ]
             
