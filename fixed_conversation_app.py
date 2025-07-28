@@ -4568,7 +4568,7 @@ ISSUE DETAILS: Please describe what specific problem you're experiencing with th
                                 
                                 // Render unified list
                                 container.innerHTML = allEntries.map(entry => {
-                                    if (entry.type === 'manual') {
+                                    if (entry.type === 'manual' || entry.type === 'manual_fix') {
                                         return entry.html; // Use pre-rendered HTML for manual fixes
                                     } else {
                                         return `
