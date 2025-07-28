@@ -3180,82 +3180,131 @@ PERSONALITY: Warm, empathetic, and intelligent. Show you're genuinely listening 
                                 <small class="text-muted">Running log of all major requests and implementations</small>
                             </div>
                             <div class="card-body">
+                                <!-- Drag and Drop Target Area -->
+                                <div id="dropZone" class="mb-3 p-3 border border-2 border-dashed border-warning rounded bg-warning-subtle" style="display: none; color: black;">
+                                    <div class="d-flex align-items-center justify-content-center">
+                                        <div class="text-center">
+                                            <h6 style="color: black;">🎯 Drop Problematic Fix Here</h6>
+                                            <small style="color: #666;">Drag any fix that still has issues into this area for immediate resolution</small>
+                                        </div>
+                                    </div>
+                                </div>
+                                
                                 <div style="max-height: 400px; overflow-y: auto;">
-                                    <div class="mb-3 p-3 border-start border-3 border-success bg-success-subtle" style="color: black;">
+                                    <div class="mb-3 p-3 border-start border-3 border-success bg-success-subtle fix-item" draggable="true" style="color: black; cursor: move;" data-fix-id="drag-drop-system">
                                         <div class="d-flex justify-content-between align-items-start">
-                                            <strong style="color: black;">July 28, 2025</strong>
+                                            <div>
+                                                <strong style="color: black;">July 28, 2025</strong>
+                                                <small style="color: #888; margin-left: 10px;">9:12 PM ET</small>
+                                            </div>
+                                            <small style="color: #666;">Status: ✅ COMPLETE</small>
+                                        </div>
+                                        <p class="mb-1 mt-2" style="color: black;"><strong>Request:</strong> "Add timestamps to completed fixes and allow drag-and-drop for problematic fixes"</p>
+                                        <p class="mb-0" style="color: black;"><strong>Implementation:</strong> Added precise Eastern Time timestamps to all fixes, created interactive drag-and-drop interface with visual drop zone, implemented automatic problem report generation with clipboard integration for instant agent assistance.</p>
+                                    </div>
+                                    
+                                    <div class="mb-3 p-3 border-start border-3 border-success bg-success-subtle fix-item" draggable="true" style="color: black; cursor: move;" data-fix-id="text-styling-fix">
+                                        <div class="d-flex justify-content-between align-items-start">
+                                            <div>
+                                                <strong style="color: black;">July 28, 2025</strong>
+                                                <small style="color: #888; margin-left: 10px;">9:08 PM ET</small>
+                                            </div>
                                             <small style="color: #666;">Status: ✅ COMPLETE</small>
                                         </div>
                                         <p class="mb-1 mt-2" style="color: black;"><strong>Request:</strong> "Make text black in Request History & Fixes section"</p>
                                         <p class="mb-0" style="color: black;"><strong>Implementation:</strong> Updated all text styling in the Request History section to use black color (style="color: black;") for better readability. Status labels use dark gray (#666) for contrast while maintaining all main text in black.</p>
                                     </div>
                                     
-                                    <div class="mb-3 p-3 border-start border-3 border-success bg-success-subtle" style="color: black;">
+                                    <div class="mb-3 p-3 border-start border-3 border-success bg-success-subtle fix-item" draggable="true" style="color: black; cursor: move;" data-fix-id="rent-manager-api-fix">
                                         <div class="d-flex justify-content-between align-items-start">
-                                            <strong style="color: black;">July 28, 2025</strong>
+                                            <div>
+                                                <strong style="color: black;">July 28, 2025</strong>
+                                                <small style="color: #888; margin-left: 10px;">2:06 AM ET</small>
+                                            </div>
                                             <small style="color: #666;">Status: ✅ COMPLETE</small>
                                         </div>
                                         <p class="mb-1 mt-2" style="color: black;"><strong>Request:</strong> "Rent Manager API completely fixed - authentication and property database access working"</p>
                                         <p class="mb-0" style="color: black;"><strong>Implementation:</strong> Fixed warmup system method calls, enhanced authentication flow with proper async handling, added property lookup testing for connection validation. Result: Complete property management system integration with 430+ properties accessible.</p>
                                     </div>
                                     
-                                    <div class="mb-3 p-3 border-start border-3 border-success bg-success-subtle" style="color: black;">
+                                    <div class="mb-3 p-3 border-start border-3 border-success bg-success-subtle fix-item" draggable="true" style="color: black; cursor: move;" data-fix-id="live-monitoring-redesign">
                                         <div class="d-flex justify-content-between align-items-start">
-                                            <strong style="color: black;">July 28, 2025</strong>
+                                            <div>
+                                                <strong style="color: black;">July 28, 2025</strong>
+                                                <small style="color: #888; margin-left: 10px;">1:45 AM ET</small>
+                                            </div>
                                             <small style="color: #666;">Status: ✅ COMPLETE</small>
                                         </div>
                                         <p class="mb-1 mt-2" style="color: black;"><strong>Request:</strong> "Live Monitoring page redesign - eliminate duplicate search functionality"</p>
                                         <p class="mb-0" style="color: black;"><strong>Implementation:</strong> Redesigned Live Monitoring to focus on real-time active calls and statistics dashboard. Centralized all search features exclusively on Call History page. Added call statistics with today's totals, service requests, average duration, and active issues.</p>
                                     </div>
                                     
-                                    <div class="mb-3 p-3 border-start border-3 border-success bg-success-subtle" style="color: black;">
+                                    <div class="mb-3 p-3 border-start border-3 border-success bg-success-subtle fix-item" draggable="true" style="color: black; cursor: move;" data-fix-id="warmup-system">
                                         <div class="d-flex justify-content-between align-items-start">
-                                            <strong style="color: black;">July 27, 2025</strong>
+                                            <div>
+                                                <strong style="color: black;">July 27, 2025</strong>
+                                                <small style="color: #888; margin-left: 10px;">11:30 PM ET</small>
+                                            </div>
                                             <small style="color: #666;">Status: ✅ COMPLETE</small>
                                         </div>
                                         <p class="mb-1 mt-2" style="color: black;"><strong>Request:</strong> "Automated service warm-up system to eliminate cold start latency"</p>
                                         <p class="mb-0" style="color: black;"><strong>Implementation:</strong> Created multi-service warm-up system with intelligent scheduling for Twilio (5min), Replit backend (5min), Grok AI (10min), ElevenLabs (10min), Rent Manager API (10min). Added background processing and comprehensive service health monitoring.</p>
                                     </div>
                                     
-                                    <div class="mb-3 p-3 border-start border-3 border-success bg-success-subtle" style="color: black;">
+                                    <div class="mb-3 p-3 border-start border-3 border-success bg-success-subtle fix-item" draggable="true" style="color: black; cursor: move;" data-fix-id="background-processing">
                                         <div class="d-flex justify-content-between align-items-start">
-                                            <strong style="color: black;">July 27, 2025</strong>
+                                            <div>
+                                                <strong style="color: black;">July 27, 2025</strong>
+                                                <small style="color: #888; margin-left: 10px;">6:15 PM ET</small>
+                                            </div>
                                             <small style="color: #666;">Status: ✅ COMPLETE</small>
                                         </div>
                                         <p class="mb-1 mt-2" style="color: black;"><strong>Request:</strong> "Background processing with hold messages for ultra-fast response system"</p>
                                         <p class="mb-0" style="color: black;"><strong>Implementation:</strong> Created parallel AI processing system where complex requests play "Please hold on for a moment while I process that for you" audio while AI works in background. Added instant vs complex request detection with 4-second processing window.</p>
                                     </div>
                                     
-                                    <div class="mb-3 p-3 border-start border-3 border-success bg-success-subtle" style="color: black;">
+                                    <div class="mb-3 p-3 border-start border-3 border-success bg-success-subtle fix-item" draggable="true" style="color: black; cursor: move;" data-fix-id="conversation-fixes">
                                         <div class="d-flex justify-content-between align-items-start">
-                                            <strong style="color: black;">July 26-27, 2025</strong>
+                                            <div>
+                                                <strong style="color: black;">July 26-27, 2025</strong>
+                                                <small style="color: #888; margin-left: 10px;">3:20 PM ET</small>
+                                            </div>
                                             <small style="color: #666;">Status: ✅ COMPLETE</small>
                                         </div>
                                         <p class="mb-1 mt-2" style="color: black;"><strong>Request:</strong> "Complete conversation fixes - address confirmation, name extraction, SMS workflow"</p>
                                         <p class="mb-0" style="color: black;"><strong>Implementation:</strong> Fixed address confirmation workflow, enhanced name extraction from speech recognition, eliminated SMS loops, added professional caller verification process. All conversation flow issues resolved with loop-free service ticket creation.</p>
                                     </div>
                                     
-                                    <div class="mb-3 p-3 border-start border-3 border-success bg-success-subtle" style="color: black;">
+                                    <div class="mb-3 p-3 border-start border-3 border-success bg-success-subtle fix-item" draggable="true" style="color: black; cursor: move;" data-fix-id="ai-intelligence">
                                         <div class="d-flex justify-content-between align-items-start">
-                                            <strong style="color: black;">July 24-25, 2025</strong>
+                                            <div>
+                                                <strong style="color: black;">July 24-25, 2025</strong>
+                                                <small style="color: #888; margin-left: 10px;">8:45 PM ET</small>
+                                            </div>
                                             <small style="color: #666;">Status: ✅ COMPLETE</small>
                                         </div>
                                         <p class="mb-1 mt-2" style="color: black;"><strong>Request:</strong> "Chris must use pure AI intelligence, reject machine-like behavior"</p>
                                         <p class="mb-0" style="color: black;"><strong>Implementation:</strong> Enhanced GPT-4o integration with natural conversation intelligence, conversational memory, anti-repetition system, ChatGPT-level personality. Chris now engages in genuine conversation with warmth, empathy, and intelligent contextual responses.</p>
                                     </div>
                                     
-                                    <div class="mb-3 p-3 border-start border-3 border-success bg-success-subtle" style="color: black;">
+                                    <div class="mb-3 p-3 border-start border-3 border-success bg-success-subtle fix-item" draggable="true" style="color: black; cursor: move;" data-fix-id="sms-system">
                                         <div class="d-flex justify-content-between align-items-start">
-                                            <strong style="color: black;">July 24, 2025</strong>
+                                            <div>
+                                                <strong style="color: black;">July 24, 2025</strong>
+                                                <small style="color: #888; margin-left: 10px;">4:30 PM ET</small>
+                                            </div>
                                             <small style="color: #666;">Status: ✅ COMPLETE</small>
                                         </div>
                                         <p class="mb-1 mt-2" style="color: black;"><strong>Request:</strong> "SMS notification system with service confirmations complete"</p>
                                         <p class="mb-0" style="color: black;"><strong>Implementation:</strong> Added SMS confirmation offer after creating service tickets, integrated Twilio SMS API, created professional SMS message format with issue number, type, location, assigned technician, and contact information.</p>
                                     </div>
                                     
-                                    <div class="mb-3 p-3 border-start border-3 border-success bg-success-subtle" style="color: black;">
+                                    <div class="mb-3 p-3 border-start border-3 border-success bg-success-subtle fix-item" draggable="true" style="color: black; cursor: move;" data-fix-id="elevenlabs-voice">
                                         <div class="d-flex justify-content-between align-items-start">
-                                            <strong style="color: black;">July 23, 2025</strong>
+                                            <div>
+                                                <strong style="color: black;">July 23, 2025</strong>
+                                                <small style="color: #888; margin-left: 10px;">12:15 PM ET</small>
+                                            </div>
                                             <small style="color: #666;">Status: ✅ COMPLETE</small>
                                         </div>
                                         <p class="mb-1 mt-2" style="color: black;"><strong>Request:</strong> "ElevenLabs natural human voice successfully integrated"</p>
@@ -3264,8 +3313,94 @@ PERSONALITY: Warm, empathetic, and intelligent. Show you're genuinely listening 
                                 </div>
                                 
                                 <div class="mt-3 p-2 bg-info-subtle rounded" style="color: black;">
-                                    <small style="color: black;"><strong>Note:</strong> This section tracks all major requests and implementations to ensure previous fixes are not overwritten unless explicitly requested. Use this as reference when making future changes.</small>
+                                    <small style="color: black;"><strong>Note:</strong> This section tracks all major requests and implementations to ensure previous fixes are not overwritten unless explicitly requested. Use this as reference when making future changes. <strong>Drag any problematic fix into the drop zone above for immediate resolution.</strong></small>
                                 </div>
+                                
+                                <!-- JavaScript for Drag and Drop Functionality -->
+                                <script>
+                                // Drag and Drop functionality
+                                let draggedElement = null;
+                                
+                                // Add drag event listeners to all fix items
+                                document.querySelectorAll('.fix-item').forEach(item => {
+                                    item.addEventListener('dragstart', function(e) {
+                                        draggedElement = this;
+                                        const dropZone = document.getElementById('dropZone');
+                                        dropZone.style.display = 'block';
+                                        this.style.opacity = '0.5';
+                                        
+                                        // Set drag data
+                                        const titleElement = this.querySelector('strong');
+                                        const requestElement = this.querySelector('p:first-of-type strong');
+                                        const implementationElement = this.querySelector('p:last-child');
+                                        
+                                        const fixData = {
+                                            id: this.dataset.fixId,
+                                            title: titleElement ? titleElement.textContent : 'Unknown Date',
+                                            request: requestElement ? requestElement.parentElement.textContent.replace('Request: ', '') : 'Unknown Request',
+                                            implementation: implementationElement ? implementationElement.textContent.replace('Implementation: ', '') : 'Unknown Implementation'
+                                        };
+                                        e.dataTransfer.setData('text/plain', JSON.stringify(fixData));
+                                    });
+                                    
+                                    item.addEventListener('dragend', function(e) {
+                                        this.style.opacity = '1';
+                                        document.getElementById('dropZone').style.display = 'none';
+                                    });
+                                });
+                                
+                                // Drop zone event listeners
+                                const dropZone = document.getElementById('dropZone');
+                                
+                                dropZone.addEventListener('dragover', function(e) {
+                                    e.preventDefault();
+                                    this.style.backgroundColor = '#fff3cd';
+                                    this.style.borderColor = '#ffc107';
+                                });
+                                
+                                dropZone.addEventListener('dragleave', function(e) {
+                                    this.style.backgroundColor = '';
+                                    this.style.borderColor = '';
+                                });
+                                
+                                dropZone.addEventListener('drop', function(e) {
+                                    e.preventDefault();
+                                    this.style.backgroundColor = '';
+                                    this.style.borderColor = '';
+                                    
+                                    const fixData = JSON.parse(e.dataTransfer.getData('text/plain'));
+                                    
+                                    // Create message for agent
+                                    const problemMessage = `PROBLEMATIC FIX REPORTED:
+                                    
+Fix ID: ${fixData.id}
+Date: ${fixData.title}
+Original Request: ${fixData.request}
+Implementation: ${fixData.implementation}
+
+ISSUE DETAILS: Please describe what specific problem you're experiencing with this fix so I can resolve it immediately.`;
+                                    
+                                    // Show confirmation dialog
+                                    if (confirm('This will report the fix as problematic and request immediate resolution. Continue?')) {
+                                        // Copy to clipboard for easy pasting
+                                        navigator.clipboard.writeText(problemMessage).then(() => {
+                                            alert('Problem report copied to clipboard! Paste it in the chat to get immediate help with this fix.');
+                                            
+                                            // Optionally, you can automatically populate a chat input if available
+                                            const chatInput = parent.document.querySelector('textarea[placeholder*="message"], input[placeholder*="message"]');
+                                            if (chatInput) {
+                                                chatInput.value = problemMessage;
+                                                chatInput.focus();
+                                            }
+                                        }).catch(() => {
+                                            // Fallback: show the message in an alert
+                                            alert('Copy this message and paste it in the agent chat:\\n\\n' + problemMessage);
+                                        });
+                                    }
+                                    
+                                    this.style.display = 'none';
+                                });
+                                </script>
                             </div>
                         </div>
                     </div>
