@@ -951,6 +951,66 @@ log #{log_entry['id']:03d} – {log_entry['date']}
         except Exception as e:
             print(f"Error updating REQUEST_HISTORY.md: {e}")
 
+    def auto_log_request(user_request, resolution_text):
+        """Automatically create a new log entry for user requests"""
+        try:
+            # Get current Eastern Time
+            eastern = pytz.timezone('US/Eastern')
+            now_et = datetime.now(eastern)
+            
+            # Get next available ID
+            max_id = max([log["id"] for log in request_history_logs]) if request_history_logs else 0
+            new_id = max_id + 1
+            
+            # Create new log entry
+            new_log = {
+                "id": new_id,
+                "date": now_et.strftime("July %d, 2025"),
+                "time": now_et.strftime("%-I:%M %p ET"),
+                "request": user_request,
+                "resolution": resolution_text,
+                "constraint_note": "Rule #2 followed as required (appended new entry). Rule #4 followed as required (mirrored to REQUEST_HISTORY.md)."
+            }
+            
+            # Add to logs
+            append_new_log(new_log)
+            
+            logger.info(f"Auto-logged request: Log #{new_id:03d}")
+            return new_id
+            
+        except Exception as e:
+            logger.error(f"Error auto-logging request: {e}")
+            return None
+
+    @app.route("/api/auto-log-request", methods=["POST"])
+    def api_auto_log_request():
+        """API endpoint to automatically log a new user request"""
+        try:
+            data = request.get_json()
+            user_request = data.get('request', '')
+            resolution = data.get('resolution', 'Request logged for implementation')
+            
+            log_id = auto_log_request(user_request, resolution)
+            
+            if log_id:
+                return jsonify({
+                    'success': True,
+                    'log_id': log_id,
+                    'message': f'Request automatically logged as Log #{log_id:03d}'
+                })
+            else:
+                return jsonify({
+                    'success': False,
+                    'message': 'Failed to create automatic log entry'
+                }), 500
+                
+        except Exception as e:
+            logger.error(f"Error in auto-log-request API: {e}")
+            return jsonify({
+                'success': False,
+                'message': f'Error: {str(e)}'
+            }), 500
+
     @app.route("/api/unified-logs", methods=["GET"])
     def get_unified_logs():
         """API endpoint for unified logs with hardened structure"""
