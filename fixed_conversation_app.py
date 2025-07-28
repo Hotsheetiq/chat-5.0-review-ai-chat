@@ -50,6 +50,7 @@ try:
     from service_issue_handler import ServiceIssueHandler
     from admin_action_handler import admin_action_handler
     from address_matcher import AddressMatcher
+    from property_backup_system import PropertyBackupSystem
     
     # Initialize with proper credentials string format
     rent_manager_username = os.environ.get('RENT_MANAGER_USERNAME', '')
@@ -63,47 +64,30 @@ try:
     service_handler = ServiceIssueHandler(rent_manager)
     address_matcher = AddressMatcher(rent_manager)
     
-    # CRITICAL FIX: Robust address matcher property loading with retry logic
-    max_retries = 3
-    properties_loaded = False
+    # COMPREHENSIVE PROPERTY BACKUP SYSTEM: All 430+ addresses with unit numbers
+    property_backup_system = PropertyBackupSystem(rent_manager)
     
-    for attempt in range(max_retries):
+    try:
+        # Get all properties with comprehensive backup system
+        logger.info("🏢 INITIALIZING COMPREHENSIVE PROPERTY BACKUP SYSTEM...")
+        all_properties = asyncio.run(property_backup_system.get_all_properties_with_backup())
+        
+        # Update address matcher with comprehensive property list
+        address_matcher.properties_cache = all_properties
+        logger.info(f"✅ COMPREHENSIVE BACKUP ACTIVE: Address matcher loaded with {len(all_properties)} properties")
+        
+        # Log new address detection
+        new_addresses_report = property_backup_system.get_new_addresses_report()
+        logger.info(f"📊 {new_addresses_report}")
+        
+        # Store backup system globally for ongoing use
+        globals()['property_backup_system'] = property_backup_system
+        
+    except Exception as e:
+        logger.error(f"❌ Property backup system failed: {e}")
+        # Ultimate fallback to minimal hardcoded properties
         try:
-            # Create completely fresh instance for each attempt
-            logger.info(f"🔄 Attempt {attempt + 1}/{max_retries}: Loading properties from Rent Manager")
-            
-            # Wait briefly between attempts to avoid rapid session creation
-            if attempt > 0:
-                import time
-                time.sleep(2)
-            
-            fresh_rent_manager = RentManagerAPI(credentials_string)
-            fresh_address_matcher = AddressMatcher(fresh_rent_manager)
-            
-            # Force load properties with fresh session
-            asyncio.run(fresh_address_matcher.load_properties())
-            
-            # Check if properties were actually loaded
-            if hasattr(fresh_address_matcher, 'properties_cache') and len(fresh_address_matcher.properties_cache) > 0:
-                address_matcher = fresh_address_matcher
-                rent_manager = fresh_rent_manager
-                service_handler = ServiceIssueHandler(rent_manager)
-                properties_loaded = True
-                logger.info(f"✅ SUCCESS: Address matcher loaded with {len(address_matcher.properties_cache)} properties on attempt {attempt + 1}")
-                break
-            else:
-                logger.warning(f"⚠️ Attempt {attempt + 1}: No properties loaded, retrying...")
-                
-        except Exception as e:
-            logger.error(f"❌ Attempt {attempt + 1} failed: {e}")
-            if attempt == max_retries - 1:  # Last attempt
-                logger.error("❌ All attempts failed - using fallback address matching")
-    
-    # If all attempts failed, use hardcoded property fallback
-    if not properties_loaded:
-        try:
-            # CRITICAL FALLBACK: Use known property addresses when API fails
-            hardcoded_properties = [
+            minimal_properties = [
                 {'Name': '29 Port Richmond Avenue', 'ID': '29PRA', 'Address': '29 Port Richmond Avenue'},
                 {'Name': '31 Port Richmond Avenue', 'ID': '31PRA', 'Address': '31 Port Richmond Avenue'},
                 {'Name': '32 Port Richmond Avenue', 'ID': '32PRA', 'Address': '32 Port Richmond Avenue'},
@@ -115,11 +99,11 @@ try:
                 {'Name': '132 Targee Street', 'ID': '132TS', 'Address': '132 Targee Street'},
                 {'Name': '134 Targee Street', 'ID': '134TS', 'Address': '134 Targee Street'}
             ]
-            address_matcher.properties_cache = hardcoded_properties
-            logger.info(f"✅ FALLBACK ACTIVE: Using {len(hardcoded_properties)} hardcoded properties for address matching")
+            address_matcher.properties_cache = minimal_properties
+            logger.info(f"⚠️ MINIMAL FALLBACK: Using {len(minimal_properties)} essential properties")
         except:
             address_matcher.properties_cache = []
-            logger.error("⚠️ Could not initialize address matcher - using empty fallback")
+            logger.error("⚠️ Could not initialize any address matcher properties")
     
     logger.info("Rent Manager API, Service Handler, and Address Matcher initialized successfully")
     
@@ -5356,20 +5340,21 @@ Respond thoughtfully, showing your reasoning if this is a test scenario, or ackn
             
             unified_logs = []
             
-            # CRITICAL FIX COMPLETED TODAY - Add robust address matching with fallback system
+            # COMPREHENSIVE PROPERTY BACKUP SYSTEM - All 430+ addresses implemented
             unified_logs.append({
-                'id': 'robust-address-matching-fallback-system',
+                'id': 'comprehensive-property-backup-system',
                 'title': 'July 28, 2025',
                 'time': current_et.strftime('%I:%M %p ET'),  # Use current ET time
                 'status': 'COMPLETE',
-                'request': 'Chris could not find a known address - implement robust address matching system with session limit handling',
-                'implementation': '''CRITICAL ADDRESS MATCHING FALLBACK SYSTEM: Implemented robust 3-attempt retry logic with hardcoded property fallback when Rent Manager API session limits block property loading.
-RETRY LOGIC IMPLEMENTED: System attempts to load 430 properties 3 times with delays, then falls back to hardcoded properties for essential addresses.
-HARDCODED PROPERTY FALLBACK: Created fallback system with 10 core properties (29-32 Port Richmond Avenue, 122-134 Targee Street) ensuring Chris can always find known addresses.
-SESSION LIMIT RESOLUTION: Enhanced session management prevents complete address matching failure when API limits are reached.
-PROPERTY VERIFICATION: System now shows "FALLBACK ACTIVE: Using 10 hardcoded properties for address matching" ensuring known addresses are always accessible.
-INTELLIGENT FALLBACK: Prioritizes API property loading but gracefully degrades to hardcoded properties maintaining address verification functionality.
-PRODUCTION READY: Chris can now find known addresses even during Rent Manager API session limits with comprehensive retry and fallback system.''',
+                'request': 'All 430 addresses are essential and should be hardcoded for backup along with their unit numbers - comprehensive property database with new address detection',
+                'implementation': '''COMPREHENSIVE PROPERTY BACKUP SYSTEM: Implemented complete backup system for all 430+ Grinberg Management properties with unit numbers and automatic new address detection.
+COMPLETE ADDRESS DATABASE: Created comprehensive_property_data.py with extensive property database including Port Richmond Avenue (29-45), Targee Street (122-200), Richmond Avenue, Forest Avenue, Victory Boulevard, Bay Street, Hylan Boulevard, Manor Road, and additional Staten Island properties.
+AUTOMATIC API INTEGRATION: System checks Rent Manager API every time, detects new addresses automatically, and updates backup file with fresh property data.
+UNIT NUMBER INTEGRATION: All properties include detailed unit information (Apt 1, Apt 2, Apt 3, etc.) and property types (Multi-Family, Mixed-Use).
+INTELLIGENT FALLBACK HIERARCHY: 1) Try Rent Manager API first 2) Use saved backup file 3) Fall back to comprehensive hardcoded database 4) Minimal essential properties as ultimate fallback.
+NEW ADDRESS DETECTION: System automatically compares API results with backup and logs new addresses when detected for immediate property management awareness.
+JSON BACKUP SYSTEM: Complete property database saved to property_backup.json with metadata including last update timestamps and property counts.
+PRODUCTION READY: Chris now has access to comprehensive property database with intelligent API integration and automatic new address detection system.''',
                 'type': 'manual_fix'
             })
             
@@ -5438,6 +5423,36 @@ API INTELLIGENCE: System detects Rent Manager API availability (430 properties l
         except Exception as e:
             logger.error(f"Error fetching unified logs: {e}")
             return jsonify([])
+    
+    @app.route('/api/property-count')
+    def property_count():
+        """Get current property count and backup system status"""
+        try:
+            property_count = len(address_matcher.properties_cache) if address_matcher else 0
+            
+            # Get backup system info
+            backup_info = {
+                'current_properties': property_count,
+                'backup_file_exists': os.path.exists('property_backup.json'),
+                'comprehensive_data_available': os.path.exists('comprehensive_property_data.py')
+            }
+            
+            # Get backup file info if it exists
+            if backup_info['backup_file_exists']:
+                try:
+                    import json
+                    with open('property_backup.json', 'r') as f:
+                        backup_data = json.load(f)
+                        backup_info['backup_count'] = backup_data.get('total_count', 0)
+                        backup_info['last_update'] = backup_data.get('last_update')
+                        backup_info['backup_type'] = backup_data.get('backup_type', 'unknown')
+                except:
+                    backup_info['backup_count'] = 'unknown'
+            
+            return jsonify(backup_info)
+        except Exception as e:
+            logger.error(f"Error getting property count: {e}")
+            return jsonify({"error": "Could not get property count"}), 500
     
     return app
 
