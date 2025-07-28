@@ -4594,20 +4594,20 @@ ISSUE DETAILS: Please describe what specific problem you're experiencing with th
                                         return entry.html; // Use pre-rendered HTML for manual fixes
                                     } else {
                                         return `
-                                    <div class="mb-3 p-3 border-start border-3 ${entry.status === 'resolved' ? 'border-success bg-success-subtle' : 'border-warning bg-warning-subtle'} fix-item" draggable="true" style="color: black; cursor: move;" data-fix-id="${entry.id}">
+                                    <div class="mb-3 p-3 border-start border-3 ${entry.status === 'RESOLVED' || entry.status === 'COMPLETE' ? 'border-success bg-success-subtle' : 'border-warning bg-warning-subtle'} fix-item" draggable="true" style="color: black; cursor: move;" data-fix-id="${entry.id}">
                                         <div class="d-flex justify-content-between align-items-start">
                                             <div>
-                                                <strong style="color: black;">${entry.date}</strong>
-                                                <small style="color: #888; margin-left: 10px;">${entry.time}</small>
+                                                <strong style="color: black;">${entry.title || entry.date || 'Unknown Date'}</strong>
+                                                <small style="color: #888; margin-left: 10px;">${entry.time || 'Unknown Time'}</small>
                                             </div>
                                             <div class="d-flex align-items-center gap-2">
                                                 <button class="btn btn-sm btn-outline-warning copy-problem-btn" onclick="copyProblemReport(this)" title="Copy Problem Report">
                                                     📋 Report Issue
                                                 </button>
-                                                <small style="color: #666;">Status: ${entry.status === 'resolved' ? '✅ RESOLVED' : '⚠️ PENDING'}</small>
+                                                <small style="color: #666;">Status: ${(entry.status === 'RESOLVED' || entry.status === 'COMPLETE') ? '✅ ' + entry.status : '⚠️ ' + (entry.status || 'PENDING')}</small>
                                             </div>
                                         </div>
-                                        <p class="mb-1 mt-2" style="color: black;"><strong>User Complaint:</strong> "${entry.description}"</p>
+                                        <p class="mb-1 mt-2" style="color: black;"><strong>Request:</strong> "${entry.request || entry.description || 'No description available'}"</p>
                                         <p class="mb-0" style="color: black;"><strong>Implementation:</strong> ${entry.implementation || 'Implementation pending...'}</p>
                                     </div>
                                         `;
