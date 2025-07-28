@@ -192,17 +192,46 @@
     
     <script>
         function goToDashboard() {
-            // Enhanced dashboard navigation with multiple fallbacks
+            // Multiple navigation methods for maximum compatibility
+            console.log('Navigating to dashboard...');
+            
+            // Method 1: Direct assignment
+            try {
+                window.location = '/';
+                return;
+            } catch (e) {
+                console.log('Method 1 failed:', e);
+            }
+            
+            // Method 2: href assignment
             try {
                 window.location.href = '/';
+                return;
             } catch (e) {
-                try {
-                    window.location = '/';
-                } catch (e2) {
-                    console.error('Dashboard navigation failed:', e2);
-                    alert('Having trouble navigating to dashboard. Please refresh the page.');
-                }
+                console.log('Method 2 failed:', e);
             }
+            
+            // Method 3: replace method
+            try {
+                window.location.replace('/');
+                return;
+            } catch (e) {
+                console.log('Method 3 failed:', e);
+            }
+            
+            // Method 4: Create and click link
+            try {
+                const link = document.createElement('a');
+                link.href = '/';
+                link.click();
+                return;
+            } catch (e) {
+                console.log('Method 4 failed:', e);
+            }
+            
+            // Final fallback: Manual refresh
+            console.error('All navigation methods failed');
+            alert('Navigation failed. Please manually click your browser\'s back button or go to the main page.');
         }
     </script>
 </body>
