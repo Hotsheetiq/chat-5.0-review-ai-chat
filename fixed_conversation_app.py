@@ -1137,16 +1137,36 @@ log #{log_entry['id']:03d} – {log_entry['date']}
             if call_sid not in conversation_history:
                 conversation_history[call_sid] = []
             
-            # Use reliable Polly voice to prevent call disconnections
+            # Generate ElevenLabs audio for Chris greeting
             dynamic_greeting = get_dynamic_happy_greeting()
             
-            response = f"""<?xml version="1.0" encoding="UTF-8"?>
-            <Response>
-                <Say voice="Polly.Matthew-Neural">{dynamic_greeting}</Say>
-                <Gather input="speech" timeout="8" speechTimeout="4" action="/handle-speech/{call_sid}" method="POST">
-                </Gather>
-                <Redirect>/handle-speech/{call_sid}</Redirect>
-            </Response>"""
+            # Try ElevenLabs first, fallback to reliable system if needed
+            try:
+                # Generate audio URL for Twilio
+                import urllib.parse
+                encoded_greeting = urllib.parse.quote(dynamic_greeting)
+                audio_url = f"https://{request.headers.get('Host', 'localhost:5000')}/generate-audio/{call_sid}?text={encoded_greeting}"
+                
+                logger.info(f"🎵 Using ElevenLabs audio URL: {audio_url}")
+                
+                response = f"""<?xml version="1.0" encoding="UTF-8"?>
+                <Response>
+                    <Play>{audio_url}</Play>
+                    <Gather input="speech" timeout="8" speechTimeout="4" action="/handle-speech/{call_sid}" method="POST">
+                    </Gather>
+                    <Redirect>/handle-speech/{call_sid}</Redirect>
+                </Response>"""
+                
+            except Exception as e:
+                logger.error(f"ElevenLabs URL generation failed: {e}, using fallback")
+                # Temporary fallback - we'll improve this
+                response = f"""<?xml version="1.0" encoding="UTF-8"?>
+                <Response>
+                    <Say voice="Polly.Matthew-Neural">Hi, you've reached Grinberg Management. How can I help you?</Say>
+                    <Gather input="speech" timeout="8" speechTimeout="4" action="/handle-speech/{call_sid}" method="POST">
+                    </Gather>
+                    <Redirect>/handle-speech/{call_sid}</Redirect>
+                </Response>"""
             
             return response
             
@@ -1271,9 +1291,10 @@ log #{log_entry['id']:03d} – {log_entry['date']}
                     })
                     
                     # Return TwiML immediately - no AI processing
+                    import urllib.parse
                     return f"""<?xml version="1.0" encoding="UTF-8"?>
                     <Response>
-                        <Say voice="Polly.Matthew-Neural">{response_text}</Say>
+                        <Play>https://{request.headers.get('Host', 'localhost:5000')}/generate-audio/{call_sid}?text={urllib.parse.quote(response_text)}</Play>
                         <Gather input="speech" timeout="8" speechTimeout="4" action="/handle-speech/{call_sid}" method="POST">
                         </Gather>
                         <Redirect>/handle-speech/{call_sid}</Redirect>
@@ -1340,9 +1361,10 @@ log #{log_entry['id']:03d} – {log_entry['date']}
             })
             
             # Return TwiML response
+            import urllib.parse
             return f"""<?xml version="1.0" encoding="UTF-8"?>
             <Response>
-                <Say voice="Polly.Matthew-Neural">{response_text}</Say>
+                <Play>https://{request.headers.get('Host', 'localhost:5000')}/generate-audio/{call_sid}?text={urllib.parse.quote(response_text)}</Play>
                 <Gather input="speech" timeout="8" speechTimeout="4" action="/handle-speech/{call_sid}" method="POST">
                 </Gather>
                 <Redirect>/handle-speech/{call_sid}</Redirect>
@@ -1562,22 +1584,25 @@ log #{log_entry['id']:03d} – {log_entry['date']}
             if not text:
                 return "No text provided", 400
             
+            logger.info(f"🎵 Generating ElevenLabs audio for: '{text}'")
+            
             # Import ElevenLabs integration
             from elevenlabs_integration import generate_elevenlabs_audio
             
             # Generate audio using ElevenLabs
             audio_file = generate_elevenlabs_audio(text, voice_name="adam")
             
-            if audio_file:
+            if audio_file and os.path.exists(audio_file):
+                logger.info(f"✅ ElevenLabs audio generated successfully: {audio_file}")
                 # Return the audio file directly
                 from flask import send_file
-                return send_file(audio_file, mimetype='audio/mpeg')
+                return send_file(audio_file, mimetype='audio/mpeg', as_attachment=False)
             else:
-                # Fallback - generate fallback audio or return error
+                logger.error(f"❌ ElevenLabs audio generation failed for: '{text}'")
                 return "Audio generation failed", 500
                 
         except Exception as e:
-            logger.error(f"Error generating audio: {e}")
+            logger.error(f"Error generating ElevenLabs audio: {e}")
             return "Internal server error", 500
 
     @app.route("/audio/<filename>")

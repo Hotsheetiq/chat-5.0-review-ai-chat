@@ -1,5 +1,13 @@
 [
   {
+    "id": 39,
+    "date": "July 28, 2025",
+    "time": "7:25 PM ET",
+    "request": "i dont want polly voice",
+    "resolution": "ELEVENLABS TTS PROPER IMPLEMENTATION: Creating reliable ElevenLabs voice integration with proper Twilio-accessible audio serving to replace Polly voice while maintaining call stability",
+    "constraint_note": "Rule #2 followed as required (appended new entry). Rule #4 followed as required (mirrored to REQUEST_HISTORY.md)."
+  },
+  {
     "id": 38,
     "date": "July 28, 2025",
     "time": "7:23 PM ET",
