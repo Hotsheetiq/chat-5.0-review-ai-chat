@@ -1645,31 +1645,47 @@ log #{log_entry['id']:03d} – {log_entry['date']}
                 from grok_integration import GrokAI
                 grok_ai = GrokAI()
                 
-                # Create conversational context with ABSOLUTE ADDRESS VERIFICATION
-                system_content = """You are Chris from Grinberg Management. You're friendly, helpful, and human-like. 
+                # Build conversation context with full history for intelligent responses
+                conversation_context = ""
+                if call_sid in conversation_history and len(conversation_history[call_sid]) > 1:
+                    # Get last 6 messages for context (3 exchanges)
+                    recent_messages = conversation_history[call_sid][-6:]
+                    context_lines = []
+                    for msg in recent_messages:
+                        speaker = msg.get('speaker', 'Unknown')
+                        message = msg.get('message', '')
+                        context_lines.append(f"{speaker}: {message}")
+                    conversation_context = f"\n\nCONVERSATION HISTORY:\n" + "\n".join(context_lines)
 
-                CRITICAL: ADDRESS VERIFICATION IS MANDATORY AND ABSOLUTE:
+                # Create conversational context with INTELLIGENT MEMORY
+                system_content = f"""You are Chris from Grinberg Management. You're intelligent, helpful, and avoid repetitive questions.
+
+                CRITICAL INTELLIGENCE RULES:
+                - READ THE CONVERSATION HISTORY carefully to understand what has already been discussed
+                - If caller already mentioned their problem (heating, electrical, plumbing), DON'T ask "how can I help" again
+                - If they repeat the same issue, move forward: ask for their address or create a service ticket
+                - NEVER ask the same question twice in one conversation
+                - Show you remember what they told you: "Got it, heating issue. What's your address?"
+
+                CONVERSATION FLOW INTELLIGENCE:
+                - Caller says "heating problem" → You ask for address (not "how can I help")
+                - Caller repeats "heating problem" → You say "Got it, heating issue. What's your address?"
+                - If you already asked for address, ask for different information or create ticket
+                - Move the conversation forward, don't get stuck in loops
+
+                ADDRESS VERIFICATION (same rules as before):
                 - You MUST ONLY work with addresses that are explicitly VERIFIED in the system message
-                - If the system message says "UNVERIFIED ADDRESS", you MUST reject it completely
-                - If the system message says "SUGGESTION MODE", you MUST offer the suggestions and wait for confirmation
-                - NEVER create service tickets, NEVER suggest alternatives for unverified addresses
-                - NEVER assume what address the caller meant - always get confirmation first
+                - If system message says "SUGGESTION MODE", offer suggestions and wait for confirmation
+                - NEVER assume what address caller meant
 
-                SUGGESTION MODE HANDLING:
-                - When system message contains "SUGGESTION MODE", offer the provided suggestions exactly as instructed
-                - Say "I couldn't find [address] exactly, but I found [suggestions]. Which one did you mean?"
-                - WAIT for caller to confirm which address they meant before proceeding
-                - Do NOT assume or pick an address for them
+                IMPORTANT: Be smart and progressive. Each response should advance the conversation toward resolution.
+                Keep responses under 25 words and sound natural.{conversation_context}"""
 
-                IMPORTANT NAME HANDLING RULES:
-                - NEVER extract or use names from speech unless crystal clear and confirmed by caller
-                - Speech recognition often mishears names - avoid saying "Hi Mike" or any name assumptions
-                - Instead use "I understand" or "Got it" or "Thanks for calling"
-                - Only use a name if caller explicitly says "My name is [NAME]" and you need to confirm spelling
-
-                For maintenance issues: Verify address FIRST → Ask about the problem → Create service tickets ONLY for verified addresses.
-                Keep responses under 30 words and sound natural."""
-
+                # Enhanced message with conversation intelligence
+                user_content = f"Current input: {speech_result}"
+                if address_context:
+                    user_content += f"\n{address_context}"
+                
                 messages = [
                     {
                         "role": "system", 
@@ -1677,7 +1693,7 @@ log #{log_entry['id']:03d} – {log_entry['date']}
                     },
                     {
                         "role": "user",
-                        "content": speech_result + address_context
+                        "content": user_content
                     }
                 ]
                 

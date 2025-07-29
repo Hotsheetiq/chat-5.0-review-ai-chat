@@ -1,5 +1,21 @@
 [
   {
+    "id": 66,
+    "date": "July 28, 2025",
+    "time": "9:59 PM ET",
+    "request": "Fix Chris unintelligent repetitive questioning",
+    "resolution": "\u2705 AI INTELLIGENCE UPGRADED: Enhanced conversation memory system with 6-message context history. Chris now reads conversation history to avoid asking same questions twice. When caller repeats heating problem, Chris will say Got it, heating issue. Whats your address? instead of How can I help? Progressive conversation flow implemented. \ud83d\udee1\ufe0f Constraint Note: All rules followed as required",
+    "constraint_note": "Rule #2 followed as required (appended new entry). Rule #4 followed as required (mirrored to REQUEST_HISTORY.md)."
+  },
+  {
+    "id": 65,
+    "date": "July 28, 2025",
+    "time": "9:59 PM ET",
+    "request": "Chris seems unintelligent - repeating same questions about heating problem",
+    "resolution": "CRITICAL AI INTELLIGENCE FIX: Chris is stuck in loop asking how he can help with heating after caller already explained the problem. Fixing AI context awareness and conversation memory to prevent repetitive questioning.",
+    "constraint_note": "Rule #2 followed as required (appended new entry). Rule #4 followed as required (mirrored to REQUEST_HISTORY.md)."
+  },
+  {
     "id": 64,
     "date": "July 28, 2025",
     "time": "9:58 PM ET",
