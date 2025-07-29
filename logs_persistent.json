@@ -1,5 +1,13 @@
 [
   {
+    "id": 96,
+    "date": "July 28, 2025",
+    "time": "11:33 PM ET",
+    "request": "New SendGrid API key provided - testing email delivery system",
+    "resolution": "\u2705 NEW SENDGRID API KEY UPDATED: User provided new API key to resolve character encoding issues. Testing email system immediately to confirm transcript delivery is working. Updated environment secrets and restarted application. Email system should now deliver call transcripts to grinbergchat@gmail.com without encoding errors.",
+    "constraint_note": "Rule #2 followed as required (appended new entry). Rule #4 followed as required (mirrored to REQUEST_HISTORY.md)."
+  },
+  {
     "id": 95,
     "date": "July 28, 2025",
     "time": "11:21 PM ET",
