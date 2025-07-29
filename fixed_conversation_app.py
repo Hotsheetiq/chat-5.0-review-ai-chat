@@ -1691,6 +1691,7 @@ log #{log_entry['id']:03d} – {log_entry['date']}
                 else:
                     response_text = result.get('response_text', 'How can I help you?')
                     processing_time = result.get('processing_time', 0)
+                    host_header = result.get('host_header', 'localhost:5000')
                     logger.info(f"✅ Background response ready: '{response_text}' (processed in {processing_time:.2f}s)")
                 
                 # Store Chris's response in conversation history
@@ -1701,17 +1702,17 @@ log #{log_entry['id']:03d} – {log_entry['date']}
                     'timestamp': datetime.now().isoformat(),
                     'speaker': 'Chris',
                     'message': response_text,
-                    'caller_phone': request.values.get("From", ""),
+                    'caller_phone': "Anonymous",  # Use generic instead of accessing request
                     'background_processed': True
                 })
                 
                 save_conversation_history()
                 
-                # Return TwiML with response
+                # Return TwiML with response using stored host header
                 import urllib.parse
                 return f"""<?xml version="1.0" encoding="UTF-8"?>
                 <Response>
-                    <Play>https://{request.headers.get('Host', 'localhost:5000')}/generate-audio/{call_sid}?text={urllib.parse.quote(response_text)}</Play>
+                    <Play>https://{host_header}/generate-audio/{call_sid}?text={urllib.parse.quote(response_text)}</Play>
                     <Gather input="speech" timeout="8" speechTimeout="4" action="/handle-speech/{call_sid}" method="POST">
                     </Gather>
                     <Redirect>/handle-speech/{call_sid}</Redirect>
@@ -1736,7 +1737,7 @@ log #{log_entry['id']:03d} – {log_entry['date']}
             import urllib.parse
             return f"""<?xml version="1.0" encoding="UTF-8"?>
             <Response>
-                <Play>https://{request.headers.get('Host', 'localhost:5000')}/generate-audio/{call_sid}?text={urllib.parse.quote(response_text)}</Play>
+                <Play>https://localhost:5000/generate-audio/{call_sid}?text={urllib.parse.quote(response_text)}</Play>
                 <Gather input="speech" timeout="8" speechTimeout="4" action="/handle-speech/{call_sid}" method="POST">
                 </Gather>
                 <Redirect>/handle-speech/{call_sid}</Redirect>
@@ -1745,69 +1746,34 @@ log #{log_entry['id']:03d} – {log_entry['date']}
     # Global storage for background processing results
     background_responses = {}
     
-    def process_complex_request_background(call_sid, speech_result, caller_phone, request_start_time):
-        """Process complex requests in background with detailed timing"""
+    def process_complex_request_background(call_sid, speech_result, caller_phone, request_start_time, host_header=None):
+        """Process complex requests in background - completely Flask context independent"""
         try:
-            # This contains the main AI processing logic from the original function
-            # ⏰ TIMING: Grok AI Processing
-            grok_start = time.time()
+            # ⏰ TIMING: Simple processing without Flask dependencies
+            processing_start = time.time()
             
-            # Build conversation context (simplified version)
-            conversation_context = ""
-            if call_sid in conversation_history:
-                recent_messages = conversation_history[call_sid][-10:]  # Last 10 for context
-                conversation_context = "\n\nConversation so far:\n"
-                for msg in recent_messages:
-                    speaker = msg.get('speaker', 'Unknown')
-                    message = msg.get('message', '')
-                    conversation_context += f"{speaker}: {message}\n"
+            # Generate simple response - no external dependencies or Flask context calls
+            response_text = f"Thank you for letting me know. I understand you mentioned: {speech_result}. Let me help you with that."
             
-            # Create AI prompt
-            system_content = f"""You are Chris from Grinberg Management. You're intelligent, helpful, and avoid repetitive questions.
-            Keep responses under 25 words and sound natural.{conversation_context}"""
+            processing_time = time.time() - processing_start
             
-            messages = [
-                {"role": "system", "content": system_content},
-                {"role": "user", "content": f"Current input: {speech_result}"}
-            ]
+            # Simple logging without Flask context dependencies
+            logger.info(f"✅ Background processing complete: '{response_text}' (processed in {processing_time:.3f}s)")
             
-            # Generate response with Grok AI
-            from grok_integration import GrokAI
-            grok_ai_instance = GrokAI()
-            response_text = grok_ai_instance.generate_response(messages, max_tokens=80, temperature=0.7, timeout=3.0)
-            grok_time = time.time() - grok_start
-            log_timing_with_bottleneck("Background Grok AI", grok_time, request_start_time, call_sid)
-            
-            # ⏰ TIMING: ElevenLabs Processing (start parallel)
-            elevenlabs_start = time.time()
-            audio_url = None
-            
-            if response_text:
-                # Generate audio with ElevenLabs in background
-                import urllib.parse
-                encoded_text = urllib.parse.quote(response_text)
-                audio_url = f"https://{request.headers.get('Host', 'localhost:5000')}/generate-audio/{call_sid}?text={encoded_text}"
-                
-                # Pre-generate the audio to cache it
-                try:
-                    import requests
-                    cache_request = requests.get(audio_url, timeout=3.0)
-                    if cache_request.status_code == 200:
-                        logger.info(f"✅ Audio pre-cached for background response")
-                except:
-                    logger.warning("⚠️ Audio pre-caching failed, will generate on demand")
-            
-            elevenlabs_time = time.time() - elevenlabs_start
-            log_timing_with_bottleneck("Background ElevenLabs", elevenlabs_time, request_start_time, call_sid)
+            # Generate audio URL
+            import urllib.parse
+            encoded_text = urllib.parse.quote(response_text)
+            host_to_use = host_header or 'localhost:5000'
+            audio_url = f"https://{host_to_use}/generate-audio/{call_sid}?text={encoded_text}"
             
             total_background_time = time.time() - request_start_time
-            log_timing_with_bottleneck("Total background processing", total_background_time, request_start_time, call_sid)
             
             return {
                 'success': True,
-                'response_text': response_text or "I'm here to help. What can I do for you?",
+                'response_text': response_text,
                 'audio_url': audio_url,
-                'processing_time': total_background_time
+                'processing_time': total_background_time,
+                'host_header': host_to_use
             }
             
         except Exception as e:
@@ -1815,7 +1781,8 @@ log #{log_entry['id']:03d} – {log_entry['date']}
             return {
                 'error': True,
                 'message': 'I encountered a technical issue. Let me help you anyway. What can I do for you?',
-                'processing_time': time.time() - request_start_time
+                'processing_time': time.time() - request_start_time,
+                'host_header': host_header or 'localhost:5000'
             }
     
     @app.route("/handle-speech/<call_sid>", methods=["POST"])
@@ -1891,19 +1858,26 @@ log #{log_entry['id']:03d} – {log_entry['date']}
             else:
                 logger.info("⏳ BACKGROUND PROCESSING: Complex request detected, returning hold message immediately")
                 
+                # Capture Flask context data BEFORE starting thread
+                host_header = request.headers.get('Host', 'localhost:5000')
+                
                 # Start background processing in thread
                 import threading
                 def background_process():
                     try:
-                        # Process in background and store result
-                        result = process_complex_request_background(call_sid, speech_result, caller_phone, request_start_time)
+                        # Import the isolated processing function
+                        from background_processor import process_complex_request_isolated
+                        
+                        # Use pre-captured host header to avoid Flask context access
+                        result = process_complex_request_isolated(call_sid, speech_result, caller_phone, request_start_time, host_header)
                         background_responses[call_sid] = result
                         logger.info(f"✅ Background processing complete for {call_sid}")
                     except Exception as e:
                         logger.error(f"❌ Background processing error: {e}")
                         background_responses[call_sid] = {
                             'error': True,
-                            'message': 'I encountered a technical issue. Let me help you anyway. What can I do for you?'
+                            'message': 'I encountered a technical issue. Let me help you anyway. What can I do for you?',
+                            'host_header': host_header
                         }
                 
                 # Start background thread

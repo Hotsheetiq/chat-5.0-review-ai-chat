@@ -1193,8 +1193,162 @@
         "message": "I didn't catch that. Could you please repeat what you said?",
         "caller_phone": "Anonymous"
       }
+    ],
+    "CA854926c7d279a9e3f13b8c7d8749dddb": [
+      {
+        "timestamp": "2025-07-29T16:33:05.197490",
+        "speaker": "Caller",
+        "message": "hi chris. i'm calling because i have a problem with my heating system.",
+        "caller_phone": "Anonymous"
+      },
+      {
+        "timestamp": "2025-07-29T16:33:10.526535",
+        "speaker": "Chris",
+        "message": "Hi there! I'm sorry to hear about your heating system issue. Can you please confirm your address so I can check on the status of your heating system?",
+        "caller_phone": "Anonymous"
+      },
+      {
+        "timestamp": "2025-07-29T16:33:26.683691",
+        "speaker": "Caller",
+        "message": "627 carry avenue.",
+        "caller_phone": "Anonymous"
+      },
+      {
+        "timestamp": "2025-07-29T16:33:30.406920",
+        "speaker": "Chris",
+        "message": "I encountered a technical issue. Let me help you anyway. What can I do for you?",
+        "caller_phone": "Anonymous",
+        "background_processed": true
+      },
+      {
+        "timestamp": "2025-07-29T16:33:36.100412",
+        "speaker": "Chris",
+        "message": "I didn't catch that. Could you please repeat what you said?",
+        "caller_phone": "Anonymous"
+      }
+    ],
+    "test-address-123": [
+      {
+        "timestamp": "2025-07-29T16:34:31.279141",
+        "speaker": "Caller",
+        "message": "i have a heating issue at 29 port richmond avenue",
+        "caller_phone": " 13477430880"
+      },
+      {
+        "timestamp": "2025-07-29T16:34:34.563709",
+        "speaker": "Chris",
+        "message": "I encountered a technical issue. Let me help you anyway. What can I do for you?",
+        "caller_phone": "",
+        "background_processed": true
+      }
+    ],
+    "test-context-fix-456": [
+      {
+        "timestamp": "2025-07-29T16:35:31.004483",
+        "speaker": "Caller",
+        "message": "i have a plumbing issue at 29 port richmond avenue",
+        "caller_phone": " 13477430880"
+      },
+      {
+        "timestamp": "2025-07-29T16:35:35.519094",
+        "speaker": "Chris",
+        "message": "I encountered a technical issue. Let me help you anyway. What can I do for you?",
+        "caller_phone": "Anonymous",
+        "background_processed": true
+      }
+    ],
+    "test-simple-fix-789": [
+      {
+        "timestamp": "2025-07-29T16:36:09.267280",
+        "speaker": "Caller",
+        "message": "hello chris",
+        "caller_phone": " 13477430880"
+      }
+    ],
+    "test-simple-bg-999": [
+      {
+        "timestamp": "2025-07-29T16:36:57.196750",
+        "speaker": "Caller",
+        "message": "i have a heating issue at 29 port richmond avenue",
+        "caller_phone": " 13477430880"
+      },
+      {
+        "timestamp": "2025-07-29T16:37:00.559903",
+        "speaker": "Chris",
+        "message": "I encountered a technical issue. Let me help you anyway. What can I do for you?",
+        "caller_phone": "Anonymous",
+        "background_processed": true
+      }
+    ],
+    "test-final-context-111": [
+      {
+        "timestamp": "2025-07-29T16:37:55.944885",
+        "speaker": "Caller",
+        "message": "i have a electrical issue at 29 port richmond avenue",
+        "caller_phone": " 13477430880"
+      },
+      {
+        "timestamp": "2025-07-29T16:37:58.625988",
+        "speaker": "Chris",
+        "message": "I encountered a technical issue. Let me help you anyway. What can I do for you?",
+        "caller_phone": "Anonymous",
+        "background_processed": true
+      }
+    ],
+    "test-isolated-bg-555": [
+      {
+        "timestamp": "2025-07-29T16:38:37.132220",
+        "speaker": "Caller",
+        "message": "i have a heating issue at 29 port richmond avenue",
+        "caller_phone": " 13477430880"
+      },
+      {
+        "timestamp": "2025-07-29T16:38:39.829425",
+        "speaker": "Chris",
+        "message": "I encountered a technical issue. Let me help you anyway. What can I do for you?",
+        "caller_phone": "Anonymous",
+        "background_processed": true
+      }
+    ],
+    "test-successful-final-777": [
+      {
+        "timestamp": "2025-07-29T16:38:46.969576",
+        "speaker": "Caller",
+        "message": "i have a plumbing issue at 29 port richmond avenue",
+        "caller_phone": " 13477430880"
+      },
+      {
+        "timestamp": "2025-07-29T16:38:50.261807",
+        "speaker": "Chris",
+        "message": "I encountered a technical issue. Let me help you anyway. What can I do for you?",
+        "caller_phone": "Anonymous",
+        "background_processed": true
+      }
+    ],
+    "test-precapture-context-888": [
+      {
+        "timestamp": "2025-07-29T16:39:06.851576",
+        "speaker": "Caller",
+        "message": "i have a heating issue at 29 port richmond avenue",
+        "caller_phone": " 13477430880"
+      },
+      {
+        "timestamp": "2025-07-29T16:39:10.485993",
+        "speaker": "Chris",
+        "message": "Thank you for letting me know. I understand you mentioned: i have a heating issue at 29 port richmond avenue. Let me help you with that.",
+        "caller_phone": "Anonymous",
+        "background_processed": true
+      }
+    ],
+    "test-simple-success-999": [
+      {
+        "timestamp": "2025-07-29T16:39:19.075431",
+        "speaker": "Caller",
+        "message": "hello chris how are you",
+        "caller_phone": " 13477430880"
+      }
     ]
   },
-  "last_updated": "2025-07-29T02:09:35.168039-04:00",
-  "total_calls": 31
+  "last_updated": "2025-07-29T12:39:19.075445-04:00",
+  "total_calls": 41
 }
