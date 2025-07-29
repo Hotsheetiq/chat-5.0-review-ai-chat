@@ -54,6 +54,9 @@ conversation_history = load_conversation_history()
 # Email tracking to prevent duplicates
 email_sent_calls = set()
 
+# Anti-repetition system - prevent Chris from repeating exact phrases
+response_tracker = {}
+
 # EMAIL NOTIFICATION SYSTEM - GMAIL SMTP FALLBACK
 def send_call_transcript_email(call_sid, caller_phone, transcript, issue_type=None, address_status="unknown"):
     """Send call transcript email to grinbergchat@gmail.com"""
@@ -1916,8 +1919,17 @@ log #{log_entry['id']:03d} – {log_entry['date']}
                         context_lines.append(f"{speaker}: {message}")
                     conversation_context = f"\n\nCONVERSATION HISTORY:\n" + "\n".join(context_lines)
 
+                # ANTI-REPETITION CHECK: Prevent Chris from repeating exact phrases  
+                if call_sid not in response_tracker:
+                    response_tracker[call_sid] = set()
+
                 # Create conversational context with INTELLIGENT MEMORY
                 system_content = f"""You are Chris from Grinberg Management. You're intelligent, helpful, and avoid repetitive questions.
+
+                CRITICAL ANTI-REPETITION RULE: 
+                - NEVER repeat the exact same phrase twice in the same call
+                - Vary your responses even for similar situations
+                - If you've already said "I want to make sure I understand. Can you tell me what's happening?" use alternatives like "What kind of problem are you having?" or "Tell me more about what's going on."
 
                 CRITICAL INTELLIGENCE RULES:
                 - READ THE CONVERSATION HISTORY carefully to understand what has already been discussed
@@ -1959,6 +1971,15 @@ log #{log_entry['id']:03d} – {log_entry['date']}
                 # Generate intelligent response
                 response_text = grok_ai.generate_response(messages, max_tokens=100, temperature=0.7, timeout=2.0)
                 logger.info(f"🤖 AI RESPONSE: '{response_text}' (length: {len(response_text) if response_text else 0})")
+                
+                # ANTI-REPETITION CHECK: Prevent AI from repeating exact phrases
+                if response_text and call_sid in response_tracker and response_text in response_tracker[call_sid]:
+                    logger.warning(f"⚠️ AI REPETITION DETECTED: '{response_text[:30]}...' already used in this call")
+                    # Request a varied response from AI
+                    varied_messages = messages.copy()
+                    varied_messages[0]["content"] += f"\n\nIMPORTANT: You already said '{response_text}' in this call. Please give a different response with the same meaning but different wording."
+                    response_text = grok_ai.generate_response(varied_messages, max_tokens=100, temperature=0.8, timeout=2.0)
+                    logger.info(f"🔄 VARIED RESPONSE: '{response_text}'")
                 
                 # Enhanced AI response validation and email triggers
                 if response_text and ("email" in response_text.lower() and ("management" in response_text.lower() or "team" in response_text.lower())):
@@ -2146,7 +2167,31 @@ log #{log_entry['id']:03d} – {log_entry['date']}
                             if remembered_issue:
                                 response_text = f"I understand you have a {remembered_issue}. What's your address?"
                             else:
-                                response_text = "I want to make sure I understand. Can you tell me what's happening?"
+                                # ANTI-REPETITION SYSTEM: Use varied clarification phrases
+                                clarification_options = [
+                                    "I want to make sure I understand. Can you tell me what's happening?",
+                                    "Can you help me understand what the issue is?",
+                                    "What kind of problem are you having?",
+                                    "Tell me more about what's going on.",
+                                    "What seems to be the issue?"
+                                ]
+                                
+                                # Filter out previously used responses for this call
+                                if call_sid not in response_tracker:
+                                    response_tracker[call_sid] = set()
+                                
+                                available_options = [opt for opt in clarification_options if opt not in response_tracker[call_sid]]
+                                
+                                if available_options:
+                                    response_text = available_options[0]  # Use first available option
+                                    response_tracker[call_sid].add(response_text)
+                                else:
+                                    # All options used, reset and use first option
+                                    response_tracker[call_sid] = set()
+                                    response_text = clarification_options[0]
+                                    response_tracker[call_sid].add(response_text)
+                                
+                                logger.info(f"🔄 ANTI-REPETITION: Using varied clarification - '{response_text[:30]}...'")
                 else:
                     logger.info("✅ AI RESPONSE ACCEPTED - using intelligent AI-generated response (CONSTRAINT PROTECTED)")
                     
@@ -2209,6 +2254,11 @@ log #{log_entry['id']:03d} – {log_entry['date']}
                     else:
                         response_text = "How can I help you today?"
             
+            # ANTI-REPETITION TRACKING: Record this response to prevent future duplicates
+            if response_text and call_sid in response_tracker:
+                response_tracker[call_sid].add(response_text)
+                logger.info(f"🔄 RESPONSE TRACKED: Added '{response_text[:30]}...' to anti-repetition tracker")
+
             # Store AI response and check for email promises
             conversation_history[call_sid].append({
                 'timestamp': datetime.now().isoformat(),

@@ -64,6 +64,36 @@ The following email system components are CRITICAL and must NEVER be removed or 
 
 **VIOLATION WARNING**: Removing email_sent_calls tracker or disabling duplicate prevention will cause multiple emails per call, creating unprofessional spam and violating user requirements.
 
+## CRITICAL PROTECTION: ANTI-REPETITION SYSTEM (ABSOLUTE CONSTRAINT - Added: July 29, 2025 at 12:05 AM ET)
+
+**ANTI-REPETITION SYSTEM - DO NOT REMOVE OR DISABLE**
+
+The following anti-repetition components are CRITICAL and must NEVER be removed or disabled:
+
+### Protected Variables:
+- `response_tracker = {}` - Global tracker preventing exact phrase repetition per call_sid - PROTECTED
+- Must remain at module level in fixed_conversation_app.py - PROTECTED
+
+### Protected Logic:
+- `if call_sid not in response_tracker: response_tracker[call_sid] = set()` - Per-call tracking initialization - PROTECTED
+- `response_tracker[call_sid].add(response_text)` - Response recording after each Chris message - PROTECTED
+- AI repetition detection: `if response_text in response_tracker[call_sid]:` - PROTECTED
+
+### Protected Features:
+- Varied clarification options array with 5 different phrases - PROTECTED
+- AI system prompt anti-repetition warning - PROTECTED
+- Response filtering to use unused clarification phrases - PROTECTED
+- Automatic tracker reset when all options exhausted - PROTECTED
+
+### Protected AI Integration:
+- AI repetition detection with varied response regeneration - PROTECTED
+- Temperature increase (0.8) for varied responses when repetition detected - PROTECTED
+- Response tracking integration with conversation history storage - PROTECTED
+
+**JUSTIFICATION**: User reported "chris asks mutiple time for clarification" and requested "create a rule that he is not allowed to repeat himself using exact the same phrase"
+
+**VIOLATION WARNING**: Removing response_tracker or disabling anti-repetition will cause Chris to repeat identical clarification phrases, creating poor user experience and violating conversation intelligence requirements.
+
 Before updating the UI or any logs, read this file and confirm you're following the rules.
 
 ## CRITICAL SYSTEM PROTECTION - AI RESPONSE INTEGRITY (ABSOLUTE CONSTRAINT)
