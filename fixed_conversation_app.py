@@ -227,6 +227,7 @@ def create_app():
                             <div class="card-header d-flex justify-content-between align-items-center">
                                 <h3 class="mb-0">📝 Request History & Fixes</h3>
                                 <div class="d-flex gap-2">
+                                    <a href="/constraints" class="btn btn-sm btn-outline-light">🛡️ System Constraints</a>
                                     <select id="flag-filter" class="form-select form-select-sm" style="width: auto;" onchange="filterByFlag()">
                                         <option value="">All Entries</option>
                                         <option value="critical">🔥 Critical Only</option>
@@ -689,6 +690,255 @@ def create_app():
             },
             "overall_status": "All services operational"
         })
+
+    @app.route("/constraints", methods=["GET"])
+    def constraints_page():
+        """System constraints dashboard with timestamp functionality"""
+        try:
+            # Read current constraints from file
+            constraints_content = ""
+            try:
+                with open('CONSTRAINTS.md', 'r') as f:
+                    constraints_content = f.read()
+            except FileNotFoundError:
+                constraints_content = "# SYSTEM CONSTRAINTS\n\nNo constraints file found."
+            
+            # Get current timestamp
+            current_time = get_eastern_time()
+            
+            return render_template_string("""
+            <!DOCTYPE html>
+            <html lang="en">
+            <head>
+                <meta charset="UTF-8">
+                <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                <title>System Constraints - Chris Voice Assistant</title>
+                <link href="https://cdn.replit.com/agent/bootstrap-agent-dark-theme.min.css" rel="stylesheet">
+                <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+                <style>
+                    .constraint-section { border-left: 4px solid #007bff; padding-left: 15px; margin: 20px 0; }
+                    .protection-rule { background: #2d3a4e; padding: 10px; border-radius: 5px; margin: 10px 0; }
+                    .timestamp { color: #6c757d; font-size: 0.9em; }
+                    pre { background: #1e2a3a; padding: 15px; border-radius: 5px; overflow-x: auto; }
+                    .add-constraint-btn { position: fixed; bottom: 20px; right: 20px; z-index: 1000; }
+                </style>
+            </head>
+            <body class="bg-dark text-light">
+                <div class="container mt-4">
+                    <div class="d-flex justify-content-between align-items-center mb-4">
+                        <h1>🛡️ System Constraints</h1>
+                        <div>
+                            <span class="timestamp">Last updated: {{ current_time.strftime('%B %d, %Y at %I:%M %p ET') }}</span>
+                            <a href="/" class="btn btn-outline-light ms-3">← Back to Dashboard</a>
+                        </div>
+                    </div>
+                    
+                    <div class="alert alert-warning">
+                        <strong>⚠️ Critical System Protection:</strong> These constraints protect essential system functionality from accidental removal or modification.
+                    </div>
+                    
+                    <div class="card mb-4">
+                        <div class="card-header">
+                            <h5 class="mb-0">📋 Active Constraints</h5>
+                        </div>
+                        <div class="card-body">
+                            <pre class="text-light">{{ constraints_content }}</pre>
+                        </div>
+                    </div>
+                    
+                    <div class="card">
+                        <div class="card-header">
+                            <h5 class="mb-0">🕒 Constraint Timeline</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="constraint-section">
+                                <strong>ElevenLabs TTS Voice System</strong>
+                                <div class="timestamp">Added: {{ current_time.strftime('%B %d, %Y at %I:%M %p ET') }}</div>
+                                <div class="protection-rule">Protects natural ElevenLabs voice from Polly reversion - User confirmed working</div>
+                            </div>
+                            
+                            <div class="constraint-section">
+                                <strong>Automatic Logging System</strong>
+                                <div class="timestamp">Added: July 28, 2025 at 6:15 PM ET</div>
+                                <div class="protection-rule">Protects request logging and persistent storage - User confirmed working</div>
+                            </div>
+                            
+                            <div class="constraint-section">
+                                <strong>Property Backup System</strong>
+                                <div class="timestamp">Added: July 28, 2025 at 9:30 AM ET</div>
+                                <div class="protection-rule">Protects 430+ property database integration - Critical for address verification</div>
+                            </div>
+                            
+                            <div class="constraint-section">
+                                <strong>Flag System User Access</strong>
+                                <div class="timestamp">Added: July 28, 2025 at 8:45 AM ET</div>
+                                <div class="protection-rule">Protects user flag modification functionality - Authorized user access required</div>
+                            </div>
+                            
+                            <div class="constraint-section">
+                                <strong>Logging Rules & Data Management</strong>
+                                <div class="timestamp">Added: July 28, 2025 at 2:00 AM ET</div>
+                                <div class="protection-rule">Protects log ordering, timestamp accuracy, and file handling protocols</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Add New Constraint Button -->
+                    <button class="btn btn-primary add-constraint-btn" onclick="addNewConstraint()">
+                        ➕ Add New Constraint
+                    </button>
+                </div>
+                
+                <!-- Add Constraint Modal -->
+                <div class="modal fade" id="addConstraintModal" tabindex="-1">
+                    <div class="modal-dialog modal-lg">
+                        <div class="modal-content bg-dark">
+                            <div class="modal-header">
+                                <h5 class="modal-title">Add New System Constraint</h5>
+                                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                            </div>
+                            <div class="modal-body">
+                                <form id="constraintForm">
+                                    <div class="mb-3">
+                                        <label class="form-label">Constraint Title</label>
+                                        <input type="text" class="form-control" id="constraintTitle" placeholder="e.g., Dashboard Navigation System">
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label">Protection Description</label>
+                                        <textarea class="form-control" id="constraintDescription" rows="3" placeholder="Describe what this constraint protects and why"></textarea>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label">Protected Components</label>
+                                        <textarea class="form-control" id="constraintComponents" rows="4" placeholder="List specific functions, files, or code sections that must not be modified"></textarea>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label">Violation Warning</label>
+                                        <input type="text" class="form-control" id="constraintWarning" placeholder="What happens if this constraint is violated">
+                                    </div>
+                                </form>
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                                <button type="button" class="btn btn-primary" onclick="saveConstraint()">Save Constraint</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <script>
+                    function addNewConstraint() {
+                        const modal = new bootstrap.Modal(document.getElementById('addConstraintModal'));
+                        modal.show();
+                    }
+                    
+                    function saveConstraint() {
+                        const title = document.getElementById('constraintTitle').value;
+                        const description = document.getElementById('constraintDescription').value;
+                        const components = document.getElementById('constraintComponents').value;
+                        const warning = document.getElementById('constraintWarning').value;
+                        
+                        if (!title || !description) {
+                            alert('Please fill in at least the title and description');
+                            return;
+                        }
+                        
+                        // Add timestamp
+                        const now = new Date();
+                        const timestamp = now.toLocaleString('en-US', {
+                            timeZone: 'America/New_York',
+                            month: 'long',
+                            day: 'numeric',
+                            year: 'numeric',
+                            hour: 'numeric',
+                            minute: '2-digit',
+                            hour12: true
+                        }) + ' ET';
+                        
+                        const constraintData = {
+                            title: title,
+                            description: description,
+                            components: components,
+                            warning: warning,
+                            timestamp: timestamp
+                        };
+                        
+                        // Send to backend to add to CONSTRAINTS.md
+                        fetch('/api/add-constraint', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify(constraintData)
+                        })
+                        .then(response => response.json())
+                        .then(data => {
+                            if (data.success) {
+                                alert('Constraint added successfully!');
+                                location.reload();
+                            } else {
+                                alert('Error adding constraint: ' + data.error);
+                            }
+                        })
+                        .catch(error => {
+                            console.error('Error:', error);
+                            alert('Error adding constraint');
+                        });
+                        
+                        // Close modal
+                        bootstrap.Modal.getInstance(document.getElementById('addConstraintModal')).hide();
+                    }
+                </script>
+            </body>
+            </html>
+            """, constraints_content=constraints_content, current_time=current_time)
+            
+        except Exception as e:
+            logger.error(f"Constraints page error: {e}")
+            return f"Constraints page error: {e}", 500
+
+    @app.route("/api/add-constraint", methods=["POST"])
+    def add_constraint():
+        """API endpoint to add new constraint with timestamp"""
+        try:
+            data = request.get_json()
+            title = data.get('title', '')
+            description = data.get('description', '')
+            components = data.get('components', '')
+            warning = data.get('warning', '')
+            timestamp = data.get('timestamp', '')
+            
+            if not title or not description:
+                return jsonify({"success": False, "error": "Title and description are required"})
+            
+            # Format new constraint entry
+            new_constraint = f"""
+
+### CRITICAL SYSTEM PROTECTION - {title.upper()} ({timestamp})
+
+**{title.upper()} - DO NOT REMOVE OR DISABLE**
+
+{description}
+
+### Protected Components:
+{components if components else 'Components will be documented during implementation'}
+
+### Protection Rules:
+- {description}
+{f"- {warning}" if warning else ""}
+
+**JUSTIFICATION**: User requested constraint protection on {timestamp}
+
+**VIOLATION WARNING**: {warning if warning else 'Removing this system will break essential functionality and violate user requirements.'}
+
+"""
+            
+            # Append to CONSTRAINTS.md
+            with open('CONSTRAINTS.md', 'a') as f:
+                f.write(new_constraint)
+            
+            return jsonify({"success": True, "message": f"Constraint '{title}' added successfully"})
+            
+        except Exception as e:
+            logger.error(f"Error adding constraint: {e}")
+            return jsonify({"success": False, "error": str(e)})
 
     @app.route("/status", methods=["GET"])
     def service_status_page():
