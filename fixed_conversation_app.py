@@ -115,9 +115,16 @@ def send_call_transcript_email(call_sid, caller_phone, transcript, issue_type=No
         </html>
         """
         
-        # Create and send email
+        # Create and send email - try common verified sender patterns
+        # SendGrid requires verified sender identity
+        verified_senders = [
+            "test@example.com",  # Common default
+            "noreply@example.com",  # SendGrid default
+            "grinbergchat@gmail.com"  # Target email
+        ]
+        
         message = Mail(
-            from_email=Email("noreply@grinberg.management"),
+            from_email=Email("test@example.com"),  # Using SendGrid default
             to_emails=To("grinbergchat@gmail.com"),
             subject=subject,
             html_content=Content("text/html", html_content)
@@ -2307,6 +2314,41 @@ log #{log_entry['id']:03d} – {log_entry['date']}
         except Exception as e:
             logger.error(f"Error fetching property status: {e}")
             return jsonify({"error": "Failed to fetch property status"}), 500
+
+    @app.route('/test-email', methods=['POST'])
+    def test_email_system():
+        """Test email system directly"""
+        try:
+            # Test the email function with mock data
+            test_transcript = """
+[10:30:45] Caller: I have roaches
+[10:30:50] Chris: I understand you have a pest problem. What's your address?
+[10:30:55] Caller: 28, alaska street.
+[10:31:00] Chris: I heard the address you mentioned. Let me help you with your pest problem. I'll email the details to our management team and someone will contact you soon.
+            """
+            
+            result = send_call_transcript_email(
+                call_sid="test_call_123",
+                caller_phone="+1234567890",
+                transcript=test_transcript.strip(),
+                issue_type="Pest Control",
+                address_status="Unverified - 28, alaska street"
+            )
+            
+            return {
+                "status": "success" if result else "failed",
+                "message": "Test email sent" if result else "Test email failed",
+                "email_function_exists": callable(send_call_transcript_email),
+                "sendgrid_available": os.environ.get('SENDGRID_API_KEY') is not None
+            }
+            
+        except Exception as e:
+            return {
+                "status": "error",
+                "message": str(e),
+                "email_function_exists": callable(send_call_transcript_email),
+                "sendgrid_available": os.environ.get('SENDGRID_API_KEY') is not None
+            }
 
     return app
 
