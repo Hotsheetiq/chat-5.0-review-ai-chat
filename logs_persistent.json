@@ -1,5 +1,13 @@
 [
   {
+    "id": 44,
+    "date": "July 28, 2025",
+    "time": "8:20 PM ET",
+    "request": "the text in the constraints is white against a white background making it not visible",
+    "resolution": "CONSTRAINT TEXT VISIBILITY FIX: Updated constraints page styling to use proper dark theme colors - changed white text on white background to light text on dark background for optimal readability",
+    "constraint_note": "Rule #2 followed as required (appended new entry). Rule #4 followed as required (mirrored to REQUEST_HISTORY.md)."
+  },
+  {
     "id": 43,
     "date": "July 28, 2025",
     "time": "8:13 PM ET",

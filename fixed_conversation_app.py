@@ -717,10 +717,12 @@ def create_app():
                 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
                 <style>
                     .constraint-section { border-left: 4px solid #007bff; padding-left: 15px; margin: 20px 0; }
-                    .protection-rule { background: #2d3a4e; padding: 10px; border-radius: 5px; margin: 10px 0; }
+                    .protection-rule { background: #2d3a4e; padding: 10px; border-radius: 5px; margin: 10px 0; color: #ffffff; }
                     .timestamp { color: #6c757d; font-size: 0.9em; }
-                    pre { background: #1e2a3a; padding: 15px; border-radius: 5px; overflow-x: auto; }
+                    pre { background: #1e2a3a; padding: 15px; border-radius: 5px; overflow-x: auto; color: #ffffff !important; }
                     .add-constraint-btn { position: fixed; bottom: 20px; right: 20px; z-index: 1000; }
+                    .card-body { color: #ffffff; }
+                    .constraint-section strong { color: #ffffff; }
                 </style>
             </head>
             <body class="bg-dark text-light">

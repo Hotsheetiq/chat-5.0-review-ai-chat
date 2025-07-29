@@ -247,3 +247,7 @@ log #042 – July 28, 2025
 log #043 – July 28, 2025  
 📝 Request: create a link from the dashboard to the constraint list. when the constraints are added they should be time and date stamped  
 ✅ Resolution: CONSTRAINT DASHBOARD INTEGRATION: Creating dashboard link to constraint list with timestamp functionality for new constraint additions
+
+log #044 – July 28, 2025  
+📝 Request: the text in the constraints is white against a white background making it not visible  
+✅ Resolution: CONSTRAINT TEXT VISIBILITY FIX: Updated constraints page styling to use proper dark theme colors - changed white text on white background to light text on dark background for optimal readability
