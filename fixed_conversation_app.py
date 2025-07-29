@@ -661,10 +661,7 @@ def create_app():
         total_conversations=len(conversation_history)
         )
 
-    @app.route("/constraints")
-    def constraints():
-        """Constraint rules documentation page"""
-        return render_template("constraints.html")
+
 
     @app.route("/live-monitoring")
     def live_monitoring():
@@ -713,7 +710,7 @@ def create_app():
                 <meta charset="UTF-8">
                 <meta name="viewport" content="width=device-width, initial-scale=1.0">
                 <title>System Constraints - Chris Voice Assistant</title>
-                <link href="https://cdn.replit.com/agent/bootstrap-agent-dark-theme.min.css" rel="stylesheet">
+                <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
                 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
                 <style>
                     .constraint-section { border-left: 4px solid #007bff; padding-left: 15px; margin: 20px 0; }

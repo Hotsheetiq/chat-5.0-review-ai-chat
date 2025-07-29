@@ -263,3 +263,7 @@ log #046 – July 28, 2025
 log #047 – July 28, 2025  
 📝 Request: look at /constraints page text is white  
 ✅ Resolution: CRITICAL CSS OVERRIDE FIX: Updated CSS style section to use black text colors instead of white - fixed pre element, card-body, and constraint-section styles that were overriding inline styles
+
+log #048 – July 28, 2025  
+📝 Request: still white  
+✅ Resolution: BOOTSTRAP THEME OVERRIDE FIX: Removed bootstrap-agent-dark-theme.min.css and replaced with standard Bootstrap CSS to prevent dark theme from overriding light text colors
