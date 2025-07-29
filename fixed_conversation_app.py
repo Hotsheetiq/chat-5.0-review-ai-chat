@@ -1869,40 +1869,55 @@ log #{log_entry['id']:03d} – {log_entry['date']}
                 if not response_text or len(response_text.strip()) < 3:
                     logger.warning("⚠️ AI COMPLETELY FAILED - using intelligent fallback (CONSTRAINT PROTECTED)")
                     
-                    # INTELLIGENT fallback that remembers conversation context
-                    if address_context and "VERIFIED ADDRESS" in address_context:
-                        # Extract the found address from context
-                        address_match = re.search(r"'Great! I found ([^']+) in our system", address_context)
-                        if address_match:
-                            found_address = address_match.group(1)
-                            response_text = f"Great! I found {found_address} in our system. What's the issue there?"
-                        else:
-                            response_text = "Great! I found that address in our system. What's the issue there?"
-                    elif any(word in speech_result.lower() for word in ['electrical', 'electric', 'power', 'lights']):
-                        response_text = "Got it, electrical issue. What's your address?"
-                    elif any(word in speech_result.lower() for word in ['heat', 'heating', 'hot', 'cold', 'temperature']):
-                        response_text = "Got it, heating issue. What's your address?"
-                    elif any(word in speech_result.lower() for word in ['plumbing', 'water', 'leak', 'pipe']):
-                        response_text = "Got it, plumbing issue. What's your address?"
+                    # Check if we're stuck in address loop - prevent repetitive address asking
+                    recent_chris_messages = [msg.get('message', '') for msg in conversation_history[call_sid][-5:] if msg.get('speaker') == 'Chris']
+                    address_asking_count = sum(1 for msg in recent_chris_messages if "address" in msg.lower())
+                    
+                    if address_asking_count >= 2:
+                        # We've asked for address multiple times - try different approach
+                        response_text = "I'm having trouble understanding. Let me help you differently. Can you tell me in simple terms what the problem is?"
+                        logger.info("🔄 BREAKING ADDRESS LOOP: Switching to problem clarification approach")
                     else:
-                        # Check conversation history for remembered issue
-                        remembered_issue = None
-                        if call_sid in conversation_history:
-                            for msg in conversation_history[call_sid]:
-                                if 'heating' in msg.get('message', '').lower():
-                                    remembered_issue = 'heating'
-                                    break
-                                elif 'electrical' in msg.get('message', '').lower() or 'electric' in msg.get('message', '').lower():
-                                    remembered_issue = 'electrical'
-                                    break
-                                elif 'plumbing' in msg.get('message', '').lower():
-                                    remembered_issue = 'plumbing'
-                                    break
-                        
-                        if remembered_issue:
-                            response_text = f"Got it, {remembered_issue} issue. What's your address?"
+                        # INTELLIGENT fallback that remembers conversation context
+                        if address_context and "VERIFIED ADDRESS" in address_context:
+                            # Extract the found address from context
+                            address_match = re.search(r"'Great! I found ([^']+) in our system", address_context)
+                            if address_match:
+                                found_address = address_match.group(1)
+                                response_text = f"Great! I found {found_address} in our system. What's the issue there?"
+                            else:
+                                response_text = "Great! I found that address in our system. What's the issue there?"
+                        elif any(word in speech_result.lower() for word in ['roach', 'bug', 'pest', 'cockroach', 'insects']):
+                            response_text = "I understand you have a pest problem. What's your address?"
+                        elif any(word in speech_result.lower() for word in ['electrical', 'electric', 'power', 'lights']):
+                            response_text = "I understand you have an electrical issue. What's your address?"
+                        elif any(word in speech_result.lower() for word in ['heat', 'heating', 'hot', 'cold', 'temperature']):
+                            response_text = "I understand you have a heating issue. What's your address?"
+                        elif any(word in speech_result.lower() for word in ['plumbing', 'water', 'leak', 'pipe']):
+                            response_text = "I understand you have a plumbing issue. What's your address?"
                         else:
-                            response_text = "How can I help you today?"
+                            # Check conversation history for remembered issue
+                            remembered_issue = None
+                            if call_sid in conversation_history:
+                                for msg in conversation_history[call_sid]:
+                                    content = msg.get('message', '').lower()
+                                    if any(word in content for word in ['roach', 'bug', 'pest', 'cockroach']):
+                                        remembered_issue = 'pest problem'
+                                        break
+                                    elif 'heating' in content:
+                                        remembered_issue = 'heating issue'
+                                        break
+                                    elif 'electrical' in content or 'electric' in content:
+                                        remembered_issue = 'electrical issue'
+                                        break
+                                    elif 'plumbing' in content:
+                                        remembered_issue = 'plumbing issue'
+                                        break
+                            
+                            if remembered_issue:
+                                response_text = f"I understand you have a {remembered_issue}. What's your address?"
+                            else:
+                                response_text = "I want to make sure I understand. Can you tell me what's happening?"
                 else:
                     logger.info("✅ AI RESPONSE ACCEPTED - using intelligent AI-generated response (CONSTRAINT PROTECTED)")
                     
