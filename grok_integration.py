@@ -56,8 +56,35 @@ class GrokAI:
                     logger.error(f"  Response ID: {getattr(response, 'id', 'unknown')}")
                     logger.error(f"  Model used: {getattr(response, 'model', 'unknown')}")
                     logger.error(f"  Usage: {getattr(response, 'usage', 'unknown')}")
-                    # Don't fallback for empty responses - this is the core issue
-                    return "I understand you're having an issue. Can you tell me more details about what's happening so I can help you properly?"
+                    
+                    # Enhanced intelligent fallback for empty responses
+                    try:
+                        # Extract user input to provide contextual response
+                        user_message = ""
+                        for msg in messages:
+                            if msg.get("role") == "user":
+                                user_message = msg.get("content", "").lower()
+                                break
+                        
+                        # Intelligent contextual responses based on user input
+                        if any(word in user_message for word in ["heat", "heating", "hot", "cold", "temperature"]):
+                            return "Let me make sure I understand - you're having a heating issue in your unit. Is that correct?"
+                        elif any(word in user_message for word in ["electrical", "electric", "power", "light", "outlet"]):
+                            return "So you're telling me there's an electrical problem. Did I get that right?"
+                        elif any(word in user_message for word in ["plumbing", "water", "leak", "pipe", "toilet", "sink"]):
+                            return "Just to confirm - you have a plumbing issue that needs attention. Is that what you're saying?"
+                        elif any(word in user_message for word in ["roach", "bug", "pest", "insect", "cockroach"]):
+                            return "Let me make sure I understand - you're dealing with a pest problem in your apartment. Did I get that right?"
+                        elif any(word in user_message for word in ["noise", "loud", "neighbor", "disturb"]):
+                            return "So you're saying there's a noise issue with neighbors. Is that correct?"
+                        elif any(word in user_message for word in ["rent", "payment", "bill", "charge"]):
+                            return "Just to confirm - you have a question about your rent or billing. Did I understand that correctly?"
+                        else:
+                            return "I want to make sure I understand what you need help with. Can you tell me more about what's going on?"
+                            
+                    except Exception as e:
+                        logger.error(f"Fallback response generation failed: {e}")
+                        return "I want to make sure I understand your concern. Can you tell me more details about what's happening?"
                 
                 return content.strip()
                 
