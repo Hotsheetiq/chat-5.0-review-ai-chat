@@ -1571,8 +1571,9 @@ log #{log_entry['id']:03d} – {log_entry['date']}
                                             break
                                 
                                 if not found_match:
-                                    # INTELLIGENT SUGGESTION SYSTEM - Find similar addresses and offer choices
-                                    suggestions = []
+                                    # ENHANCED ADDRESS VERIFICATION: Letter-by-letter spelling system
+                                    address_context = f"\n\nUNVERIFIED ADDRESS - REQUEST LETTER SPELLING: The caller mentioned '{potential_address}' which I cannot find in our system. YOU MUST SAY: 'I heard you say {potential_address}, but I can't find that exact address in our system. Could you please spell the street name for me, one letter at a time? And then tell me the house number, one digit at a time? This will help me find the correct property.'"
+                                    logger.warning(f"❌ UNVERIFIED ADDRESS: '{potential_address}' - requesting letter-by-letter spelling")
                                     caller_match = re.search(r'(\d+)\s+(.+)', potential_lower)
                                     
                                     if caller_match:
@@ -1610,6 +1611,35 @@ log #{log_entry['id']:03d} – {log_entry['date']}
                         address_context = f"\n\nERROR FALLBACK: Could not verify address due to technical issue. Ask: 'Let me help you with that address. Can you please repeat it slowly?'"
                     
                     break
+
+            # ENHANCED ADDRESS HANDLING: Letter-by-letter spelling request
+            if "REQUEST LETTER SPELLING" in address_context:
+                # Extract the address and request letter-by-letter spelling
+                address_match = re.search(r"mentioned '([^']+)'", address_context)
+                if address_match:
+                    mentioned_address = address_match.group(1)
+                    response_text = f"I heard you say {mentioned_address}, but I can't find that exact address in our system. Could you please spell the street name for me, one letter at a time? And then tell me the house number, one digit at a time? This will help me find the correct property."
+                    logger.info(f"🔤 REQUESTING LETTER SPELLING: '{mentioned_address}' - asking for clarification")
+                    
+                    # Store letter spelling request
+                    conversation_history[call_sid].append({
+                        'timestamp': datetime.now().isoformat(),
+                        'speaker': 'Chris',
+                        'message': response_text,
+                        'caller_phone': caller_phone,
+                        'address_spelling_request': True,
+                        'unverified_address': mentioned_address
+                    })
+                    
+                    # Return TwiML with spelling request
+                    import urllib.parse
+                    return f"""<?xml version="1.0" encoding="UTF-8"?>
+                    <Response>
+                        <Play>https://{request.headers.get('Host', 'localhost:5000')}/generate-audio/{call_sid}?text={urllib.parse.quote(response_text)}</Play>
+                        <Gather input="speech" timeout="15" speechTimeout="6" action="/handle-speech/{call_sid}" method="POST">
+                        </Gather>
+                        <Redirect>/handle-speech/{call_sid}</Redirect>
+                    </Response>"""
 
             # INTELLIGENT ADDRESS HANDLING: Acknowledge addresses but explain limitations
             if "UNVERIFIED ADDRESS ACKNOWLEDGMENT" in address_context:
@@ -1763,21 +1793,42 @@ log #{log_entry['id']:03d} – {log_entry['date']}
                 elif any(word in speech_result.lower() for word in ['plumbing', 'water', 'leak', 'pipe']):
                     response_text = "Got it, plumbing issue. What's your address?"
                 else:
-                    # Check conversation history for remembered issue
+                    # Check conversation history for remembered issue AND check for address spelling attempts
                     remembered_issue = None
+                    has_spelling_request = False
+                    unverified_address = None
+                    
                     if call_sid in conversation_history:
                         for msg in conversation_history[call_sid]:
+                            # Check for previous spelling requests
+                            if msg.get('address_spelling_request'):
+                                has_spelling_request = True
+                                unverified_address = msg.get('unverified_address', 'unknown address')
+                            
+                            # Check for issue types
                             if 'heating' in msg.get('message', '').lower():
                                 remembered_issue = 'heating'
-                                break
                             elif 'electrical' in msg.get('message', '').lower() or 'electric' in msg.get('message', '').lower():
                                 remembered_issue = 'electrical'
-                                break
                             elif 'plumbing' in msg.get('message', '').lower():
                                 remembered_issue = 'plumbing'
-                                break
                     
-                    if remembered_issue:
+                    # If we previously asked for spelling and still can't verify, continue with unverified address
+                    if has_spelling_request and unverified_address:
+                        logger.info(f"📧 CONTINUING WITH UNVERIFIED ADDRESS: {unverified_address} after spelling attempt")
+                        response_text = f"Thank you for the spelling. I still can't find that exact address in our system, but let me help you anyway. I'll make a note that the address needs verification. What's the issue you're experiencing?"
+                        
+                        # Mark for email notification with unverified address
+                        conversation_history[call_sid].append({
+                            'timestamp': datetime.now().isoformat(),
+                            'speaker': 'Chris',
+                            'message': response_text,
+                            'caller_phone': caller_phone,
+                            'unverified_address_proceeding': True,
+                            'address_for_email': unverified_address
+                        })
+                    
+                    elif remembered_issue:
                         response_text = f"Got it, {remembered_issue} issue. What's your address?"
                     else:
                         response_text = "How can I help you today?"

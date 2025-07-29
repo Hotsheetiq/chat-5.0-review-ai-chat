@@ -1,5 +1,21 @@
 [
   {
+    "id": 83,
+    "date": "July 28, 2025",
+    "time": "10:39 PM ET",
+    "request": "Enhanced address verification system with letter-by-letter spelling complete",
+    "resolution": "\u2705 ENHANCED ADDRESS VERIFICATION IMPLEMENTED: When no exact address match found, Chris asks caller to spell street name letter-by-letter and house number digit-by-digit. If still no match after spelling attempt, Chris continues call and marks address as unverified for email notification. System tracks spelling requests and proceeds professionally while noting address verification issues. \ud83d\udee1\ufe0f Constraint Note: Enhanced user experience while maintaining address security",
+    "constraint_note": "Rule #2 followed as required (appended new entry). Rule #4 followed as required (mirrored to REQUEST_HISTORY.md)."
+  },
+  {
+    "id": 82,
+    "date": "July 28, 2025",
+    "time": "10:39 PM ET",
+    "request": "Chris needs better address handling - ask for letter-by-letter spelling when no exact match",
+    "resolution": "ENHANCED ADDRESS VERIFICATION: When no exact match found, Chris will ask caller to spell street name letter-by-letter and house number digit-by-digit. If still no match, continue call and mark address as unverified in email record.",
+    "constraint_note": "Rule #2 followed as required (appended new entry). Rule #4 followed as required (mirrored to REQUEST_HISTORY.md)."
+  },
+  {
     "id": 81,
     "date": "July 28, 2025",
     "time": "10:35 PM ET",
