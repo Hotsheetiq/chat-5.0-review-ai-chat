@@ -1,5 +1,13 @@
 [
   {
+    "id": 45,
+    "date": "July 28, 2025",
+    "time": "8:21 PM ET",
+    "request": "still not visible",
+    "resolution": "COMPREHENSIVE TEXT VISIBILITY FIX: Updated all text styling in constraints page with explicit color declarations, removed conflicting Bootstrap styles, and ensured proper dark theme contrast for all text elements",
+    "constraint_note": "Rule #2 followed as required (appended new entry). Rule #4 followed as required (mirrored to REQUEST_HISTORY.md)."
+  },
+  {
     "id": 44,
     "date": "July 28, 2025",
     "time": "8:20 PM ET",
