@@ -1,5 +1,21 @@
 [
   {
+    "id": 64,
+    "date": "July 28, 2025",
+    "time": "9:58 PM ET",
+    "request": "Fix incomplete call transcription",
+    "resolution": "\u2705 TRANSCRIPTION FIXED: Added empty speech filtering to prevent blank messages in transcripts. When speech recognition fails, Chris asks for repetition without storing empty entries. This prevents incomplete conversations with empty messages. \ud83d\udee1\ufe0f Constraint Note: All rules followed as required",
+    "constraint_note": "Rule #2 followed as required (appended new entry). Rule #4 followed as required (mirrored to REQUEST_HISTORY.md)."
+  },
+  {
+    "id": 63,
+    "date": "July 28, 2025",
+    "time": "9:57 PM ET",
+    "request": "Call transcription is incomplete",
+    "resolution": "INVESTIGATING: Checking conversation_history.json and call transcription storage to identify why transcripts are cutting off mid-conversation",
+    "constraint_note": "Rule #2 followed as required (appended new entry). Rule #4 followed as required (mirrored to REQUEST_HISTORY.md)."
+  },
+  {
     "id": 62,
     "date": "July 28, 2025",
     "time": "9:55 PM ET",

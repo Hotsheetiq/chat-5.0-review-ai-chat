@@ -1454,12 +1454,38 @@ log #{log_entry['id']:03d} – {log_entry['date']}
             if call_sid not in conversation_history:
                 conversation_history[call_sid] = []
             
-            conversation_history[call_sid].append({
-                'timestamp': datetime.now().isoformat(),
-                'speaker': 'Caller',
-                'message': speech_result,
-                'caller_phone': caller_phone
-            })
+            # Only store non-empty speech results to prevent incomplete transcriptions
+            if speech_result and len(speech_result.strip()) > 0:
+                conversation_history[call_sid].append({
+                    'timestamp': datetime.now().isoformat(),
+                    'speaker': 'Caller',
+                    'message': speech_result,
+                    'caller_phone': caller_phone
+                })
+            else:
+                logger.warning(f"⚠️ EMPTY SPEECH RESULT - Not storing in transcript to prevent incomplete conversation")
+                # For empty speech, ask caller to repeat without storing empty message
+                response_text = "I didn't catch that. Could you please repeat what you said?"
+                
+                # Store Chris's response (but not the empty caller input)
+                conversation_history[call_sid].append({
+                    'timestamp': datetime.now().isoformat(),
+                    'speaker': 'Chris',
+                    'message': response_text,
+                    'caller_phone': caller_phone
+                })
+                
+                # Save and return TwiML for retry
+                save_conversation_history()
+                
+                import urllib.parse
+                return f"""<?xml version="1.0" encoding="UTF-8"?>
+                <Response>
+                    <Play>https://{request.headers.get('Host', 'localhost:5000')}/generate-audio/{call_sid}?text={urllib.parse.quote(response_text)}</Play>
+                    <Gather input="speech" timeout="8" speechTimeout="4" action="/handle-speech/{call_sid}" method="POST">
+                    </Gather>
+                    <Redirect>/handle-speech/{call_sid}</Redirect>
+                </Response>"""
             
             # Save conversation to persistent storage
             save_conversation_history()
