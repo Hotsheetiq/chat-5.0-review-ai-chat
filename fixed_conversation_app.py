@@ -1752,6 +1752,15 @@ log #{log_entry['id']:03d} – {log_entry['date']}
                 </Gather>
                 <Redirect>/handle-speech/{call_sid}</Redirect>
             </Response>"""
+            
+            import urllib.parse
+            return f"""<?xml version="1.0" encoding="UTF-8"?>
+            <Response>
+                <Play>https://{request.headers.get('Host', 'localhost:5000')}/generate-audio/{call_sid}?text={urllib.parse.quote(response_text)}</Play>
+                <Gather input="speech" timeout="8" speechTimeout="4" action="/handle-speech/{call_sid}" method="POST">
+                </Gather>
+                <Redirect>/handle-speech/{call_sid}</Redirect>
+            </Response>"""
 
     # Global storage for background processing results
     background_responses = {}
