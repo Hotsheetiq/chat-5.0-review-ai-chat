@@ -941,8 +941,136 @@
         "message": "I didn't catch that. Could you please repeat what you said?",
         "caller_phone": "Anonymous"
       }
+    ],
+    "CA69c5bd01c7f7038ddce68c8fb2666235": [
+      {
+        "timestamp": "2025-07-29T04:34:37.760360",
+        "speaker": "Caller",
+        "message": "i'm calling because i have a problem with my toilet.",
+        "caller_phone": "Anonymous"
+      },
+      {
+        "timestamp": "2025-07-29T04:34:44.064240",
+        "speaker": "Chris",
+        "message": "Let me make sure I understand - your toilet is having issues. Is that correct?",
+        "caller_phone": "Anonymous"
+      },
+      {
+        "timestamp": "2025-07-29T04:34:54.559428",
+        "speaker": "Caller",
+        "message": "yeah.",
+        "caller_phone": "Anonymous"
+      },
+      {
+        "timestamp": "2025-07-29T04:34:57.720572",
+        "speaker": "Chris",
+        "message": "Can you describe the toilet issue in more detail? What's happening?",
+        "caller_phone": "Anonymous"
+      },
+      {
+        "timestamp": "2025-07-29T04:35:09.159086",
+        "speaker": "Caller",
+        "message": "the water is overflowing.",
+        "caller_phone": "Anonymous"
+      },
+      {
+        "timestamp": "2025-07-29T04:35:12.461047",
+        "speaker": "Chris",
+        "message": "Let me make sure I understand - the toilet water is overflowing. Is that correct?",
+        "caller_phone": "Anonymous"
+      },
+      {
+        "timestamp": "2025-07-29T04:35:23.158081",
+        "speaker": "Caller",
+        "message": "drug.",
+        "caller_phone": "Anonymous"
+      },
+      {
+        "timestamp": "2025-07-29T04:35:26.786051",
+        "speaker": "Chris",
+        "message": "I understand there might be a drug issue. Can you tell me more about it? Is it related to the toilet problem?",
+        "caller_phone": "Anonymous"
+      },
+      {
+        "timestamp": "2025-07-29T04:35:44.248972",
+        "speaker": "Caller",
+        "message": "what do you mean? the toilet is overflowing. i think it's bob.",
+        "caller_phone": "Anonymous"
+      },
+      {
+        "timestamp": "2025-07-29T04:35:47.613338",
+        "speaker": "Chris",
+        "message": "I understand the toilet is overflowing, and you think it's Bob's doing. Is that correct?",
+        "caller_phone": "Anonymous"
+      },
+      {
+        "timestamp": "2025-07-29T04:36:03.554081",
+        "speaker": "Caller",
+        "message": "not bob. i said, i think it's clogged, is there?  something stuck in there.",
+        "caller_phone": "Anonymous"
+      },
+      {
+        "timestamp": "2025-07-29T04:36:07.307315",
+        "speaker": "Chris",
+        "message": "So you're saying the toilet is clogged and you think something might be stuck in it. Is that correct?",
+        "caller_phone": "Anonymous"
+      },
+      {
+        "timestamp": "2025-07-29T04:36:18.912598",
+        "speaker": "Caller",
+        "message": "yes.",
+        "caller_phone": "Anonymous"
+      },
+      {
+        "timestamp": "2025-07-29T04:36:22.546560",
+        "speaker": "Chris",
+        "message": "I'll arrange for a plumber to check and unclog your toilet. Is there anything else I can help you with?",
+        "caller_phone": "Anonymous"
+      },
+      {
+        "timestamp": "2025-07-29T04:36:38.649660",
+        "speaker": "Caller",
+        "message": "know how long is it going to take them to come out?",
+        "caller_phone": "Anonymous"
+      },
+      {
+        "timestamp": "2025-07-29T04:36:42.824205",
+        "speaker": "Chris",
+        "message": "The plumber should arrive within 2-3 hours. Is there anything else I can help you with?",
+        "caller_phone": "Anonymous"
+      },
+      {
+        "timestamp": "2025-07-29T04:36:57.257947",
+        "speaker": "Caller",
+        "message": "what happens if he doesn't arrive?",
+        "caller_phone": "Anonymous"
+      },
+      {
+        "timestamp": "2025-07-29T04:37:01.583478",
+        "speaker": "Chris",
+        "message": "If the plumber doesn't arrive within the expected time, please call us back, and we'll expedite the service. Is there anything else I can help you with?",
+        "caller_phone": "Anonymous"
+      },
+      {
+        "timestamp": "2025-07-29T04:37:17.452511",
+        "speaker": "Caller",
+        "message": "that's all. thank you very much.",
+        "caller_phone": "Anonymous"
+      },
+      {
+        "timestamp": "2025-07-29T04:37:20.475652",
+        "speaker": "Chris",
+        "message": "You're welcome! Have a great day!",
+        "caller_phone": "Anonymous"
+      },
+      {
+        "timestamp": "2025-07-29T04:37:24.823473",
+        "speaker": "Chris",
+        "message": "I didn't catch that. Could you please repeat what you said?",
+        "caller_phone": "Anonymous"
+      }
     ]
   },
-  "last_updated": "2025-07-29T00:26:16.037477-04:00",
-  "total_calls": 24
+  "last_updated": "2025-07-29T00:37:24.823489-04:00",
+  "total_calls": 25
 }
