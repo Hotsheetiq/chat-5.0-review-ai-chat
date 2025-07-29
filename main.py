@@ -1,3 +1,2 @@
-# Import FIXED conversational app with all critical issues resolved
-from fixed_conversation_app import create_app
-app = create_app()
+# Import simple working Flask app
+from main_fixed import app

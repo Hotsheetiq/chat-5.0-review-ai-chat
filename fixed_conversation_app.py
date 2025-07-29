@@ -144,19 +144,22 @@ def get_dynamic_happy_greeting():
     return random.choice(greetings)
 
 def create_app():
-    app = Flask(__name__)
-    app.secret_key = os.environ.get("SESSION_SECRET", "dev-secret-key")
-    
-    def get_eastern_time():
-        """Get current Eastern Time"""
-        eastern = pytz.timezone('US/Eastern')
-        return datetime.now(eastern)
-    
-    @app.route("/", methods=["GET"])
-    def dashboard():
-        """Main dashboard with unified logs and proper numbering"""
-        eastern = pytz.timezone('US/Eastern')
-        current_eastern = datetime.now(eastern)
+    try:
+        print("🚀 DEBUG: Starting create_app()")
+        app = Flask(__name__)
+        app.secret_key = os.environ.get("SESSION_SECRET", "dev-secret-key")
+        print("✅ DEBUG: Flask app created successfully")
+        
+        def get_eastern_time():
+            """Get current Eastern Time"""
+            eastern = pytz.timezone('US/Eastern')
+            return datetime.now(eastern)
+        
+        @app.route("/", methods=["GET"])
+        def dashboard():
+            """Main dashboard with unified logs and proper numbering"""
+            eastern = pytz.timezone('US/Eastern')
+            current_eastern = datetime.now(eastern)
         
         return render_template_string("""
         <!DOCTYPE html>
@@ -1023,24 +1026,98 @@ def create_app():
             log_entry['constraint_note'] = "Rule #2 followed as required (appended new entry). Rule #4 followed as required (mirrored to REQUEST_HISTORY.md)."
         return log_entry
 
-    def load_logs_from_file():
-        """Load logs from persistent JSON file"""
-        try:
-            with open('logs_persistent.json', 'r') as f:
-                return json.load(f)
-        except FileNotFoundError:
-            return default_logs
-        except Exception as e:
-            logger.error(f"Error loading logs from file: {e}")
-            return default_logs
+def _is_spelled_out_input(speech_text):
+    """
+    Detect if the user is spelling out an address letter-by-letter or digit-by-digit.
+    Look for patterns like "one two three main street" or "a b c avenue"
+    """
+    # Letter patterns (spelled out letters)
+    letter_words = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 
+                   'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z']
+    
+    # Number patterns (spelled out numbers)
+    number_words = ['zero', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine']
+    
+    words = speech_text.lower().split()
+    
+    # Count spelled-out components
+    spelled_letters = sum(1 for word in words if word in letter_words)
+    spelled_numbers = sum(1 for word in words if word in number_words)
+    
+    # If we have multiple spelled-out letters or numbers, it's likely detailed input
+    return spelled_letters >= 3 or spelled_numbers >= 2
 
-    def save_logs_to_file(logs_list):
-        """Save logs to persistent JSON file"""
-        try:
-            with open('logs_persistent.json', 'w') as f:
-                json.dump(logs_list, f, indent=2)
-        except Exception as e:
-            logger.error(f"Error saving logs to file: {e}")
+def _reconstruct_address_from_spelling(speech_text):
+    """
+    Reconstruct an address from spelled-out input.
+    Convert "six two eight c a r y avenue" to "628 cary avenue"
+    """
+    # Number word to digit mapping
+    number_map = {
+        'zero': '0', 'one': '1', 'two': '2', 'three': '3', 'four': '4',
+        'five': '5', 'six': '6', 'seven': '7', 'eight': '8', 'nine': '9'
+    }
+    
+    # Letter mapping (in case they say "bee" instead of "b")
+    letter_variations = {
+        'bee': 'b', 'see': 'c', 'dee': 'd', 'gee': 'g', 'jay': 'j',
+        'kay': 'k', 'pee': 'p', 'cue': 'q', 'are': 'r', 'tee': 't',
+        'you': 'u', 'why': 'y', 'zee': 'z'
+    }
+    
+    words = speech_text.lower().split()
+    reconstructed_parts = []
+    current_number = ""
+    current_word = ""
+    
+    for word in words:
+        # Handle numbers
+        if word in number_map:
+            current_number += number_map[word]
+        # Handle single letters
+        elif len(word) == 1 and word.isalpha():
+            current_word += word
+        # Handle letter variations
+        elif word in letter_variations:
+            current_word += letter_variations[word]
+        # Handle complete words (street, avenue, etc.)
+        else:
+            # If we have accumulated letters/numbers, add them
+            if current_number:
+                reconstructed_parts.append(current_number)
+                current_number = ""
+            if current_word:
+                reconstructed_parts.append(current_word)
+                current_word = ""
+            # Add the complete word
+            reconstructed_parts.append(word)
+    
+    # Add any remaining accumulated parts
+    if current_number:
+        reconstructed_parts.append(current_number)
+    if current_word:
+        reconstructed_parts.append(current_word)
+    
+    return " ".join(reconstructed_parts)
+
+def load_logs_from_file():
+    """Load logs from persistent JSON file"""
+    try:
+        with open('logs_persistent.json', 'r') as f:
+            return json.load(f)
+    except FileNotFoundError:
+        return default_logs
+    except Exception as e:
+        logger.error(f"Error loading logs from file: {e}")
+        return default_logs
+
+def save_logs_to_file(logs_list):
+    """Save logs to persistent JSON file"""
+    try:
+        with open('logs_persistent.json', 'w') as f:
+            json.dump(logs_list, f, indent=2)
+    except Exception as e:
+        logger.error(f"Error saving logs to file: {e}")
 
     # Default logs if no persistent file exists
     default_logs = [
@@ -1521,12 +1598,35 @@ log #{log_entry['id']:03d} – {log_entry['date']}
                                 loop = asyncio.new_event_loop()
                                 asyncio.set_event_loop(loop)
                             
-                            matched_property = loop.run_until_complete(address_matcher.find_matching_property(potential_address))
+                            # Use enhanced address matching with detailed collection support
+                            match_result = loop.run_until_complete(address_matcher.find_matching_property(potential_address, strict_mode=False))
                             
-                            if matched_property:
+                            if match_result["status"] == "exact_match":
+                                matched_property = match_result["property"]
                                 verified_address = matched_property.get('Name', potential_address)
                                 address_context = f"\n\nVERIFIED ADDRESS: The caller mentioned '{potential_address}' which matches '{verified_address}' in our Rent Manager system. Confirm: 'Great! I found {verified_address} in our system.'"
                                 logger.info(f"✅ API VERIFIED: '{potential_address}' → '{verified_address}'")
+                            elif match_result["status"] == "need_detail_collection":
+                                # Check if this looks like detailed spelled-out input (letter-by-letter)
+                                if _is_spelled_out_input(speech_result):
+                                    reconstructed_address = _reconstruct_address_from_spelling(speech_result)
+                                    logger.info(f"🔤 RECONSTRUCTED ADDRESS: '{speech_result}' → '{reconstructed_address}'")
+                                    
+                                    # Try matching with reconstructed address in strict mode
+                                    strict_result = loop.run_until_complete(address_matcher.find_matching_property(reconstructed_address, strict_mode=True))
+                                    
+                                    if strict_result["status"] == "intelligent_match":
+                                        matched_property = strict_result["property"]
+                                        verified_address = matched_property.get('Name', reconstructed_address)
+                                        address_context = f"\n\nINTELLIGENT MATCH FOUND: Based on spelling '{speech_result}', I found '{verified_address}' as the closest match. Confirm: 'Great! Based on your spelling, I believe you mean {verified_address}. Is that correct?'"
+                                        logger.info(f"✅ INTELLIGENT MATCH: '{reconstructed_address}' → '{verified_address}'")
+                                    else:
+                                        address_context = f"\n\nNO MATCH AFTER SPELLING: Even with detailed spelling, I couldn't find a match. YOU MUST SAY: 'I'm sorry, even with the detailed spelling, I can't find that address in our system. Let me connect you with our office to verify the property.'"
+                                        logger.warning(f"❌ NO MATCH AFTER DETAILED COLLECTION: '{reconstructed_address}'")
+                                else:
+                                    # Request detailed collection: house number digit-by-digit and street letter-by-letter
+                                    address_context = f"\n\nDETAIL COLLECTION NEEDED: The caller mentioned '{potential_address}' but needs clearer collection. YOU MUST SAY: '{match_result['message']}'"
+                                    logger.info(f"🔍 REQUESTING DETAIL COLLECTION: '{potential_address}' - needs letter-by-letter spelling")
                             else:
                                 # INTELLIGENT ADDRESS REJECTION - acknowledge they provided an address but can't find it
                                 address_context = f"\n\nUNVERIFIED ADDRESS ACKNOWLEDGMENT: The caller mentioned '{potential_address}' which I heard clearly but is NOT in our database. YOU MUST SAY: 'I heard you say {potential_address}, but I can't find that address in our system. We manage properties on Port Richmond Avenue, Targee Street, and Richmond Avenue. Could you double-check the address or let me know if it's one of our properties?'"
@@ -2095,7 +2195,13 @@ log #{log_entry['id']:03d} – {log_entry['date']}
             logger.error(f"Error fetching property status: {e}")
             return jsonify({"error": "Failed to fetch property status"}), 500
 
-    return app
+        print("🎯 DEBUG: About to return Flask app")
+        return app
+    except Exception as e:
+        print(f"❌ ERROR in create_app(): {e}")
+        import traceback
+        traceback.print_exc()
+        return None
 
 if __name__ == "__main__":
     app = create_app()

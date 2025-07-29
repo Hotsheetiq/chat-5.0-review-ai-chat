@@ -33,10 +33,10 @@ class AddressMatcher:
         except Exception as e:
             logger.error(f"Error loading properties: {e}")
     
-    async def find_matching_property(self, spoken_address: str) -> Optional[Dict[str, Any]]:
+    async def find_matching_property(self, spoken_address: str, strict_mode: bool = False) -> Dict[str, Any]:
         """
-        Intelligent address matching - finds best property match with educated guesses.
-        Uses fuzzy matching and street name intelligence.
+        Enhanced address matching with detailed collection fallback.
+        Returns match result with suggestions for unclear addresses.
         """
         try:
             # Ensure properties are loaded
@@ -45,54 +45,127 @@ class AddressMatcher:
             
             if not self.properties_cache:
                 logger.error("No properties available for matching")
-                return None
+                return {"status": "error", "message": "Property database unavailable"}
             
             spoken_clean = spoken_address.lower().strip().replace(',', '').replace('.', '')
-            logger.info(f"🔍 INTELLIGENT MATCHING: '{spoken_address}' against {len(self.properties_cache)} properties")
+            logger.info(f"🔍 ENHANCED MATCHING: '{spoken_address}' against {len(self.properties_cache)} properties (strict_mode: {strict_mode})")
             
-            # STEP 1: Extract street components from spoken address
-            street_info = self._extract_street_components(spoken_clean)
-            logger.info(f"📍 EXTRACTED COMPONENTS: {street_info}")
+            # STEP 1: Try exact matches first
+            exact_match = self._find_exact_match(spoken_clean)
+            if exact_match:
+                logger.info(f"✅ EXACT MATCH: '{exact_match.get('Name')}' for spoken '{spoken_address}'")
+                return {"status": "exact_match", "property": exact_match}
             
-            # STEP 2: Try exact matches first
-            for prop in self.properties_cache:
-                prop_name = prop.get('Name', '').lower()
-                
-                # Check for exact street name match
-                if spoken_clean in prop_name or prop_name in spoken_clean:
-                    logger.info(f"✅ EXACT MATCH: '{prop.get('Name')}' for spoken '{spoken_address}'")
-                    return prop
+            # STEP 2: If strict mode (after detailed collection), use intelligent fuzzy matching
+            if strict_mode:
+                best_match = self._find_best_fuzzy_match(spoken_clean)
+                if best_match:
+                    logger.info(f"🎯 INTELLIGENT MATCH: '{best_match.get('Name')}' for spoken '{spoken_address}'")
+                    return {"status": "intelligent_match", "property": best_match}
+                else:
+                    return {"status": "no_match", "message": "No properties found matching your address"}
             
-            # STEP 3: Try intelligent street matching with common variations
-            best_matches = []
-            for prop in self.properties_cache:
-                prop_name = prop.get('Name', '').lower()
-                score = self._calculate_match_score(street_info, prop_name)
-                if score > 0:
-                    best_matches.append((score, prop))
-            
-            # Sort by score and return best match
-            if best_matches:
-                best_matches.sort(reverse=True, key=lambda x: x[0])
-                best_score, best_prop = best_matches[0]
-                logger.info(f"🎯 BEST INTELLIGENT MATCH: '{best_prop.get('Name')}' (score: {best_score}) for '{spoken_address}'")
-                return best_prop
-            
-            # STEP 4: Try single significant word matches as last resort
-            for word in street_info.get('words', []):
-                if len(word) > 4:  # Only try longer words
-                    for prop in self.properties_cache:
-                        prop_name = prop.get('Name', '').lower()
-                        if word in prop_name:
-                            logger.info(f"✅ WORD MATCH: '{prop.get('Name')}' for spoken '{spoken_address}' (word: '{word}')")
-                            return prop
-            
-            logger.warning(f"❌ NO MATCH: '{spoken_address}' not found in property database")
-            return None
+            # STEP 3: No exact match found - request detailed collection
+            logger.info(f"🔍 NO EXACT MATCH - requesting detailed collection for '{spoken_address}'")
+            return {
+                "status": "need_detail_collection", 
+                "message": "I need to get your address more clearly. Can you please say your house number one digit at a time, then spell your street name one letter at a time?"
+            }
             
         except Exception as e:
             logger.error(f"Error matching address '{spoken_address}': {e}")
-            return None
+            return {"status": "error", "message": "Error processing your address"}
+    
+    def _find_exact_match(self, spoken_clean: str) -> Optional[Dict[str, Any]]:
+        """Find exact matches in property database"""
+        for prop in self.properties_cache:
+            prop_name = prop.get('Name', '').lower()
+            
+            # Check for exact street name match
+            if spoken_clean in prop_name or prop_name in spoken_clean:
+                return prop
+        return None
+    
+    def _find_best_fuzzy_match(self, spoken_clean: str) -> Optional[Dict[str, Any]]:
+        """
+        Find best fuzzy match with STREET SIMILARITY carrying most weight.
+        Prioritizes street name matching over house numbers.
+        """
+        street_info = self._extract_street_components(spoken_clean)
+        logger.info(f"📍 EXTRACTED COMPONENTS: {street_info}")
+        
+        best_matches = []
+        for prop in self.properties_cache:
+            prop_name = prop.get('Name', '').lower()
+            score = self._calculate_street_priority_score(street_info, prop_name)
+            if score > 0:
+                best_matches.append((score, prop))
+        
+        # Sort by score (highest first) and return best match
+        if best_matches:
+            best_matches.sort(reverse=True, key=lambda x: x[0])
+            best_score, best_prop = best_matches[0]
+            logger.info(f"🎯 BEST INTELLIGENT MATCH: '{best_prop.get('Name')}' (score: {best_score}) for '{spoken_clean}'")
+            return best_prop
+        
+        return None
+    
+    def _calculate_street_priority_score(self, street_info: Dict, prop_name: str) -> float:
+        """
+        Calculate match score with STREET SIMILARITY carrying most weight.
+        Street name similarity = 70% weight, number proximity = 30% weight.
+        """
+        score = 0.0
+        
+        # Extract property components
+        prop_parts = prop_name.split()
+        
+        # STREET SIMILARITY (70% weight) - most important
+        street_words = street_info.get('words', [])
+        for street_word in street_words:
+            if len(street_word) > 2:  # Ignore very short words
+                for prop_part in prop_parts:
+                    if street_word in prop_part or prop_part in street_word:
+                        score += 7.0  # High weight for street matches
+                    elif self._are_similar_streets(street_word, prop_part):
+                        score += 5.0  # Medium weight for similar streets
+        
+        # NUMBER PROXIMITY (30% weight) - secondary
+        if 'number' in street_info and street_info['number']:
+            spoken_num = street_info['number']
+            for prop_part in prop_parts:
+                if prop_part.isdigit():
+                    prop_num = int(prop_part)
+                    diff = abs(spoken_num - prop_num)
+                    if diff == 0:
+                        score += 3.0  # Exact number match
+                    elif diff <= 5:
+                        score += 2.0  # Close number match
+                    elif diff <= 10:
+                        score += 1.0  # Nearby number match
+        
+        return score
+    
+    def _are_similar_streets(self, word1: str, word2: str) -> bool:
+        """Check if two words represent similar street names"""
+        similar_pairs = [
+            ('richmond', 'richmondave'),  # Richmond/Richmond Avenue
+            ('port', 'portrichmond'),     # Port/Port Richmond  
+            ('targee', 'targeest'),       # Targee/Targee Street
+            ('midland', 'midlandave'),    # Midland/Midland Avenue
+            ('victory', 'victoryblvd'),   # Victory/Victory Boulevard
+            ('ave', 'avenue'),            # Avenue abbreviations
+            ('st', 'street'),             # Street abbreviations
+            ('blvd', 'boulevard'),        # Boulevard abbreviations
+        ]
+        
+        word1, word2 = word1.lower(), word2.lower()
+        
+        for pair in similar_pairs:
+            if (word1 in pair and word2 in pair) or (word2 in pair and word1 in pair):
+                return True
+        
+        return False
     
     def get_property_list(self) -> List[str]:
         """Get list of all property names for reference"""
