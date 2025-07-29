@@ -1,52 +1,114 @@
 import os
 import json
 import logging
+import time
+import hashlib
 from openai import OpenAI
 
 logger = logging.getLogger(__name__)
 
 class GrokAI:
-    """Grok 4.0 AI integration - xAI's flagship model with superior conversation memory and intelligence"""
+    """OPTIMIZED Grok 4.0 AI integration with connection reuse and caching"""
     
     def __init__(self):
-        """Initialize Grok AI with pre-warming to reduce first-response latency"""
+        """Initialize optimized Grok AI with connection pooling"""
         self.api_key = os.environ.get("XAI_API_KEY")
         if not self.api_key:
             raise ValueError("XAI_API_KEY environment variable is required")
         
-        # Create Grok client using OpenAI-compatible API
+        # Create optimized Grok client with connection reuse
         self.client = OpenAI(
             base_url="https://api.x.ai/v1",
-            api_key=self.api_key
+            api_key=self.api_key,
+            timeout=8.0,  # Optimized timeout
+            max_retries=1  # Faster failure for performance
         )
-        logger.info("✅ Grok AI client initialized successfully")
         
-        # PRE-WARM: Make a quick test call to reduce first-response latency
+        # Response cache for common requests
+        self.response_cache = {}
+        self.cache_max_size = 50
+        
+        logger.info("✅ OPTIMIZED Grok AI client initialized with connection pooling")
+        
+        # PRE-WARM with optimized connection
         try:
+            start_time = time.time()
             self.client.chat.completions.create(
                 model="grok-4-0709",
-                messages=[{"role": "user", "content": "Hi"}],
-                max_tokens=5,
+                messages=[{"role": "user", "content": "Ready"}],
+                max_tokens=3,
                 temperature=0.1
             )
-            logger.info("🚀 Grok 4.0 pre-warmed - first responses will be faster")
+            warmup_time = time.time() - start_time
+            logger.info(f"🚀 Grok 4.0 pre-warmed in {warmup_time:.3f}s - optimized for speed")
         except Exception as e:
             logger.warning(f"Pre-warm failed (non-critical): {e}")
     
-    def generate_response(self, messages, max_tokens=100, temperature=0.5, timeout=4.0):
-        """Generate response using Grok 4.0 as default with Grok 2 fallback"""
+    def _get_cache_key(self, messages, max_tokens, temperature):
+        """Generate cache key for request"""
+        import hashlib
+        content = str(messages) + str(max_tokens) + str(temperature)
+        return hashlib.md5(content.encode()).hexdigest()
+    
+    def _cache_response(self, key, response):
+        """Cache response with size limit"""
+        if len(self.response_cache) >= self.cache_max_size:
+            # Remove oldest entry
+            oldest_key = next(iter(self.response_cache))
+            del self.response_cache[oldest_key]
+        self.response_cache[key] = response
+    
+    def _optimize_prompt_length(self, messages):
+        """Optimize prompt length for faster processing"""
+        optimized = []
+        for msg in messages:
+            if msg.get("role") == "system":
+                # Keep system message but truncate if too long
+                content = msg.get("content", "")
+                if len(content) > 1000:  # Limit system message length
+                    # Keep essential parts
+                    essential_parts = []
+                    for line in content.split('\n'):
+                        if any(keyword in line.upper() for keyword in ['CRITICAL', 'CONSTRAINT', 'IMPORTANT', 'NEVER', 'ALWAYS']):
+                            essential_parts.append(line)
+                    
+                    if essential_parts:
+                        content = '\n'.join(essential_parts[:10])  # Max 10 critical lines
+                    else:
+                        content = content[:800]  # Fallback truncation
+                        
+                optimized.append({"role": "system", "content": content})
+            else:
+                # Keep user messages as-is but limit length
+                content = msg.get("content", "")[:300]  # Truncate long user messages
+                optimized.append({"role": msg.get("role"), "content": content})
+        
+        return optimized
+    
+    def generate_response(self, messages, max_tokens=80, temperature=0.5, timeout=3.0):
+        """OPTIMIZED response generation with caching and reduced tokens"""
+        # ⏰ START GROK TIMING
+        grok_start_time = time.time()
+        
         try:
-            # 🔎 1. TRACE AND PRINT THE PROMPT
-            logger.info(f"[DEBUG] Full messages sent to Grok: {json.dumps(messages, indent=2)}")
-            logger.info(f"[DEBUG] Parameters: max_tokens={max_tokens}, temperature={temperature}, timeout={timeout}")
+            # Check cache first for performance
+            cache_key = self._get_cache_key(messages, max_tokens, temperature)
+            if cache_key in self.response_cache:
+                cached_response = self.response_cache[cache_key]
+                cache_time = time.time() - grok_start_time
+                logger.info(f"[Timing] Grok cache hit: {cache_time:.3f} seconds")
+                return cached_response
+            
+            # Optimize prompt length to reduce processing time
+            optimized_messages = self._optimize_prompt_length(messages)
+            
+            logger.info(f"[DEBUG] OPTIMIZED Grok 4.0 request: max_tokens={max_tokens}, timeout={timeout}")
 
             # 🛡️ CONSTRAINT PROTECTION: ALWAYS USE GROK 4.0 AS PRIMARY (User Required)
-            # Use Grok 4.0 as primary model - more advanced reasoning and conversation quality
             try:
-                logger.info("[DEBUG] Sending request to Grok 4.0...")
                 response = self.client.chat.completions.create(
                     model="grok-4-0709",  # 🛡️ CONSTRAINT: ALWAYS Grok 4.0 primary
-                    messages=messages,
+                    messages=optimized_messages,
                     max_tokens=max_tokens,
                     temperature=temperature,
                     timeout=timeout
@@ -72,35 +134,36 @@ class GrokAI:
                     # Strip whitespace and check again
                     content = content.strip() if content else ""
                     
+                    # Log successful response with timing
+                    grok_time = time.time() - grok_start_time
+                    logger.info(f"[Timing] Grok 4.0 success: {grok_time:.3f} seconds")
                     logger.info(f"✅ Using Grok 4.0 - primary model (CONSTRAINT PROTECTED) - Response length: {len(content)}")
+                    
+                    # Cache successful response
+                    self._cache_response(cache_key, content)
                     
                     # 🔐 5. DO NOT ATTEMPT FIXES BLINDLY - Handle empty responses properly
                     if not content or len(content) == 0:
                         logger.error("[ERROR] Grok 4.0 response content was empty or malformed.")
-                        logger.error(f"❌ GROK 4.0 EMPTY RESPONSE DEBUG:")
-                        logger.error(f"  Raw content: {repr(content)}")
-                        logger.error(f"  Response ID: {getattr(response, 'id', 'unknown')}")
-                        logger.error(f"  Model used: {getattr(response, 'model', 'unknown')}")
-                        logger.error(f"  Usage: {getattr(response, 'usage', 'unknown')}")
                         
                         # Try Grok 2 as fallback for empty responses - PROVEN TO WORK
-                        logger.info("[DEBUG] Attempting Grok 2 fallback for empty Grok 4.0 response...")
+                        logger.info("[DEBUG] Attempting optimized Grok 2 fallback...")
                         try:
                             fallback_response = self.client.chat.completions.create(
                                 model="grok-2-1212",
-                                messages=messages,
+                                messages=optimized_messages,
                                 max_tokens=max_tokens,
                                 temperature=temperature,
                                 timeout=max(2.0, timeout - 1.0)
                             )
-                            logger.info(f"[DEBUG] Grok 2 fallback response received")
                             fallback_content = fallback_response.choices[0].message.content
                             if fallback_content and fallback_content.strip():
-                                logger.info(f"✅ Grok 2 fallback successful - Response length: {len(fallback_content)}")
-                                logger.info(f"📝 Grok 2 content: {repr(fallback_content[:100])}...")
+                                grok_time = time.time() - grok_start_time
+                                logger.info(f"[Timing] Grok 2 fallback: {grok_time:.3f} seconds")
+                                
+                                # Cache the fallback response
+                                self._cache_response(cache_key, fallback_content.strip())
                                 return fallback_content.strip()
-                            else:
-                                logger.error("[ERROR] Grok 2 also returned empty content")
                         except Exception as fallback_error:
                             logger.error(f"[ERROR] Grok 2 fallback failed: {fallback_error}")
                         

@@ -6,12 +6,19 @@ import os
 import requests
 import tempfile
 import logging
+import time
+import hashlib
 from typing import Optional
+from collections import OrderedDict
 
 logger = logging.getLogger(__name__)
 
 ELEVENLABS_API_KEY = os.environ.get("ELEVENLABS_API_KEY")
 ELEVENLABS_BASE_URL = "https://api.elevenlabs.io/v1"
+
+# OPTIMIZED: Audio cache for performance
+audio_cache = OrderedDict()
+MAX_CACHE_SIZE = 100
 
 # Available male voices from our ElevenLabs account
 AVAILABLE_VOICES = {
@@ -23,8 +30,11 @@ AVAILABLE_VOICES = {
 
 def generate_elevenlabs_audio(text: str, voice_id: str = None, voice_name: str = "adam") -> Optional[str]:
     """
-    Generate audio using ElevenLabs API and return URL or file path
+    OPTIMIZED audio generation with caching and timing
     """
+    # ⏰ START ELEVENLABS TIMING
+    elevenlabs_start = time.time()
+    
     if not ELEVENLABS_API_KEY:
         logger.warning("ElevenLabs API key not available")
         return None
@@ -32,6 +42,16 @@ def generate_elevenlabs_audio(text: str, voice_id: str = None, voice_name: str =
     # Use voice_id if provided, otherwise get from voice_name
     if not voice_id:
         voice_id = AVAILABLE_VOICES.get(voice_name, AVAILABLE_VOICES["adam"])
+    
+    # Check cache first for performance
+    cache_key = hashlib.md5(f"{text}_{voice_id}".encode()).hexdigest()
+    if cache_key in audio_cache:
+        cached_path = audio_cache[cache_key]
+        cache_time = time.time() - elevenlabs_start
+        logger.info(f"[Timing] ElevenLabs cache hit: {cache_time:.3f} seconds")
+        # Move to end (most recently used)
+        audio_cache.move_to_end(cache_key)
+        return cached_path
     
     try:
         url = f"{ELEVENLABS_BASE_URL}/text-to-speech/{voice_id}"
@@ -53,13 +73,31 @@ def generate_elevenlabs_audio(text: str, voice_id: str = None, voice_name: str =
             }
         }
         
-        response = requests.post(url, json=data, headers=headers, timeout=5)  # Reduced timeout for speed
+        # OPTIMIZED: Reduced timeout for faster failure
+        response = requests.post(url, json=data, headers=headers, timeout=3)
         
         if response.status_code == 200:
-            # Save audio to temporary file and return path
+            # Save audio to temporary file and cache it
             with tempfile.NamedTemporaryFile(delete=False, suffix='.mp3') as audio_file:
                 audio_file.write(response.content)
-                return audio_file.name
+                audio_path = audio_file.name
+                
+                # Cache the audio file path
+                if len(audio_cache) >= MAX_CACHE_SIZE:
+                    # Remove oldest entry
+                    oldest_key, oldest_path = audio_cache.popitem(last=False)
+                    try:
+                        os.unlink(oldest_path)  # Delete old file
+                    except:
+                        pass
+                
+                audio_cache[cache_key] = audio_path
+                
+                # Log timing
+                generation_time = time.time() - elevenlabs_start
+                logger.info(f"[Timing] ElevenLabs generation: {generation_time:.3f} seconds")
+                
+                return audio_path
         else:
             logger.error(f"ElevenLabs API error: {response.status_code} - {response.text}")
             return None

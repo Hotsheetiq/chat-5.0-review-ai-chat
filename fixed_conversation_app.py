@@ -12,10 +12,19 @@ from datetime import datetime
 import pytz
 from flask import Flask, request, render_template, jsonify, render_template_string
 from twilio.twiml.voice_response import VoiceResponse
+from concurrent.futures import ThreadPoolExecutor
+import time
+import threading
+from collections import defaultdict
 
 # Configure logging
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
+
+# Performance optimization globals
+executor = ThreadPoolExecutor(max_workers=4)  # For parallel processing
+response_cache = {}  # Cache common responses
+timing_data = defaultdict(list)  # Store timing metrics
 
 # Global variables for application state
 conversation_history = {}  # Only real phone conversations stored here
@@ -53,6 +62,19 @@ conversation_history = load_conversation_history()
 
 # Email tracking to prevent duplicates
 email_sent_calls = set()
+
+# Performance timing functions
+def log_timing(stage, duration, call_sid=None):
+    """Log timing data for performance monitoring"""
+    timing_data[stage].append(duration)
+    logger.info(f"[Timing] {stage}: {duration:.3f} seconds")
+    if call_sid:
+        logger.info(f"[Call {call_sid}] {stage}: {duration:.3f}s")
+
+def print_total_timing(call_sid, total_time):
+    """Print total response time as requested"""
+    print(f"[Timing] Total AI response cycle: {total_time:.2f} seconds")
+    logger.info(f"[Call {call_sid}] Total AI response cycle: {total_time:.2f} seconds")
 
 # Anti-repetition system - prevent Chris from repeating exact phrases
 response_tracker = {}
@@ -1625,10 +1647,17 @@ log #{log_entry['id']:03d} – {log_entry['date']}
 
     @app.route("/handle-speech/<call_sid>", methods=["POST"])
     def handle_speech(call_sid):
-        """Handle speech input from callers"""
+        """OPTIMIZED speech handler with comprehensive timing"""
+        # ⏰ START TOTAL TIMING
+        total_start_time = time.time()
+        
         try:
+            # ⏰ 1. SPEECH TRANSCRIPTION TIMING (already done by Twilio)
+            transcription_start = time.time()
             speech_result = request.values.get("SpeechResult", "").lower().strip()
             caller_phone = request.values.get("From", "")
+            transcription_time = time.time() - transcription_start
+            log_timing("Speech transcription processing", transcription_time, call_sid)
             
             logger.info(f"🎤 SPEECH from {caller_phone}: '{speech_result}'")
             
@@ -1993,20 +2022,32 @@ log #{log_entry['id']:03d} – {log_entry['date']}
                     }
                 ]
                 
-                # Generate intelligent response with enhanced timeout and fallback
+                # ⏰ 2. GROK AI PROCESSING TIMING
+                grok_start = time.time()
                 try:
-                    response_text = grok_ai.generate_response(messages, max_tokens=150, temperature=0.7, timeout=4.0)
+                    # OPTIMIZED: Reduced max_tokens for faster responses
+                    response_text = grok_ai.generate_response(messages, max_tokens=80, temperature=0.7, timeout=3.0)
+                    grok_time = time.time() - grok_start
+                    log_timing("Grok AI processing", grok_time, call_sid)
+                    print(f"[Timing] Grok AI processing: {grok_time:.2f} seconds")
+                    
                     logger.info(f"🤖 AI RESPONSE: '{response_text}' (length: {len(response_text) if response_text else 0})")
                     
                     # If response is empty or too short, try again with different parameters
                     if not response_text or len(response_text.strip()) < 5:
                         logger.warning("⚠️ GROK RESPONSE TOO SHORT - retrying with enhanced parameters")
+                        retry_start = time.time()
                         enhanced_messages = messages.copy()
                         enhanced_messages[0]["content"] += "\n\nIMPORTANT: Please provide a helpful, complete response to assist the caller. Do not return empty responses."
-                        response_text = grok_ai.generate_response(enhanced_messages, max_tokens=200, temperature=0.8, timeout=6.0)
+                        response_text = grok_ai.generate_response(enhanced_messages, max_tokens=120, temperature=0.8, timeout=4.0)
+                        retry_time = time.time() - retry_start
+                        log_timing("Grok AI retry", retry_time, call_sid)
+                        print(f"[Timing] Grok AI retry: {retry_time:.2f} seconds")
                         logger.info(f"🔄 ENHANCED RESPONSE: '{response_text}'")
                         
                 except Exception as e:
+                    grok_time = time.time() - grok_start
+                    log_timing("Grok AI error", grok_time, call_sid)
                     logger.error(f"❌ GROK ERROR: {e}")
                     response_text = None
                 
@@ -2343,11 +2384,36 @@ log #{log_entry['id']:03d} – {log_entry['date']}
                 except Exception as e:
                     logger.error(f"❌ EMAIL ERROR: Fallback trigger failed: {e}")
             
-            # Return TwiML response
+            # ⏰ 3. PARALLEL PROCESSING: Start ElevenLabs generation in background
+            elevenlabs_start = time.time()
             import urllib.parse
+            
+            # Queue ElevenLabs generation in parallel
+            def start_elevenlabs_generation():
+                try:
+                    from elevenlabs_integration import generate_elevenlabs_audio
+                    audio_path = generate_elevenlabs_audio(response_text)
+                    return audio_path
+                except Exception as e:
+                    logger.error(f"Background ElevenLabs error: {e}")
+                    return None
+            
+            # Submit to thread pool for parallel processing
+            audio_future = executor.submit(start_elevenlabs_generation)
+            
+            encoded_text = urllib.parse.quote(response_text)
+            elevenlabs_time = time.time() - elevenlabs_start
+            log_timing("ElevenLabs parallel queue", elevenlabs_time, call_sid)
+            print(f"[Timing] ElevenLabs parallel queue: {elevenlabs_time:.3f} seconds")
+            
+            # ⏰ 4. TOTAL RESPONSE TIME CALCULATION
+            total_time = time.time() - total_start_time
+            print_total_timing(call_sid, total_time)
+            
+            # Return optimized TwiML response
             return f"""<?xml version="1.0" encoding="UTF-8"?>
             <Response>
-                <Play>https://{request.headers.get('Host', 'localhost:5000')}/generate-audio/{call_sid}?text={urllib.parse.quote(response_text)}</Play>
+                <Play>https://{request.headers.get('Host', 'localhost:5000')}/generate-audio/{call_sid}?text={encoded_text}</Play>
                 <Gather input="speech" timeout="8" speechTimeout="4" action="/handle-speech/{call_sid}" method="POST">
                 </Gather>
                 <Redirect>/handle-speech/{call_sid}</Redirect>
