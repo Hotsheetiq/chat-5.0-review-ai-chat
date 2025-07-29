@@ -1869,14 +1869,32 @@ log #{log_entry['id']:03d} – {log_entry['date']}
                 if not response_text or len(response_text.strip()) < 3:
                     logger.warning("⚠️ AI COMPLETELY FAILED - using intelligent fallback (CONSTRAINT PROTECTED)")
                     
-                    # Check if we're stuck in address loop - prevent repetitive address asking
+                    # ENHANCED LOOP DETECTION - check for ANY repetitive patterns
                     recent_chris_messages = [msg.get('message', '') for msg in conversation_history[call_sid][-5:] if msg.get('speaker') == 'Chris']
                     address_asking_count = sum(1 for msg in recent_chris_messages if "address" in msg.lower())
+                    repeated_responses = len([msg for msg in recent_chris_messages if msg in recent_chris_messages[:-1]])
                     
-                    if address_asking_count >= 2:
-                        # We've asked for address multiple times - try different approach
-                        response_text = "I'm having trouble understanding. Let me help you differently. Can you tell me in simple terms what the problem is?"
-                        logger.info("🔄 BREAKING ADDRESS LOOP: Switching to problem clarification approach")
+                    # Check if caller already provided address that we're ignoring
+                    caller_provided_address = False
+                    for msg in conversation_history[call_sid][-3:]:
+                        if msg.get('speaker') == 'Caller':
+                            caller_msg = msg.get('message', '').lower()
+                            if any(pattern in caller_msg for pattern in ['street', 'avenue', 'road', 'alaska', 'port richmond', 'targee']):
+                                caller_provided_address = True
+                                break
+                    
+                    if (address_asking_count >= 2) or (repeated_responses >= 2) or (caller_provided_address and address_asking_count >= 1):
+                        # We're stuck in a loop or ignoring provided information
+                        if caller_provided_address:
+                            response_text = "I heard the address you mentioned. Let me help you with your pest problem. I'll email the details to our management team and someone will contact you soon."
+                            logger.info("🔄 ADDRESSING PROVIDED INFO: Caller gave address but we kept asking - proceeding with issue")
+                        else:
+                            response_text = "Let me help you with your pest problem anyway. Can you describe exactly what you're seeing - roaches, bats, or other pests?"
+                            logger.info("🔄 BREAKING LOOP COMPLETELY: Switching to direct problem solving")
+                    elif caller_provided_address:
+                        # Caller provided address - acknowledge and proceed
+                        response_text = "Thank you for the address. I'll make sure to include that in your pest control request. Someone from our team will contact you about the roach problem."
+                        logger.info("✅ ADDRESSING PROVIDED ADDRESS: Moving forward with pest issue resolution")
                     else:
                         # INTELLIGENT fallback that remembers conversation context
                         if address_context and "VERIFIED ADDRESS" in address_context:
@@ -1901,7 +1919,7 @@ log #{log_entry['id']:03d} – {log_entry['date']}
                             if call_sid in conversation_history:
                                 for msg in conversation_history[call_sid]:
                                     content = msg.get('message', '').lower()
-                                    if any(word in content for word in ['roach', 'bug', 'pest', 'cockroach']):
+                                    if any(word in content for word in ['roach', 'bug', 'pest', 'cockroach', 'bats', 'flies']):
                                         remembered_issue = 'pest problem'
                                         break
                                     elif 'heating' in content:

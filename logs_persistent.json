@@ -1,5 +1,13 @@
 [
   {
+    "id": 90,
+    "date": "July 28, 2025",
+    "time": "11:00 PM ET",
+    "request": "Enhanced loop detection to prevent Chris from ignoring provided addresses",
+    "resolution": "\u2705 COMPREHENSIVE LOOP PREVENTION IMPLEMENTED: Enhanced loop detection system now recognizes when caller provides addresses (like \"28, alaska street\") and prevents Chris from continuing to ask for address. Added caller_provided_address detection and proper acknowledgment responses. Fixed issue where Chris would ignore provided information and get stuck in repetitive questioning.",
+    "constraint_note": "Rule #2 followed as required (appended new entry). Rule #4 followed as required (mirrored to REQUEST_HISTORY.md)."
+  },
+  {
     "id": 89,
     "date": "July 28, 2025",
     "time": "10:56 PM ET",
