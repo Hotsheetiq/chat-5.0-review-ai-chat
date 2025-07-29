@@ -31,6 +31,17 @@ conversation_history = {}  # Only real phone conversations stored here
 call_recordings = {}
 current_service_issue = None
 
+# ENHANCED HOLD MESSAGE SYSTEM
+HOLD_MESSAGES = [
+    "Give me just a moment while I look that up for you.",
+    "Let me check on that for you right now.",
+    "Hang tight, I'm pulling up the details.",
+    "One second while I process that request.", 
+    "Just a sec — I'm checking that now.",
+    "Hold on, I'm getting that information for you.",
+    "Let me grab those details for you right away."
+]
+
 # PERSISTENT CONVERSATION STORAGE SYSTEM
 def load_conversation_history():
     """Load conversation history from persistent storage"""
@@ -1891,6 +1902,11 @@ log #{log_entry['id']:03d} – {log_entry['date']}
             else:
                 logger.info("⏳ BACKGROUND PROCESSING: Complex request detected, returning hold message immediately")
                 
+                # Select random hold message for variety
+                import random
+                hold_message = random.choice(HOLD_MESSAGES)
+                logger.info(f"🎭 HOLD MESSAGE VARIANT: '{hold_message}'")
+                
                 # Start background processing in thread
                 import threading
                 host_header = request.headers.get('Host', 'localhost:5000')  # Get host before thread
@@ -1912,15 +1928,14 @@ log #{log_entry['id']:03d} – {log_entry['date']}
                 thread.daemon = True
                 thread.start()
                 
-                # Return immediate hold message
-                hold_message = "Please hold for just a moment while I process that for you."
+                # Return immediate hold message with faster speed
                 twiml_return_time = time.time() - request_start_time
                 log_timing_with_bottleneck("TwiML return (hold message)", twiml_return_time, request_start_time, call_sid)
                 
                 import urllib.parse
                 return f"""<?xml version="1.0" encoding="UTF-8"?>
                 <Response>
-                    <Play>https://{request.headers.get('Host', 'localhost:5000')}/generate-audio/{call_sid}?text={urllib.parse.quote(hold_message)}</Play>
+                    <Play>https://{request.headers.get('Host', 'localhost:5000')}/generate-audio/{call_sid}?text={urllib.parse.quote(hold_message)}&speed=1.15</Play>
                     <Redirect>/get-background-response/{call_sid}</Redirect>
                 </Response>"""
             

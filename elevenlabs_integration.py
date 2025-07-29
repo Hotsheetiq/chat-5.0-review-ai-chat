@@ -62,6 +62,43 @@ def generate_elevenlabs_audio(text: str, voice_id: str = None, voice_name: str =
             "xi-api-key": ELEVENLABS_API_KEY
         }
         
+def generate_elevenlabs_audio(text: str, voice_id: str = None, voice_name: str = "adam", speed: float = 1.0) -> Optional[str]:
+    """
+    OPTIMIZED audio generation with caching, timing, and speed control
+    """
+    # ⏰ START ELEVENLABS TIMING
+    elevenlabs_start = time.time()
+    
+    if not ELEVENLABS_API_KEY:
+        logger.warning("ElevenLabs API key not available")
+        return None
+    
+    # Use voice_id if provided, otherwise get from voice_name
+    if not voice_id:
+        voice_id = AVAILABLE_VOICES.get(voice_name, AVAILABLE_VOICES["adam"])
+    
+    # Check cache first for performance (include speed in cache key)
+    cache_key = hashlib.md5(f"{text}_{voice_id}_{speed}".encode()).hexdigest()
+    if cache_key in audio_cache:
+        cached_path = audio_cache[cache_key]
+        cache_time = time.time() - elevenlabs_start
+        logger.info(f"[Timing] ElevenLabs cache hit: {cache_time:.3f} seconds")
+        # Move to end (most recently used)
+        audio_cache.move_to_end(cache_key)
+        return cached_path
+    
+    try:
+        url = f"{ELEVENLABS_BASE_URL}/text-to-speech/{voice_id}"
+        
+        headers = {
+            "Accept": "audio/mpeg",
+            "Content-Type": "application/json",
+            "xi-api-key": ELEVENLABS_API_KEY
+        }
+        
+        # Calculate speaking rate based on speed parameter (1.0 = normal, 1.15 = 15% faster)
+        speaking_rate = min(1.5, max(0.5, speed))  # Clamp between 0.5x and 1.5x
+        
         data = {
             "text": text,
             "model_id": "eleven_turbo_v2_5",  # Fastest model for real-time
@@ -69,7 +106,8 @@ def generate_elevenlabs_audio(text: str, voice_id: str = None, voice_name: str =
                 "stability": 0.85,        # VERY HIGH stability for absolutely consistent professional tone
                 "similarity_boost": 0.90, # Maximum consistency for same voice character
                 "style": 0.1,            # MINIMAL style for neutral, professional tone - no emotion variation
-                "use_speaker_boost": True # Enhanced clarity for phone calls
+                "use_speaker_boost": True, # Enhanced clarity for phone calls
+                "speaking_rate": speaking_rate  # Speed control for hold messages
             }
         }
         
