@@ -1,5 +1,13 @@
 [
   {
+    "id": 46,
+    "date": "July 28, 2025",
+    "time": "8:22 PM ET",
+    "request": "box background color is white change text color to black",
+    "resolution": "CONSTRAINT TEXT COLOR FIX: Changed all text colors from white to black for proper visibility against white background - updated pre element, strong elements, and card body text colors",
+    "constraint_note": "Rule #2 followed as required (appended new entry). Rule #4 followed as required (mirrored to REQUEST_HISTORY.md)."
+  },
+  {
     "id": 45,
     "date": "July 28, 2025",
     "time": "8:21 PM ET",

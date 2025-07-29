@@ -743,8 +743,8 @@ def create_app():
                         <div class="card-header">
                             <h5 class="mb-0">📋 Active Constraints</h5>
                         </div>
-                        <div class="card-body" style="color: #ffffff;">
-                            <pre style="background: #1e2a3a; padding: 15px; border-radius: 5px; overflow-x: auto; color: #ffffff; white-space: pre-wrap;">{{ constraints_content }}</pre>
+                        <div class="card-body" style="color: #000000;">
+                            <pre style="background: #ffffff; padding: 15px; border-radius: 5px; overflow-x: auto; color: #000000; white-space: pre-wrap; border: 1px solid #ccc;">{{ constraints_content }}</pre>
                         </div>
                     </div>
                     
@@ -752,35 +752,35 @@ def create_app():
                         <div class="card-header">
                             <h5 class="mb-0">🕒 Constraint Timeline</h5>
                         </div>
-                        <div class="card-body" style="color: #ffffff;">
+                        <div class="card-body" style="color: #000000;">
                             <div class="constraint-section" style="border-left: 4px solid #007bff; padding-left: 15px; margin: 20px 0;">
-                                <strong style="color: #ffffff;">ElevenLabs TTS Voice System</strong>
+                                <strong style="color: #000000;">ElevenLabs TTS Voice System</strong>
                                 <div class="timestamp" style="color: #6c757d; font-size: 0.9em;">Added: {{ current_time.strftime('%B %d, %Y at %I:%M %p ET') }}</div>
-                                <div class="protection-rule" style="background: #2d3a4e; padding: 10px; border-radius: 5px; margin: 10px 0; color: #ffffff;">Protects natural ElevenLabs voice from Polly reversion - User confirmed working</div>
+                                <div class="protection-rule" style="background: #f8f9fa; padding: 10px; border-radius: 5px; margin: 10px 0; color: #000000; border: 1px solid #dee2e6;">Protects natural ElevenLabs voice from Polly reversion - User confirmed working</div>
                             </div>
                             
                             <div class="constraint-section" style="border-left: 4px solid #007bff; padding-left: 15px; margin: 20px 0;">
-                                <strong style="color: #ffffff;">Automatic Logging System</strong>
+                                <strong style="color: #000000;">Automatic Logging System</strong>
                                 <div class="timestamp" style="color: #6c757d; font-size: 0.9em;">Added: July 28, 2025 at 6:15 PM ET</div>
-                                <div class="protection-rule" style="background: #2d3a4e; padding: 10px; border-radius: 5px; margin: 10px 0; color: #ffffff;">Protects request logging and persistent storage - User confirmed working</div>
+                                <div class="protection-rule" style="background: #f8f9fa; padding: 10px; border-radius: 5px; margin: 10px 0; color: #000000; border: 1px solid #dee2e6;">Protects request logging and persistent storage - User confirmed working</div>
                             </div>
                             
                             <div class="constraint-section" style="border-left: 4px solid #007bff; padding-left: 15px; margin: 20px 0;">
-                                <strong style="color: #ffffff;">Property Backup System</strong>
+                                <strong style="color: #000000;">Property Backup System</strong>
                                 <div class="timestamp" style="color: #6c757d; font-size: 0.9em;">Added: July 28, 2025 at 9:30 AM ET</div>
-                                <div class="protection-rule" style="background: #2d3a4e; padding: 10px; border-radius: 5px; margin: 10px 0; color: #ffffff;">Protects 430+ property database integration - Critical for address verification</div>
+                                <div class="protection-rule" style="background: #f8f9fa; padding: 10px; border-radius: 5px; margin: 10px 0; color: #000000; border: 1px solid #dee2e6;">Protects 430+ property database integration - Critical for address verification</div>
                             </div>
                             
                             <div class="constraint-section" style="border-left: 4px solid #007bff; padding-left: 15px; margin: 20px 0;">
-                                <strong style="color: #ffffff;">Flag System User Access</strong>
+                                <strong style="color: #000000;">Flag System User Access</strong>
                                 <div class="timestamp" style="color: #6c757d; font-size: 0.9em;">Added: July 28, 2025 at 8:45 AM ET</div>
-                                <div class="protection-rule" style="background: #2d3a4e; padding: 10px; border-radius: 5px; margin: 10px 0; color: #ffffff;">Protects user flag modification functionality - Authorized user access required</div>
+                                <div class="protection-rule" style="background: #f8f9fa; padding: 10px; border-radius: 5px; margin: 10px 0; color: #000000; border: 1px solid #dee2e6;">Protects user flag modification functionality - Authorized user access required</div>
                             </div>
                             
                             <div class="constraint-section" style="border-left: 4px solid #007bff; padding-left: 15px; margin: 20px 0;">
-                                <strong style="color: #ffffff;">Logging Rules & Data Management</strong>
+                                <strong style="color: #000000;">Logging Rules & Data Management</strong>
                                 <div class="timestamp" style="color: #6c757d; font-size: 0.9em;">Added: July 28, 2025 at 2:00 AM ET</div>
-                                <div class="protection-rule" style="background: #2d3a4e; padding: 10px; border-radius: 5px; margin: 10px 0; color: #ffffff;">Protects log ordering, timestamp accuracy, and file handling protocols</div>
+                                <div class="protection-rule" style="background: #f8f9fa; padding: 10px; border-radius: 5px; margin: 10px 0; color: #000000; border: 1px solid #dee2e6;">Protects log ordering, timestamp accuracy, and file handling protocols</div>
                             </div>
                         </div>
                     </div>
