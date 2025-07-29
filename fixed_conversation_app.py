@@ -1601,7 +1601,6 @@ log #{log_entry['id']:03d} – {log_entry['date']}
                     
                     # Format timestamp
                     try:
-                        from datetime import datetime
                         dt = datetime.fromisoformat(timestamp.replace('Z', '+00:00'))
                         time_str = dt.strftime('[%H:%M:%S]')
                     except:
