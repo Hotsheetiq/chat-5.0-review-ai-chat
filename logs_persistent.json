@@ -1,5 +1,21 @@
 [
   {
+    "id": 74,
+    "date": "July 28, 2025",
+    "time": "10:13 PM ET",
+    "request": "Remove harmful fallback logic overriding AI responses",
+    "resolution": "\u2705 FALLBACK LOGIC FIXED: Removed harmful fallback systems that were overriding AI intelligent responses. System was detecting 640 terry avenue correctly, AI was saying Great! I found 630 Midland Avenue but fallbacks override with Whats your address. Now AI responses will come through properly.",
+    "constraint_note": "Rule #2 followed as required (appended new entry). Rule #4 followed as required (mirrored to REQUEST_HISTORY.md)."
+  },
+  {
+    "id": 73,
+    "date": "July 28, 2025",
+    "time": "10:12 PM ET",
+    "request": "User clarified 630 Midland Avenue IS their property under SINY Development LLC",
+    "resolution": "\u2705 ADDRESS VERIFIED: 630 Midland Avenue confirmed as legitimate property managed by SINY Development LLC. Address matching working correctly. Real issue is AI response being overridden by fallback logic. Fixing fallback systems now.",
+    "constraint_note": "Rule #2 followed as required (appended new entry). Rule #4 followed as required (mirrored to REQUEST_HISTORY.md)."
+  },
+  {
     "id": 72,
     "date": "July 28, 2025",
     "time": "10:10 PM ET",

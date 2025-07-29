@@ -1701,35 +1701,14 @@ log #{log_entry['id']:03d} – {log_entry['date']}
                 # Generate intelligent response
                 response_text = grok_ai.generate_response(messages, max_tokens=100, temperature=0.7, timeout=2.0)
                 
-                # Smart fallback if AI fails (REMOVE THE STUPID FALLBACK)
+                # MINIMAL fallback - only if AI completely fails
                 if not response_text or len(response_text.strip()) < 3:
-                    # Use intelligent maintenance-specific fallback instead of generic response
-                    if any(word in speech_result.lower() for word in ['heat', 'heating', 'hot', 'cold', 'temperature']):
-                        response_text = "Got it, heating issue. What's your address?"
-                    elif any(word in speech_result.lower() for word in ['electrical', 'electric', 'power', 'lights']):
-                        response_text = "Understood, electrical problem. What's your address?"
-                    elif any(word in speech_result.lower() for word in ['plumbing', 'water', 'leak', 'pipe']):
-                        response_text = "Got it, plumbing issue. What's your address?"
-                    elif any(word in speech_result.lower() for word in ['maintenance', 'repair', 'broken', 'problem', 'issue']):
-                        response_text = "I can help with that issue. What's your address?"
-                    else:
-                        response_text = "What's your address so I can help you?"
+                    response_text = "I understand. How can I help you with that?"
                     
             except Exception as e:
                 logger.error(f"AI response error: {e}")
-                # INTELLIGENT fallback based on input - NO MORE GENERIC RESPONSES
-                if any(word in speech_result.lower() for word in ['heat', 'heating', 'hot', 'cold', 'temperature']):
-                    response_text = "Got it, heating issue. What's your address?"
-                elif any(word in speech_result.lower() for word in ['electrical', 'electric', 'power', 'lights']):
-                    response_text = "Understood, electrical problem. What's your address?"
-                elif any(word in speech_result.lower() for word in ['plumbing', 'water', 'leak', 'pipe']):
-                    response_text = "Got it, plumbing issue. What's your address?"
-                elif any(word in speech_result.lower() for word in ['maintenance', 'repair', 'broken', 'issue', 'problem']):
-                    response_text = "I can help with that issue. What's your address?"
-                elif any(word in speech_result.lower() for word in ['hours', 'open', 'closed']):
-                    response_text = "We're open Monday through Friday, 9 to 5 Eastern. What else can I help with?"
-                else:
-                    response_text = "What's your address so I can help you?"
+                # Simple fallback only on complete AI failure
+                response_text = "I understand. How can I help you with that?"
             
             # Store AI response
             conversation_history[call_sid].append({
