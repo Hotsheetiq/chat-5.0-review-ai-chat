@@ -64,6 +64,48 @@ The following AI response system components are CRITICAL and must NEVER be overr
 
 **TIMESTAMP**: Added July 29, 2025 at 2:16 AM ET
 
+## CRITICAL SYSTEM PROTECTION - DASHBOARD SYSTEM (ABSOLUTE CONSTRAINT)
+
+**DASHBOARD SYSTEM COMPONENTS - DO NOT REMOVE OR MODIFY WITHOUT AUTHORIZATION**
+
+The following dashboard system components are CRITICAL and must NEVER be removed or modified:
+
+### Protected Dashboard Features:
+- Main dashboard interface at root route (/) with comprehensive monitoring
+- Request History & Fixes section with chronological log display
+- Recent Call History with conversation transcripts and caller details
+- System status indicators for all services (Grok AI, ElevenLabs, Twilio, Rent Manager)
+- Real-time call monitoring capabilities with live updates
+- Service warmup status monitoring at /status route
+- Live call monitoring interface at /live-monitoring route
+- Constraint management interface at /constraints route
+
+### Protected API Endpoints:
+- `/api/calls/history` - provides call history data for dashboard
+- `/api/unified-logs` - serves request history and fixes data
+- `/api/warmup-status` - JSON service status for monitoring
+- `/api/auto-log-request` - automatic request logging system
+- `/api/add-constraint` - constraint management functionality
+- `/api/set-flag` - flag modification system for authorized users
+
+### Protected Dashboard Files:
+- `templates/` directory containing all dashboard HTML templates
+- Dashboard styling and JavaScript functionality
+- Real-time data refresh and update mechanisms
+- Professional dark theme styling with Bootstrap integration
+
+### Protected Dashboard Data:
+- `logs_persistent.json` - persistent log storage for dashboard display
+- `conversation_history.json` - call history data for monitoring
+- Request history chronological ordering and display logic
+- Call transcript storage and retrieval system
+
+**JUSTIFICATION**: User explicitly requested "save this dashboard as a constraint" - dashboard system provides critical monitoring and management capabilities
+
+**VIOLATION WARNING**: Removing or modifying dashboard components breaks monitoring workflow and violates established user requirements for system oversight
+
+**TIMESTAMP**: Added July 29, 2025 at 2:33 AM ET
+
 ## Additional Constraints
 
 ### Data Structure Management

@@ -1,5 +1,13 @@
 [
   {
+    "id": 79,
+    "date": "July 28, 2025",
+    "time": "10:33 PM ET",
+    "request": "Save this dashboard as a constraint",
+    "resolution": "\u2705 DASHBOARD CONSTRAINT ADDED: Complete dashboard system protected in CONSTRAINTS.md including main interface, Request History & Fixes, call monitoring, service status, API endpoints, templates, and data storage. Dashboard components now have absolute protection from removal/modification. \ud83d\udee1\ufe0f Constraint Note: Dashboard system preserved as requested",
+    "constraint_note": "Rule #2 followed as required (appended new entry). Rule #4 followed as required (mirrored to REQUEST_HISTORY.md)."
+  },
+  {
     "id": 78,
     "date": "July 28, 2025",
     "time": "10:20 PM ET",
