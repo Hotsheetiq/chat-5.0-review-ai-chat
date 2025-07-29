@@ -1,5 +1,13 @@
 [
   {
+    "id": 94,
+    "date": "July 28, 2025",
+    "time": "11:18 PM ET",
+    "request": "Update SendGrid API key and test email delivery",
+    "resolution": "\u2705 SENDGRID API KEY UPDATED: Updated SendGrid API key in environment variables to ensure current credentials. Testing email system with new key to verify email delivery functionality and sender verification status.",
+    "constraint_note": "Rule #2 followed as required (appended new entry). Rule #4 followed as required (mirrored to REQUEST_HISTORY.md)."
+  },
+  {
     "id": 93,
     "date": "July 28, 2025",
     "time": "11:09 PM ET",

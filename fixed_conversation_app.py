@@ -115,27 +115,62 @@ def send_call_transcript_email(call_sid, caller_phone, transcript, issue_type=No
         </html>
         """
         
-        # Create and send email - try common verified sender patterns
-        # SendGrid requires verified sender identity
-        verified_senders = [
-            "test@example.com",  # Common default
-            "noreply@example.com",  # SendGrid default
-            "grinbergchat@gmail.com"  # Target email
-        ]
-        
+        # Create and send email with proper encoding and error handling
         message = Mail(
-            from_email=Email("test@example.com"),  # Using SendGrid default
+            from_email=Email("test@example.com"),
             to_emails=To("grinbergchat@gmail.com"),
             subject=subject,
             html_content=Content("text/html", html_content)
         )
         
-        response = sg.send(message)
-        logger.info(f"✅ EMAIL SENT: Call transcript sent to grinbergchat@gmail.com (Status: {response.status_code})")
-        return True
+        # Send the email with comprehensive error handling
+        try:
+            sendgrid_api_key = os.environ.get('SENDGRID_API_KEY')
+            if not sendgrid_api_key:
+                logger.error("❌ SENDGRID API KEY MISSING")
+                return False
+            
+            # Create SendGrid client with proper encoding
+            sg = SendGridAPIClient(sendgrid_api_key)
+            
+            # Use simple ASCII-safe content to avoid encoding issues
+            simple_subject = f"Call Transcript - {caller_phone} - {timestamp_str}".encode('ascii', 'ignore').decode('ascii')
+            simple_transcript = transcript.encode('ascii', 'ignore').decode('ascii')
+            
+            simple_message = Mail(
+                from_email=Email("test@example.com"),
+                to_emails=To("grinbergchat@gmail.com"),
+                subject=simple_subject,
+                plain_text_content=Content("text/plain", f"""
+Call Transcript from Grinberg Management
+
+Caller: {caller_phone}
+Time: {timestamp_str}
+Issue Type: {issue_type or 'Not specified'}
+Address Status: {address_status}
+
+Complete Conversation:
+{simple_transcript}
+
+Next Actions:
+- Review conversation for follow-up
+- Address verification status: {address_status}
+- Contact caller if additional information required
+
+This is an automated transcript from the Grinberg Management voice assistant system.
+                """)
+            )
+            
+            response = sg.send(simple_message)
+            logger.info(f"✅ EMAIL SUCCESS: Transcript sent to grinbergchat@gmail.com (Status: {response.status_code})")
+            return True
+            
+        except Exception as e:
+            logger.error(f"❌ EMAIL ERROR: Failed to send transcript email: {e}")
+            return False
         
     except Exception as e:
-        logger.error(f"❌ EMAIL ERROR: Failed to send transcript email: {e}")
+        logger.error(f"❌ EMAIL FUNCTION ERROR: {e}")
         return False
 
 def get_eastern_time():
