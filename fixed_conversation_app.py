@@ -51,7 +51,7 @@ def save_conversation_history():
 # Load existing conversation history on startup
 conversation_history = load_conversation_history()
 
-# EMAIL NOTIFICATION SYSTEM
+# EMAIL NOTIFICATION SYSTEM - GMAIL SMTP FALLBACK
 def send_call_transcript_email(call_sid, caller_phone, transcript, issue_type=None, address_status="unknown"):
     """Send call transcript email to grinbergchat@gmail.com"""
     try:
@@ -115,9 +115,9 @@ def send_call_transcript_email(call_sid, caller_phone, transcript, issue_type=No
         </html>
         """
         
-        # Create and send email with proper encoding and error handling
+        # Create and send email with verified sender
         message = Mail(
-            from_email=Email("test@example.com"),
+            from_email=Email("grinbergchat@gmail.com"),  # Use verified sender
             to_emails=To("grinbergchat@gmail.com"),
             subject=subject,
             html_content=Content("text/html", html_content)
@@ -138,7 +138,7 @@ def send_call_transcript_email(call_sid, caller_phone, transcript, issue_type=No
             simple_transcript = transcript.encode('ascii', 'ignore').decode('ascii')
             
             simple_message = Mail(
-                from_email=Email("test@example.com"),
+                from_email=Email("grinbergchat@gmail.com"),  # Use verified sender
                 to_emails=To("grinbergchat@gmail.com"),
                 subject=simple_subject,
                 plain_text_content=Content("text/plain", f"""
@@ -166,8 +166,59 @@ This is an automated transcript from the Grinberg Management voice assistant sys
             return True
             
         except Exception as e:
-            logger.error(f"❌ EMAIL ERROR: Failed to send transcript email: {e}")
-            return False
+            logger.error(f"❌ SENDGRID ERROR: {e}")
+            # Try Gmail SMTP fallback
+            try:
+                import smtplib
+                from email.mime.text import MIMEText
+                from email.mime.multipart import MIMEMultipart
+                
+                # Gmail SMTP configuration  
+                gmail_user = "grinbergchat@gmail.com"
+                gmail_app_password = os.environ.get('GMAIL_APP_PASSWORD')
+                
+                if not gmail_app_password:
+                    logger.error("❌ Gmail App Password not configured")
+                    return False
+                
+                msg = MIMEMultipart()
+                msg['From'] = gmail_user
+                msg['To'] = "grinbergchat@gmail.com" 
+                msg['Subject'] = f"Call Transcript - {caller_phone} - {timestamp_str}"
+                
+                body = f"""
+Call Transcript from Grinberg Management
+
+Caller: {caller_phone}
+Time: {timestamp_str}
+Issue Type: {issue_type or 'Not specified'}
+Address Status: {address_status}
+
+Complete Conversation:
+{simple_transcript}
+
+Next Actions:
+- Review conversation for follow-up
+- Address verification status: {address_status}
+- Contact caller if additional information required
+
+This is an automated transcript from the Grinberg Management voice assistant system.
+                """
+                
+                msg.attach(MIMEText(body, 'plain'))
+                
+                server = smtplib.SMTP('smtp.gmail.com', 587)
+                server.starttls()
+                server.login(gmail_user, gmail_app_password)
+                server.send_message(msg)
+                server.quit()
+                
+                logger.info("✅ EMAIL SUCCESS (Gmail SMTP): Transcript sent to grinbergchat@gmail.com")
+                return True
+                
+            except Exception as e2:
+                logger.error(f"❌ GMAIL SMTP ERROR: {e2}")
+                return False
         
     except Exception as e:
         logger.error(f"❌ EMAIL FUNCTION ERROR: {e}")
