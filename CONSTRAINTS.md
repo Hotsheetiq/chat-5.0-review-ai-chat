@@ -198,3 +198,40 @@ The following code sections are CRITICAL and must NEVER be modified or removed:
 - Error handling must maintain ElevenLabs functionality, not revert to Polly
 
 **VIOLATION OF THESE CONSTRAINTS IS STRICTLY PROHIBITED - ELEVENLABS VOICE IS MANDATORY**
+
+## GROK 4.0 AI MODEL SYSTEM - ABSOLUTE PROTECTION
+
+**CRITICAL CONSTRAINT: The Grok 4.0 AI integration has MAXIMUM PROTECTION and CANNOT be reverted to Grok 2 as default model.**
+
+### Protected Components (NEVER MODIFY OR REVERT):
+1. **Grok 4.0 Primary Model Configuration** - `model="grok-4-0709"` must remain as primary model
+2. **grok_integration.py generate_response() function** - Primary model selection logic is PROTECTED
+3. **Grok 4.0 Pre-warming System** - Pre-warm initialization must use Grok 4.0 first
+4. **Model Priority Logic** - Grok 4.0 first, Grok 2 fallback order is MANDATORY
+5. **Timeout Configuration** - 0.8s timeout optimized for Grok 4.0 performance
+6. **XAI API Integration** - https://api.x.ai/v1 endpoint configuration is PROTECTED
+
+### Protection Rules:
+- **NEVER revert primary model back to Grok 2 (grok-2-1212) as default**
+- Grok 4.0 (`grok-4-0709`) MUST remain the primary model for all Chris interactions
+- Pre-warming system MUST initialize Grok 4.0 first for optimal first-response performance
+- Model selection logic MUST prioritize Grok 4.0 with Grok 2 as fallback only
+- Timeout settings MUST remain optimized for Grok 4.0 (0.8s primary, 0.6s fallback)
+- Any attempt to make Grok 2 the primary model must be REJECTED immediately
+- Error handling must maintain Grok 4.0 as primary, not revert to Grok 2 default
+
+### User Confirmation:
+- User explicitly confirmed: "This fix works — create a necessary constraint so it's not undone in the future"
+- Log #052 documents successful Grok 4.0 implementation with user approval
+- System logs show successful Grok 4.0 API calls: "✅ Using Grok 4.0 - primary model for best conversation quality"
+- Live HTTP requests confirmed working with model: 'grok-4-0709'
+
+### Technical Requirements:
+- XAI_API_KEY environment variable must remain configured for xAI API access
+- OpenAI-compatible client must use base_url="https://api.x.ai/v1" for xAI integration
+- Model selection must use exact model IDs: "grok-4-0709" (primary), "grok-2-1212" (fallback)
+- Response generation must prioritize advanced Grok 4.0 reasoning capabilities
+- Pre-warming calls must target Grok 4.0 to reduce first-response latency
+- Logging must indicate "Using Grok 4.0" for primary model usage tracking
+
+**VIOLATION OF THESE CONSTRAINTS IS STRICTLY PROHIBITED - GROK 4.0 IS MANDATORY AS PRIMARY MODEL**
