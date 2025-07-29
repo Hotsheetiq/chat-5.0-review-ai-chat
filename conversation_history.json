@@ -1342,8 +1342,28 @@
         "message": "i have a heating problem",
         "caller_phone": "+13477430880"
       }
+    ],
+    "TIMEOUT_TEST_456": [
+      {
+        "timestamp": "2025-07-29T05:43:18.482750",
+        "speaker": "System",
+        "message": "Performance monitoring for call TIMEOUT_TEST_456",
+        "caller_phone": "System",
+        "call_id": "TIMEOUT_TEST_456",
+        "timing_data": {
+          "speech_transcription_processing": 0.0006775856018066406
+        },
+        "total_processing_time": 0.0006799697875976562,
+        "bottlenecks": []
+      },
+      {
+        "timestamp": "2025-07-29T05:43:18.482810",
+        "speaker": "Caller",
+        "message": "i need help with maintenance",
+        "caller_phone": "+13477430880"
+      }
     ]
   },
-  "last_updated": "2025-07-29T01:40:50.224770-04:00",
-  "total_calls": 49
+  "last_updated": "2025-07-29T01:43:18.494667-04:00",
+  "total_calls": 50
 }

@@ -1081,50 +1081,52 @@ def create_app():
                 except (TypeError, IndexError):
                     recent_calls = []
             
-            # Scan for live bottlenecks from recent calls
-            for call in recent_calls:
-                if isinstance(call, dict):
-                    # Check for timing data that indicates bottlenecks
-                    call_id = call.get('call_id', 'Unknown')
+            # Scan conversation history for live bottlenecks
+            for call_id, call_messages in conversation_history.items():
+                if isinstance(call_messages, list):
+                    # Check the last few messages for timing data
+                    recent_messages = call_messages[-3:] if len(call_messages) >= 3 else call_messages
                     
-                    # Check for Grok AI bottlenecks
-                    if 'grok_time' in call:
-                        try:
-                            grok_time = float(call.get('grok_time', 0))
-                            if grok_time > 2.0:
-                                bottlenecks.append({
-                                    "call_id": call_id,
-                                    "operation": "Grok AI Processing",
-                                    "duration": f"{grok_time:.3f}s",
-                                    "timestamp": call.get('timestamp', current_time.strftime('%I:%M:%S %p ET'))
-                                })
-                        except (ValueError, TypeError):
-                            pass
-                    
-                    # Check for total processing bottlenecks
-                    if 'total_processing_time' in call:
-                        try:
-                            total_time = float(call.get('total_processing_time', 0))
-                            if total_time > 2.0:
-                                bottlenecks.append({
-                                    "call_id": call_id,
-                                    "operation": "Total Background Processing",
-                                    "duration": f"{total_time:.3f}s",
-                                    "timestamp": call.get('timestamp', current_time.strftime('%I:%M:%S %p ET'))
-                                })
-                        except (ValueError, TypeError):
-                            pass
-                    
-                    # Check for explicit bottlenecks array
-                    if 'bottlenecks' in call and isinstance(call['bottlenecks'], list):
-                        for bottleneck in call['bottlenecks']:
-                            if isinstance(bottleneck, dict):
-                                bottlenecks.append({
-                                    "call_id": call_id,
-                                    "operation": bottleneck.get('operation', 'Unknown'),
-                                    "duration": bottleneck.get('duration', 'Unknown'),
-                                    "timestamp": call.get('timestamp', current_time.strftime('%I:%M:%S %p ET'))
-                                })
+                    for message in recent_messages:
+                        if isinstance(message, dict):
+                            # Check for timing_data bottlenecks
+                            timing_data = message.get('timing_data', {})
+                            for stage, duration in timing_data.items():
+                                try:
+                                    duration_float = float(duration)
+                                    if duration_float > 2.0:
+                                        bottlenecks.append({
+                                            "call_id": call_id,
+                                            "operation": stage.replace('_', ' ').title(),
+                                            "duration": f"{duration_float:.3f}s",
+                                            "timestamp": message.get('timestamp', current_time.strftime('%I:%M:%S %p ET'))
+                                        })
+                                except (ValueError, TypeError):
+                                    pass
+                            
+                            # Check for explicit bottlenecks array
+                            if 'bottlenecks' in message and isinstance(message['bottlenecks'], list):
+                                for bottleneck in message['bottlenecks']:
+                                    if isinstance(bottleneck, dict):
+                                        bottlenecks.append({
+                                            "call_id": call_id,
+                                            "operation": bottleneck.get('operation', 'Unknown'),
+                                            "duration": bottleneck.get('duration', 'Unknown'),
+                                            "timestamp": bottleneck.get('timestamp', current_time.strftime('%I:%M:%S %p ET'))
+                                        })
+                            
+                            # Check for total processing time bottlenecks
+                            total_time = message.get('total_processing_time', 0)
+                            try:
+                                if float(total_time) > 2.0:
+                                    bottlenecks.append({
+                                        "call_id": call_id,
+                                        "operation": "Total Processing",
+                                        "duration": f"{float(total_time):.3f}s",
+                                        "timestamp": message.get('timestamp', current_time.strftime('%I:%M:%S %p ET'))
+                                    })
+                            except (ValueError, TypeError):
+                                pass
             
             # Detect performance issues from recent logs
             performance_warnings = []
