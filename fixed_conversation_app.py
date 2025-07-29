@@ -31,17 +31,6 @@ conversation_history = {}  # Only real phone conversations stored here
 call_recordings = {}
 current_service_issue = None
 
-# ENHANCED HOLD MESSAGE SYSTEM
-HOLD_MESSAGES = [
-    "Give me just a moment while I look that up for you.",
-    "Let me check on that for you right now.",
-    "Hang tight, I'm pulling up the details.",
-    "One second while I process that request.", 
-    "Just a sec — I'm checking that now.",
-    "Hold on, I'm getting that information for you.",
-    "Let me grab those details for you right away."
-]
-
 # PERSISTENT CONVERSATION STORAGE SYSTEM
 def load_conversation_history():
     """Load conversation history from persistent storage"""
@@ -89,42 +78,6 @@ def log_timing_with_bottleneck(stage, duration, request_start_time, call_sid=Non
     timing_data[stage].append(duration)
     if call_sid:
         logger.info(f"[Call {call_sid}] {stage}: {duration:.3f}s {bottleneck}")
-        
-        # Store timing data in conversation history for real-time monitoring
-        if call_sid not in conversation_history:
-            conversation_history[call_sid] = []
-        
-        # Add timing data to the latest conversation entry or create a new one
-        if conversation_history[call_sid]:
-            latest_entry = conversation_history[call_sid][-1]
-            if 'timing_data' not in latest_entry:
-                latest_entry['timing_data'] = {}
-                latest_entry['call_id'] = call_sid
-            latest_entry['timing_data'][stage.lower().replace(' ', '_')] = duration
-            latest_entry['total_processing_time'] = elapsed
-            
-            # Track bottlenecks for real-time detection
-            if duration > 2.0:
-                if 'bottlenecks' not in latest_entry:
-                    latest_entry['bottlenecks'] = []
-                latest_entry['bottlenecks'].append({
-                    'operation': stage,
-                    'duration': f"{duration:.3f}s",
-                    'threshold_exceeded': True,
-                    'timestamp': datetime.now().isoformat()
-                })
-        else:
-            # Create new entry for timing data
-            conversation_history[call_sid].append({
-                'timestamp': datetime.now().isoformat(),
-                'speaker': 'System',
-                'message': f'Performance monitoring for call {call_sid}',
-                'caller_phone': 'System',
-                'call_id': call_sid,
-                'timing_data': {stage.lower().replace(' ', '_'): duration},
-                'total_processing_time': elapsed,
-                'bottlenecks': [{'operation': stage, 'duration': f"{duration:.3f}s", 'threshold_exceeded': True, 'timestamp': datetime.now().isoformat()}] if duration > 2.0 else []
-            })
 
 def log_timing(stage, duration, call_sid=None):
     """Legacy timing function - kept for compatibility"""
@@ -485,17 +438,6 @@ def create_app():
                                         <span class="status-healthy">●</span> CONNECTED
                                     </div>
                                 </div>
-                            </div>
-                        </div>
-
-                        <!-- Application Error Status -->
-                        <div class="card mb-4">
-                            <div class="card-header d-flex justify-content-between align-items-center">
-                                <h5 class="mb-0">🛠️ Application Status</h5>
-                                <button class="btn btn-sm btn-outline-light" onclick="refreshApplicationStatus()">🔄 Refresh</button>
-                            </div>
-                            <div class="card-body">
-                                <div id="application-status-section">Loading application status...</div>
                             </div>
                         </div>
 
@@ -936,91 +878,10 @@ def create_app():
                     }, 3000);
                 }
 
-                // Load application status
-                function loadApplicationStatus() {
-                    fetch('/api/application-status')
-                        .then(response => response.json())
-                        .then(data => {
-                            const container = document.getElementById('application-status-section');
-                            
-                            const statusColor = data.application_status === 'OPERATIONAL' ? 'success' : 
-                                               data.application_status.includes('PERFORMANCE') ? 'warning' : 'danger';
-                            const statusIcon = data.application_status === 'OPERATIONAL' ? '✅' : 
-                                              data.application_status.includes('PERFORMANCE') ? '⚠️' : '❌';
-                            
-                            container.innerHTML = `
-                                <div class="row mb-3">
-                                    <div class="col-md-12">
-                                        <div class="alert alert-${statusColor} mb-3">
-                                            <strong>${statusIcon} ${data.application_status}</strong> - ${data.total_errors} issues detected
-                                            ${data.bottleneck_count ? `<br><span class="badge bg-warning">${data.bottleneck_count} bottlenecks detected</span>` : ''}
-                                            <br><small>Last check: ${data.last_check}</small>
-                                        </div>
-                                    </div>
-                                </div>
-                                
-                                <div class="row mb-3">
-                                    <div class="col-md-6">
-                                        <h6>System Health:</h6>
-                                        <ul class="list-unstyled">
-                                            ${Object.entries(data.system_health).map(([key, value]) => {
-                                                const badgeColor = value.includes('BOTTLENECK') || value.includes('DELAYS') ? 'warning' : 
-                                                                  value.includes('WORKING') || value.includes('OPERATIONAL') || value.includes('ENHANCED') || value.includes('SUCCESS') ? 'success' : 'secondary';
-                                                const displayKey = key.replace(/_/g, ' ').toUpperCase();
-                                                return `<li class="mb-2"><span class="badge bg-${badgeColor} me-2">${value}</span> <strong>${displayKey}</strong></li>`;
-                                            }).join('')}
-                                        </ul>
-                                    </div>
-                                    <div class="col-md-6">
-                                        <h6>Resolution Status:</h6>
-                                        <div class="row">
-                                            ${Object.entries(data.resolution_status).map(([key, value]) => 
-                                                `<div class="col-12 mb-1"><small><strong>${value}</strong> ${key.replace(/_/g, ' ').toUpperCase()}</small></div>`
-                                            ).join('')}
-                                        </div>
-                                    </div>
-                                </div>
-                                
-                                <div class="row">
-                                    <div class="col-md-12">
-                                        <h6>Recent Operations:</h6>
-                                        <div style="max-height: 150px; overflow-y: auto;">
-                                            ${data.recent_operations.map(op => {
-                                                const badgeColor = op.status.includes('SUCCESS') ? 'success' : 
-                                                                  op.status.includes('BOTTLENECK') || op.status.includes('DELAYED') ? 'warning' : 'danger';
-                                                return `<div class="d-flex justify-content-between align-items-center border-bottom py-1">
-                                                    <span><strong>${op.operation}</strong>: ${op.details}</span>
-                                                    <span class="badge bg-${badgeColor}">${op.status}</span>
-                                                </div>`;
-                                            }).join('')}
-                                            
-                                            ${data.recent_errors && data.recent_errors.length > 0 ? 
-                                                `<div class="mt-2"><h6>Recent Issues:</h6>
-                                                ${data.recent_errors.map(error => 
-                                                    `<div class="alert alert-warning py-1 px-2 mb-1"><small>${error}</small></div>`
-                                                ).join('')}</div>` : ''
-                                            }
-                                        </div>
-                                    </div>
-                                </div>
-                            `;
-                        })
-                        .catch(error => {
-                            console.error('Error loading application status:', error);
-                            document.getElementById('application-status-section').innerHTML = 
-                                '<div class="alert alert-warning">Error loading application status.</div>';
-                        });
-                }
-                
-                function refreshApplicationStatus() {
-                    loadApplicationStatus();
-                }
-
                 // Initial load
                 loadUnifiedLogs();
                 loadCallHistory();
                 loadWarmupStatus();
-                loadApplicationStatus();
             </script>
         </body>
         </html>
@@ -1055,170 +916,6 @@ def create_app():
                 "Rent Manager": {"healthy": True, "status": "HEALTHY", "last_check": "12:50 PM ET"}
             },
             "overall_status": "All services operational"
-        })
-
-    @app.route("/api/application-status", methods=["GET"])
-    def application_status():
-        """Comprehensive application error reporting system with real-time bottleneck detection"""
-        import time
-        from datetime import datetime
-        import json
-        
-        current_time = get_eastern_time()
-        
-        # Check recent errors and bottlenecks in logs
-        recent_errors = []
-        bottlenecks = []
-        error_count = 0
-        recent_operations = []
-        
-        try:
-            # Check for recent bottlenecks from conversation history safely
-            recent_calls = []
-            if conversation_history and len(conversation_history) > 0:
-                try:
-                    recent_calls = list(conversation_history)[-10:] if len(conversation_history) >= 10 else list(conversation_history)
-                except (TypeError, IndexError):
-                    recent_calls = []
-            
-            # Scan conversation history for live bottlenecks
-            for call_id, call_messages in conversation_history.items():
-                if isinstance(call_messages, list):
-                    # Check the last few messages for timing data
-                    recent_messages = call_messages[-3:] if len(call_messages) >= 3 else call_messages
-                    
-                    for message in recent_messages:
-                        if isinstance(message, dict):
-                            # Check for timing_data bottlenecks
-                            timing_data = message.get('timing_data', {})
-                            for stage, duration in timing_data.items():
-                                try:
-                                    duration_float = float(duration)
-                                    if duration_float > 2.0:
-                                        bottlenecks.append({
-                                            "call_id": call_id,
-                                            "operation": stage.replace('_', ' ').title(),
-                                            "duration": f"{duration_float:.3f}s",
-                                            "timestamp": message.get('timestamp', current_time.strftime('%I:%M:%S %p ET'))
-                                        })
-                                except (ValueError, TypeError):
-                                    pass
-                            
-                            # Check for explicit bottlenecks array
-                            if 'bottlenecks' in message and isinstance(message['bottlenecks'], list):
-                                for bottleneck in message['bottlenecks']:
-                                    if isinstance(bottleneck, dict):
-                                        bottlenecks.append({
-                                            "call_id": call_id,
-                                            "operation": bottleneck.get('operation', 'Unknown'),
-                                            "duration": bottleneck.get('duration', 'Unknown'),
-                                            "timestamp": bottleneck.get('timestamp', current_time.strftime('%I:%M:%S %p ET'))
-                                        })
-                            
-                            # Check for total processing time bottlenecks
-                            total_time = message.get('total_processing_time', 0)
-                            try:
-                                if float(total_time) > 2.0:
-                                    bottlenecks.append({
-                                        "call_id": call_id,
-                                        "operation": "Total Processing",
-                                        "duration": f"{float(total_time):.3f}s",
-                                        "timestamp": message.get('timestamp', current_time.strftime('%I:%M:%S %p ET'))
-                                    })
-                            except (ValueError, TypeError):
-                                pass
-            
-            # Detect performance issues from recent logs
-            performance_warnings = []
-            if bottlenecks:
-                error_count += len(bottlenecks)
-                for b in bottlenecks:
-                    performance_warnings.append(f"⚠️ BOTTLENECK: {b['operation']} took {b['duration']} in call {b['call_id']}")
-            
-            # Check for recent processing delays (from current session)
-            current_session_issues = []
-            if len(recent_calls) > 0:
-                latest_call = recent_calls[-1]
-                if isinstance(latest_call, dict) and 'grok_time' in latest_call:
-                    try:
-                        grok_time = float(latest_call.get('grok_time', 0))
-                        if grok_time > 3.0:
-                            current_session_issues.append("⚠️ Grok AI processing delay detected")
-                            error_count += 1
-                    except (ValueError, TypeError):
-                        pass
-            
-            # Recent successful operations (real data from logs)  
-            latest_call_id = "CA46cf4bf69565b4f3f0913d55391be1ff"  # From live logs
-            bottleneck_status = "⚠️ BOTTLENECK DETECTED" if len(bottlenecks) > 0 else "✅ SUCCESS"
-            
-            recent_operations = [
-                {"operation": "Latest Call Connection", "status": "⚠️ DELAYED" if current_session_issues or bottlenecks else "✅ SUCCESS", 
-                 "timestamp": current_time.strftime('%I:%M:%S %p ET'), 
-                 "details": f"Call {latest_call_id} - {len(bottlenecks)} bottlenecks detected"},
-                {"operation": "Grok AI Processing", "status": "⚠️ BOTTLENECK" if any("Grok" in b.get('operation', '') for b in bottlenecks) else "✅ SUCCESS", 
-                 "timestamp": current_time.strftime('%I:%M:%S %p ET'), 
-                 "details": "3.304s processing time - exceeds 2s threshold"},
-                {"operation": "Background Processing", "status": bottleneck_status, 
-                 "timestamp": current_time.strftime('%I:%M:%S %p ET'), 
-                 "details": f"Total processing: 3.763s - {len(bottlenecks)} bottlenecks found"},
-                {"operation": "ElevenLabs Audio Generation", "status": "✅ SUCCESS", 
-                 "timestamp": current_time.strftime('%I:%M:%S %p ET'), 
-                 "details": "0.418s generation time - within threshold"},
-                {"operation": "TwiML Response Format", "status": "✅ SUCCESS", 
-                 "timestamp": current_time.strftime('%I:%M:%S %p ET'), 
-                 "details": "All endpoints returning proper XML format"}
-            ]
-            
-            # Add performance warnings to recent errors
-            recent_errors.extend(performance_warnings)
-            recent_errors.extend(current_session_issues)
-            
-        except Exception as e:
-            recent_errors.append(f"Status check error: {e}")
-            error_count += 1
-            # Fallback operations in case of error
-            recent_operations = [
-                {"operation": "Error Recovery", "status": "⚠️ FALLBACK", 
-                 "timestamp": current_time.strftime('%I:%M:%S %p ET'), 
-                 "details": f"Application status check failed: {str(e)[:100]}"}
-            ]
-        
-        # Determine overall system status
-        has_bottlenecks = len(bottlenecks) > 0
-        has_errors = error_count > 0
-        overall_status = "OPERATIONAL"
-        if has_bottlenecks and has_errors:
-            overall_status = "ERRORS & BOTTLENECKS DETECTED"
-        elif has_bottlenecks:
-            overall_status = "PERFORMANCE ISSUES DETECTED"
-        elif has_errors:
-            overall_status = "ERRORS DETECTED"
-            
-        return jsonify({
-            "application_status": overall_status,
-            "total_errors": error_count,
-            "bottleneck_count": len(bottlenecks),
-            "last_check": current_time.strftime('%B %d, %Y at %I:%M:%S %p ET'),
-            "recent_operations": recent_operations,
-            "recent_errors": recent_errors,
-            "bottlenecks": bottlenecks,
-            "system_health": {
-                "call_connection": "EXPERIENCING DELAYS" if has_bottlenecks else "WORKING",
-                "background_processing": "BOTTLENECKS DETECTED" if has_bottlenecks else "STABLE", 
-                "error_handling": "ROBUST",
-                "hold_messages": "ENHANCED",
-                "voice_synthesis": "OPERATIONAL",
-                "grok_ai_performance": "BOTTLENECK DETECTED" if any("Grok" in b.get('operation', '') for b in bottlenecks) else "NORMAL"
-            },
-            "resolution_status": {
-                "application_errors": "✅ COMPLETELY FIXED",
-                "syntax_errors": "✅ RESOLVED", 
-                "timeout_issues": "⚠️ MONITORING - 3.796s processing detected",
-                "twiml_responses": "✅ CORRECTED",
-                "error_recovery": "✅ IMPLEMENTED",
-                "performance_monitoring": "🔍 ACTIVE - Real-time bottleneck detection"
-            }
         })
 
     @app.route("/constraints", methods=["GET"])
@@ -1969,43 +1666,18 @@ log #{log_entry['id']:03d} – {log_entry['date']}
 
     @app.route("/get-background-response/<call_sid>", methods=["GET", "POST"])  
     def get_background_response(call_sid):
-        """Retrieve background processing results with IMMEDIATE response to prevent application errors"""
-        
-        # ===== COMPREHENSIVE LOGGING SYSTEM =====
-        logger.info(f"[GET-BACKGROUND] CallSid: {call_sid}")
-        logger.info(f"[GET-BACKGROUND] Method: {request.method}")
-        logger.info(f"[GET-BACKGROUND] Headers: {dict(request.headers)}")
-        logger.info(f"[GET-BACKGROUND] Form Data: {dict(request.form)}")
-        logger.info(f"[GET-BACKGROUND] Values: {dict(request.values)}")
-        
+        """Retrieve background processing results and continue conversation"""
         try:
-            # IMMEDIATE RESPONSE: Don't wait at all - return instantly if processing
-            if call_sid in background_processing and call_sid not in background_results:
-                logger.error(f"[ERROR] FORCING IMMEDIATE RESPONSE - Background still processing")
-                response_text = "I understand. Let me help you with that right away."
-                
-                # Return immediate TwiML without waiting
-                import urllib.parse
-                twiml_response = f"""<?xml version="1.0" encoding="UTF-8"?>
-                <Response>
-                    <Play>https://{request.headers.get('Host', 'localhost:5000')}/generate-audio/{call_sid}?text={urllib.parse.quote(response_text)}</Play>
-                    <Gather input="speech" timeout="8" speechTimeout="4" action="/handle-speech/{call_sid}" method="POST">
-                    </Gather>
-                    <Redirect>/handle-speech/{call_sid}</Redirect>
-                </Response>"""
-                
-                logger.info(f"[FINAL-TWIML] IMMEDIATE Response: {twiml_response}")
-                return twiml_response
-            
-            # IMMEDIATE RESPONSE: Return instantly without waiting
+            # Wait up to 10 seconds for background processing to complete
             import time
-            max_wait = 0.5  # Maximum 0.5 seconds wait
-            wait_interval = 0.1  # Ultra-fast polling
+            max_wait = 10
+            wait_interval = 0.5
             waited = 0
             
             while call_sid not in background_responses and waited < max_wait:
                 time.sleep(wait_interval)
                 waited += wait_interval
+                logger.info(f"⏳ Waiting for background processing: {waited:.1f}s")
             
             if call_sid in background_responses:
                 result = background_responses[call_sid]
@@ -2045,8 +1717,8 @@ log #{log_entry['id']:03d} – {log_entry['date']}
                     <Redirect>/handle-speech/{call_sid}</Redirect>
                 </Response>"""
             else:
-                logger.warning(f"⏰ Background processing timeout for {call_sid} after 2s - using instant fallback")
-                response_text = "I understand. Let me help you with that right away."
+                logger.warning(f"⏰ Background processing timeout for {call_sid}")
+                response_text = "I'm here to help. What can I do for you?"
                 
                 import urllib.parse
                 return f"""<?xml version="1.0" encoding="UTF-8"?>
@@ -2069,48 +1741,40 @@ log #{log_entry['id']:03d} – {log_entry['date']}
                 </Gather>
                 <Redirect>/handle-speech/{call_sid}</Redirect>
             </Response>"""
-            
-            import urllib.parse
-            return f"""<?xml version="1.0" encoding="UTF-8"?>
-            <Response>
-                <Play>https://{request.headers.get('Host', 'localhost:5000')}/generate-audio/{call_sid}?text={urllib.parse.quote(response_text)}</Play>
-                <Gather input="speech" timeout="8" speechTimeout="4" action="/handle-speech/{call_sid}" method="POST">
-                </Gather>
-                <Redirect>/handle-speech/{call_sid}</Redirect>
-            </Response>"""
 
     # Global storage for background processing results
     background_responses = {}
     
-    def process_complex_request_background(call_sid, speech_result, caller_phone, request_start_time, host_header):
+    def process_complex_request_background(call_sid, speech_result, caller_phone, request_start_time):
         """Process complex requests in background with detailed timing"""
         try:
             # This contains the main AI processing logic from the original function
             # ⏰ TIMING: Grok AI Processing
             grok_start = time.time()
             
-            # ULTRA-FAST: Minimal conversation context to reduce processing time
+            # Build conversation context (simplified version)
             conversation_context = ""
             if call_sid in conversation_history:
-                recent_messages = conversation_history[call_sid][-3:]  # Only last 3 for speed
+                recent_messages = conversation_history[call_sid][-10:]  # Last 10 for context
+                conversation_context = "\n\nConversation so far:\n"
                 for msg in recent_messages:
                     speaker = msg.get('speaker', 'Unknown')
                     message = msg.get('message', '')
                     conversation_context += f"{speaker}: {message}\n"
             
-            # AGGRESSIVE: Ultra-short AI prompt for maximum speed
-            system_content = f"""You are Chris from Grinberg Management. Keep responses under 15 words.{conversation_context}"""
+            # Create AI prompt
+            system_content = f"""You are Chris from Grinberg Management. You're intelligent, helpful, and avoid repetitive questions.
+            Keep responses under 25 words and sound natural.{conversation_context}"""
             
             messages = [
                 {"role": "system", "content": system_content},
                 {"role": "user", "content": f"Current input: {speech_result}"}
             ]
             
-            # AGGRESSIVE OPTIMIZATION: Generate response with Grok AI
+            # Generate response with Grok AI
             from grok_integration import GrokAI
             grok_ai_instance = GrokAI()
-            # EXTREME OPTIMIZATION: Absolute minimum settings to prevent timeouts
-            response_text = grok_ai_instance.generate_response(messages, max_tokens=10, temperature=0.7, timeout=0.3)
+            response_text = grok_ai_instance.generate_response(messages, max_tokens=80, temperature=0.7, timeout=3.0)
             grok_time = time.time() - grok_start
             log_timing_with_bottleneck("Background Grok AI", grok_time, request_start_time, call_sid)
             
@@ -2122,12 +1786,12 @@ log #{log_entry['id']:03d} – {log_entry['date']}
                 # Generate audio with ElevenLabs in background
                 import urllib.parse
                 encoded_text = urllib.parse.quote(response_text)
-                audio_url = f"https://{host_header}/generate-audio/{call_sid}?text={encoded_text}"
+                audio_url = f"https://{request.headers.get('Host', 'localhost:5000')}/generate-audio/{call_sid}?text={encoded_text}"
                 
-                # AGGRESSIVE: Pre-generate the audio to cache it with reduced timeout
+                # Pre-generate the audio to cache it
                 try:
                     import requests
-                    cache_request = requests.get(audio_url, timeout=0.5)
+                    cache_request = requests.get(audio_url, timeout=3.0)
                     if cache_request.status_code == 200:
                         logger.info(f"✅ Audio pre-cached for background response")
                 except:
@@ -2148,91 +1812,23 @@ log #{log_entry['id']:03d} – {log_entry['date']}
             
         except Exception as e:
             logger.error(f"❌ Background processing error: {e}")
-            # Provide immediate response to prevent application error
             return {
-                'success': True,
-                'response_text': 'I understand. Let me help you with that right away.',
-                'audio_url': None,
+                'error': True,
+                'message': 'I encountered a technical issue. Let me help you anyway. What can I do for you?',
                 'processing_time': time.time() - request_start_time
             }
     
     @app.route("/handle-speech/<call_sid>", methods=["POST"])
     def handle_speech(call_sid):
-        """EMERGENCY BYPASS: Instant responses only - NO AI processing to eliminate application errors"""
+        """TWO-STEP response handler with immediate hold message and background processing"""
+        # ⏰ START REQUEST TIMING
+        request_start_time = time.time()
         
         try:
-            # Get basic data
-            speech_result = request.form.get('SpeechResult', '').strip().lower()
-            caller_phone = request.form.get('From', '')
-            
-            logger.error(f"🚨 EMERGENCY BYPASS: CallSid: {call_sid}, Speech: '{speech_result}', From: {caller_phone}")
-            
-            # INSTANT RESPONSES - No AI processing
-            if any(word in speech_result for word in ['hello', 'hi', 'hey', 'good morning']):
-                response_text = "Hello! How can I help you today?"
-            elif 'maintenance' in speech_result or 'issue' in speech_result or 'problem' in speech_result:
-                response_text = "I understand you have a maintenance issue. Can you tell me your address?"
-            elif 'electrical' in speech_result:
-                response_text = "I'll help with your electrical issue. What's your address?"
-            elif 'plumbing' in speech_result:
-                response_text = "I'll help with your plumbing issue. What's your address?"
-            elif 'heating' in speech_result:
-                response_text = "I'll help with your heating issue. What's your address?"
-            elif 'office' in speech_result or 'open' in speech_result:
-                response_text = "We're open Monday through Friday, 9 AM to 5 PM. How can I help?"
-            else:
-                response_text = "I understand. How can I help you today?"
-            
-            logger.error(f"🚨 EMERGENCY RESPONSE: '{response_text}'")
-            
-            # Return immediate TwiML
-            import urllib.parse
-            encoded_text = urllib.parse.quote(response_text)
-            host = request.headers.get('Host', 'localhost:5000')
-            
-            twiml_response = f"""<?xml version="1.0" encoding="UTF-8"?>
-            <Response>
-                <Play>https://{host}/generate-audio/{call_sid}?text={encoded_text}</Play>
-                <Gather input="speech" timeout="8" speechTimeout="4" action="/handle-speech/{call_sid}" method="POST">
-                </Gather>
-                <Redirect>/handle-speech/{call_sid}</Redirect>
-            </Response>"""
-            
-            logger.error(f"🚨 EMERGENCY TWIML: {twiml_response}")
-            return twiml_response
-            
-        except Exception as e:
-            logger.error(f"🚨 EMERGENCY ERROR: {e}")
-            
-            # ABSOLUTE FALLBACK
-            return f"""<?xml version="1.0" encoding="UTF-8"?>
-            <Response>
-                <Say>I understand. How can I help you?</Say>
-                <Gather input="speech" timeout="8" speechTimeout="4" action="/handle-speech/{call_sid}" method="POST">
-                </Gather>
-                <Redirect>/handle-speech/{call_sid}</Redirect>
-            </Response>"""
-        
-        # ===== COMPREHENSIVE LOGGING SYSTEM =====
-        logger.info(f"[HANDLE-SPEECH] CallSid: {call_sid}")
-        logger.info(f"[HANDLE-SPEECH] Method: {request.method}")
-        logger.info(f"[HANDLE-SPEECH] Headers: {dict(request.headers)}")
-        logger.info(f"[HANDLE-SPEECH] Form Data: {dict(request.form)}")
-        logger.info(f"[HANDLE-SPEECH] Values: {dict(request.values)}")
-        
-        try:
-            # ⏰ START REQUEST TIMING
-            request_start_time = time.time()
             # ⏰ 1. SPEECH TRANSCRIPTION TIMING
             transcription_start = time.time()
             speech_result = request.values.get("SpeechResult", "").lower().strip()
             caller_phone = request.values.get("From", "")
-            
-            # ===== DETAILED SPEECH LOGGING =====
-            logger.info(f"[SPEECH-DATA] SpeechResult: '{speech_result}' (length: {len(speech_result)})")
-            logger.info(f"[SPEECH-DATA] CallSid: {call_sid}")
-            logger.info(f"[SPEECH-DATA] From: {caller_phone}")
-            logger.info(f"[SPEECH-DATA] Confidence: {request.values.get('Confidence', 'N/A')}")
             transcription_time = time.time() - transcription_start
             log_timing_with_bottleneck("Speech transcription processing", transcription_time, request_start_time, call_sid)
             
@@ -2244,15 +1840,9 @@ log #{log_entry['id']:03d} – {log_entry['date']}
                 'are you open', 'what time', 'office hours', 'how are you'
             ])
             
-            # ===== CONVERSATION STORAGE WITH ERROR PROTECTION =====
-            global conversation_history
-            try:
-                if call_sid not in conversation_history:
-                    conversation_history[call_sid] = []
-            except Exception as storage_error:
-                logger.error(f"[ERROR] Conversation storage failed: {storage_error}")
-                # Initialize minimal conversation storage
-                conversation_history = {call_sid: []}
+            # Store conversation
+            if call_sid not in conversation_history:
+                conversation_history[call_sid] = []
             
             # Only store non-empty speech results to prevent incomplete transcriptions
             if speech_result and len(speech_result.strip()) > 0:
@@ -2301,18 +1891,12 @@ log #{log_entry['id']:03d} – {log_entry['date']}
             else:
                 logger.info("⏳ BACKGROUND PROCESSING: Complex request detected, returning hold message immediately")
                 
-                # Select random hold message for variety
-                import random
-                hold_message = random.choice(HOLD_MESSAGES)
-                logger.info(f"🎭 HOLD MESSAGE VARIANT: '{hold_message}'")
-                
                 # Start background processing in thread
                 import threading
-                host_header = request.headers.get('Host', 'localhost:5000')  # Get host before thread
                 def background_process():
                     try:
                         # Process in background and store result
-                        result = process_complex_request_background(call_sid, speech_result, caller_phone, request_start_time, host_header)
+                        result = process_complex_request_background(call_sid, speech_result, caller_phone, request_start_time)
                         background_responses[call_sid] = result
                         logger.info(f"✅ Background processing complete for {call_sid}")
                     except Exception as e:
@@ -2327,14 +1911,15 @@ log #{log_entry['id']:03d} – {log_entry['date']}
                 thread.daemon = True
                 thread.start()
                 
-                # Return immediate hold message with faster speed
+                # Return immediate hold message
+                hold_message = "Please hold for just a moment while I process that for you."
                 twiml_return_time = time.time() - request_start_time
                 log_timing_with_bottleneck("TwiML return (hold message)", twiml_return_time, request_start_time, call_sid)
                 
                 import urllib.parse
                 return f"""<?xml version="1.0" encoding="UTF-8"?>
                 <Response>
-                    <Play>https://{request.headers.get('Host', 'localhost:5000')}/generate-audio/{call_sid}?text={urllib.parse.quote(hold_message)}&speed=1.15</Play>
+                    <Play>https://{request.headers.get('Host', 'localhost:5000')}/generate-audio/{call_sid}?text={urllib.parse.quote(hold_message)}</Play>
                     <Redirect>/get-background-response/{call_sid}</Redirect>
                 </Response>"""
             
@@ -2662,8 +2247,8 @@ log #{log_entry['id']:03d} – {log_entry['date']}
                 # ⏰ 2. GROK AI PROCESSING TIMING
                 grok_start = time.time()
                 try:
-                    # AGGRESSIVE OPTIMIZATION: Ultra-fast responses
-                    response_text = grok_ai.generate_response(messages, max_tokens=50, temperature=0.7, timeout=1.5)
+                    # OPTIMIZED: Reduced max_tokens for faster responses
+                    response_text = grok_ai.generate_response(messages, max_tokens=80, temperature=0.7, timeout=3.0)
                     grok_time = time.time() - grok_start
                     log_timing_with_bottleneck("Grok AI processing", grok_time, request_start_time, call_sid)
                     
@@ -2675,7 +2260,7 @@ log #{log_entry['id']:03d} – {log_entry['date']}
                         retry_start = time.time()
                         enhanced_messages = messages.copy()
                         enhanced_messages[0]["content"] += "\n\nIMPORTANT: Please provide a helpful, complete response to assist the caller. Do not return empty responses."
-                        response_text = grok_ai.generate_response(enhanced_messages, max_tokens=70, temperature=0.8, timeout=2.0)
+                        response_text = grok_ai.generate_response(enhanced_messages, max_tokens=120, temperature=0.8, timeout=4.0)
                         retry_time = time.time() - retry_start
                         log_timing_with_bottleneck("Grok AI retry", retry_time, request_start_time, call_sid)
                         logger.info(f"🔄 ENHANCED RESPONSE: '{response_text}'")
@@ -3023,21 +2608,17 @@ log #{log_entry['id']:03d} – {log_entry['date']}
             elevenlabs_start = time.time()
             import urllib.parse
             
-            # AGGRESSIVE PARALLEL: Queue ElevenLabs generation with speed optimization
+            # Queue ElevenLabs generation in parallel
             def start_elevenlabs_generation():
                 try:
                     from elevenlabs_integration import generate_elevenlabs_audio
-                    audio_path = generate_elevenlabs_audio(
-                        response_text, 
-                        voice_name="adam",
-                        speed=1.3  # 30% faster for maximum speed
-                    )
+                    audio_path = generate_elevenlabs_audio(response_text)
                     return audio_path
                 except Exception as e:
                     logger.error(f"Background ElevenLabs error: {e}")
                     return None
             
-            # Submit to thread pool for parallel processing with timeout
+            # Submit to thread pool for parallel processing
             audio_future = executor.submit(start_elevenlabs_generation)
             
             encoded_text = urllib.parse.quote(response_text)
@@ -3049,38 +2630,8 @@ log #{log_entry['id']:03d} – {log_entry['date']}
             total_time = time.time() - request_start_time
             print_total_timing(call_sid, total_time)
             
-            # 🚨 IMMEDIATE TIMEOUT PROTECTION - PREVENT APPLICATION ERRORS
-            if total_time > 1.0:  # ULTRA-AGGRESSIVE: Force response after 1 second
-                logger.error(f"[ERROR] TIMEOUT PROTECTION ACTIVATED - Response time {total_time:.3f}s > 1.0s limit")
-                response_text = "I understand. Let me help you with that right away."
-                
-                # Store error recovery response
-                conversation_history[call_sid].append({
-                    'timestamp': datetime.now().isoformat(),
-                    'speaker': 'Chris',
-                    'message': response_text,
-                    'caller_phone': caller_phone,
-                    'timeout_protection': True
-                })
-                
-                # Return immediate TwiML with ElevenLabs
-                import urllib.parse
-                encoded_text = urllib.parse.quote(response_text)
-                
-                logger.error(f"[ERROR] FORCED IMMEDIATE RESPONSE due to timeout protection")
-                twiml_response = f"""<?xml version="1.0" encoding="UTF-8"?>
-                <Response>
-                    <Play>https://{request.headers.get('Host', 'localhost:5000')}/generate-audio/{call_sid}?text={encoded_text}</Play>
-                    <Gather input="speech" timeout="8" speechTimeout="4" action="/handle-speech/{call_sid}" method="POST">
-                    </Gather>
-                    <Redirect>/handle-speech/{call_sid}</Redirect>
-                </Response>"""
-                
-                logger.info(f"[FINAL-TWIML] TIMEOUT PROTECTION Response: {twiml_response}")
-                return twiml_response
-            
-            # ===== FINAL TWIML RESPONSE WITH COMPREHENSIVE LOGGING =====
-            twiml_response = f"""<?xml version="1.0" encoding="UTF-8"?>
+            # Return optimized TwiML response
+            return f"""<?xml version="1.0" encoding="UTF-8"?>
             <Response>
                 <Play>https://{request.headers.get('Host', 'localhost:5000')}/generate-audio/{call_sid}?text={encoded_text}</Play>
                 <Gather input="speech" timeout="8" speechTimeout="4" action="/handle-speech/{call_sid}" method="POST">
@@ -3088,61 +2639,13 @@ log #{log_entry['id']:03d} – {log_entry['date']}
                 <Redirect>/handle-speech/{call_sid}</Redirect>
             </Response>"""
             
-            logger.info(f"[FINAL-TWIML] SUCCESS Response: {twiml_response}")
-            return twiml_response
-            
         except Exception as e:
-            logger.error(f"[ERROR] Speech handling error: {e}")
-            logger.error(f"[ERROR] Exception type: {type(e).__name__}")
-            
-            # ===== ERROR TIMING CHECK =====
-            try:
-                total_time = time.time() - request_start_time
-                logger.error(f"[ERROR] Call duration: {total_time:.3f}s")
-                if total_time > 3.0:
-                    logger.error(f"[ERROR] Request exceeded 3 second threshold: {total_time:.3f}s")
-            except:
-                logger.error(f"[ERROR] Could not calculate timing")
-            
-            # ===== COMPREHENSIVE ERROR HANDLING =====
-            fallback_text = "I understand. Let me help you with that right away."
-            
-            try:
-                # Store error response in conversation history  
-                if call_sid not in conversation_history:
-                    conversation_history[call_sid] = []
-                    
-                conversation_history[call_sid].append({
-                    'timestamp': datetime.now().isoformat(),
-                    'speaker': 'Chris',
-                    'message': fallback_text,
-                    'caller_phone': request.values.get("From", ""),
-                    'error_recovery': True
-                })
-                
-                save_conversation_history()
-                
-                # ===== FINAL TWIML LOGGING =====
-                import urllib.parse
-                twiml_response = f"""<?xml version="1.0" encoding="UTF-8"?>
-                <Response>
-                    <Play>https://{request.headers.get('Host', 'localhost:5000')}/generate-audio/{call_sid}?text={urllib.parse.quote(fallback_text)}</Play>
-                    <Gather input="speech" timeout="8" speechTimeout="4" action="/handle-speech/{call_sid}" method="POST">
-                    </Gather>
-                    <Redirect>/handle-speech/{call_sid}</Redirect>
-                </Response>"""
-                
-                logger.info(f"[FINAL-TWIML] Error Recovery Response: {twiml_response}")
-                return twiml_response
-                
-            except Exception as nested_error:
-                logger.error(f"[ERROR] Nested error in error handling: {nested_error}")
-                # Ultimate fallback - simple TwiML that always works
-                return """<?xml version="1.0" encoding="UTF-8"?>
-                <Response>
-                    <Say voice="Polly.Matthew-Neural">I'm here to help. What can I do for you?</Say>
-                    <Gather input="speech" timeout="8" speechTimeout="4"/>
-                </Response>"""
+            logger.error(f"Speech handling error: {e}")
+            return """<?xml version="1.0" encoding="UTF-8"?>
+            <Response>
+                <Say voice="Polly.Matthew-Neural">I'm sorry, I had a technical issue. Please try again.</Say>
+                <Gather input="speech" timeout="8" speechTimeout="4"/>
+            </Response>"""
 
     @app.route("/api/calls/history", methods=["GET"])
     def get_call_history():

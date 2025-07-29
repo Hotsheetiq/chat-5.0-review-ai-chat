@@ -16,9 +16,9 @@ logger = logging.getLogger(__name__)
 ELEVENLABS_API_KEY = os.environ.get("ELEVENLABS_API_KEY")
 ELEVENLABS_BASE_URL = "https://api.elevenlabs.io/v1"
 
-# AGGRESSIVE: Audio cache for performance
+# OPTIMIZED: Audio cache for performance
 audio_cache = OrderedDict()
-MAX_CACHE_SIZE = 200  # Doubled cache size for better hit rate
+MAX_CACHE_SIZE = 100
 
 # Available male voices from our ElevenLabs account
 AVAILABLE_VOICES = {
@@ -28,9 +28,9 @@ AVAILABLE_VOICES = {
     "antoni": "ErXwobaYiN019PkySvjV", # Young American male
 }
 
-def generate_elevenlabs_audio(text: str, voice_id: str = None, voice_name: str = "adam", speed: float = 1.0) -> Optional[str]:
+def generate_elevenlabs_audio(text: str, voice_id: str = None, voice_name: str = "adam") -> Optional[str]:
     """
-    OPTIMIZED audio generation with caching, timing, and speed control
+    OPTIMIZED audio generation with caching and timing
     """
     # ⏰ START ELEVENLABS TIMING
     elevenlabs_start = time.time()
@@ -43,8 +43,8 @@ def generate_elevenlabs_audio(text: str, voice_id: str = None, voice_name: str =
     if not voice_id:
         voice_id = AVAILABLE_VOICES.get(voice_name, AVAILABLE_VOICES["adam"])
     
-    # Check cache first for performance (include speed in cache key)
-    cache_key = hashlib.md5(f"{text}_{voice_id}_{speed}".encode()).hexdigest()
+    # Check cache first for performance
+    cache_key = hashlib.md5(f"{text}_{voice_id}".encode()).hexdigest()
     if cache_key in audio_cache:
         cached_path = audio_cache[cache_key]
         cache_time = time.time() - elevenlabs_start
@@ -62,9 +62,6 @@ def generate_elevenlabs_audio(text: str, voice_id: str = None, voice_name: str =
             "xi-api-key": ELEVENLABS_API_KEY
         }
         
-        # AGGRESSIVE: Calculate speaking rate based on speed parameter (1.0 = normal, 1.3 = 30% faster)
-        speaking_rate = min(1.8, max(0.5, speed))  # Clamp between 0.5x and 1.8x for maximum speed
-        
         data = {
             "text": text,
             "model_id": "eleven_turbo_v2_5",  # Fastest model for real-time
@@ -72,13 +69,12 @@ def generate_elevenlabs_audio(text: str, voice_id: str = None, voice_name: str =
                 "stability": 0.85,        # VERY HIGH stability for absolutely consistent professional tone
                 "similarity_boost": 0.90, # Maximum consistency for same voice character
                 "style": 0.1,            # MINIMAL style for neutral, professional tone - no emotion variation
-                "use_speaker_boost": True, # Enhanced clarity for phone calls
-                "speaking_rate": speaking_rate  # Speed control for hold messages
+                "use_speaker_boost": True # Enhanced clarity for phone calls
             }
         }
         
         # OPTIMIZED: Reduced timeout for faster failure
-        response = requests.post(url, json=data, headers=headers, timeout=1.5)
+        response = requests.post(url, json=data, headers=headers, timeout=3)
         
         if response.status_code == 200:
             # Save audio to temporary file and cache it
@@ -125,13 +121,23 @@ def get_voice_list():
             voices_data = response.json()
             return voices_data.get("voices", [])
         else:
-            logger.error(f"ElevenLabs voices API error: {response.status_code}")
+            logger.error(f"Error fetching voices: {response.status_code}")
             return []
             
     except Exception as e:
-        logger.error(f"Error fetching ElevenLabs voices: {e}")
+        logger.error(f"Error fetching voice list: {e}")
         return []
 
-def get_voice_id_by_name(voice_name):
-    """Get voice ID by name from available voices"""
-    return AVAILABLE_VOICES.get(voice_name.lower(), AVAILABLE_VOICES["adam"])
+def test_elevenlabs_connection():
+    """Test ElevenLabs API connection"""
+    if not ELEVENLABS_API_KEY:
+        return False, "No API key"
+    
+    try:
+        voices = get_voice_list()
+        if voices:
+            return True, f"Connected - {len(voices)} voices available"
+        else:
+            return False, "API key invalid or no voices"
+    except Exception as e:
+        return False, f"Connection error: {e}"
