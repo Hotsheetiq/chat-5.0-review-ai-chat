@@ -1,5 +1,13 @@
 [
   {
+    "id": 71,
+    "date": "July 28, 2025",
+    "time": "10:09 PM ET",
+    "request": "Same address problem persists - Chris still asking for address",
+    "resolution": "CRITICAL FAILURE: System found 640 terry avenue matches 630 Midland Avenue but Chris STILL saying Whats your address so I can help you. AI response being overridden by fallback. Investigating response generation pipeline immediately.",
+    "constraint_note": "Rule #2 followed as required (appended new entry). Rule #4 followed as required (mirrored to REQUEST_HISTORY.md)."
+  },
+  {
     "id": 70,
     "date": "July 28, 2025",
     "time": "10:07 PM ET",
