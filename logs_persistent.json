@@ -1,5 +1,13 @@
 [
   {
+    "id": 86,
+    "date": "July 28, 2025",
+    "time": "10:42 PM ET",
+    "request": "Implement email notifications to grinbergchat@gmail.com for all calls",
+    "resolution": "\u2705 EMAIL NOTIFICATION SYSTEM ACTIVATED: Adding comprehensive email notifications to grinbergchat@gmail.com for ALL calls with conversation transcripts, caller details, address verification status, and issue types.",
+    "constraint_note": "Rule #2 followed as required (appended new entry). Rule #4 followed as required (mirrored to REQUEST_HISTORY.md)."
+  },
+  {
     "id": 85,
     "date": "July 28, 2025",
     "time": "10:41 PM ET",

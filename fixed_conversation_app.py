@@ -51,6 +51,86 @@ def save_conversation_history():
 # Load existing conversation history on startup
 conversation_history = load_conversation_history()
 
+# EMAIL NOTIFICATION SYSTEM
+def send_call_transcript_email(call_sid, caller_phone, transcript, issue_type=None, address_status="unknown"):
+    """Send call transcript email to grinbergchat@gmail.com"""
+    try:
+        import os
+        from sendgrid import SendGridAPIClient
+        from sendgrid.helpers.mail import Mail, Email, To, Content
+        
+        # Get SendGrid API key
+        sendgrid_key = os.environ.get('SENDGRID_API_KEY')
+        if not sendgrid_key:
+            logger.error("❌ SENDGRID_API_KEY not found - cannot send email")
+            return False
+        
+        sg = SendGridAPIClient(sendgrid_key)
+        
+        # Format email subject and content
+        eastern_time = get_eastern_time()
+        timestamp_str = eastern_time.strftime("%B %d, %Y at %I:%M %p ET")
+        
+        subject = f"Call Transcript - {caller_phone} - {timestamp_str}"
+        
+        # Create comprehensive HTML email content
+        html_content = f"""
+        <html>
+        <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
+            <div style="max-width: 800px; margin: 0 auto; padding: 20px;">
+                <h2 style="color: #2c3e50; border-bottom: 2px solid #3498db; padding-bottom: 10px;">
+                    Grinberg Management Call Transcript
+                </h2>
+                
+                <div style="background-color: #f8f9fa; padding: 15px; border-radius: 5px; margin: 20px 0;">
+                    <h3 style="margin: 0 0 10px 0; color: #2c3e50;">Call Details</h3>
+                    <p><strong>Caller Phone:</strong> {caller_phone}</p>
+                    <p><strong>Call Time:</strong> {timestamp_str}</p>
+                    <p><strong>Call ID:</strong> {call_sid}</p>
+                    <p><strong>Issue Type:</strong> {issue_type or 'Not specified'}</p>
+                    <p><strong>Address Status:</strong> {address_status}</p>
+                </div>
+                
+                <div style="background-color: #fff; border: 1px solid #ddd; padding: 20px; border-radius: 5px;">
+                    <h3 style="color: #2c3e50; margin-bottom: 15px;">Complete Conversation Transcript</h3>
+                    <div style="background-color: #f8f9fa; padding: 15px; border-radius: 3px; font-family: 'Courier New', monospace; white-space: pre-wrap; font-size: 14px;">
+{transcript}
+                    </div>
+                </div>
+                
+                <div style="margin-top: 20px; padding: 15px; background-color: #e8f4f8; border-radius: 5px;">
+                    <h4 style="color: #2c3e50; margin: 0 0 10px 0;">Next Actions</h4>
+                    <ul style="margin: 0; padding-left: 20px;">
+                        <li>Review conversation for any follow-up needed</li>
+                        <li>Address verification status: {address_status}</li>
+                        <li>Contact caller if additional information required</li>
+                    </ul>
+                </div>
+                
+                <p style="margin-top: 30px; font-size: 12px; color: #666; border-top: 1px solid #ddd; padding-top: 15px;">
+                    This is an automated transcript from the Grinberg Management voice assistant system.
+                </p>
+            </div>
+        </body>
+        </html>
+        """
+        
+        # Create and send email
+        message = Mail(
+            from_email=Email("noreply@grinberg.management"),
+            to_emails=To("grinbergchat@gmail.com"),
+            subject=subject,
+            html_content=Content("text/html", html_content)
+        )
+        
+        response = sg.send(message)
+        logger.info(f"✅ EMAIL SENT: Call transcript sent to grinbergchat@gmail.com (Status: {response.status_code})")
+        return True
+        
+    except Exception as e:
+        logger.error(f"❌ EMAIL ERROR: Failed to send transcript email: {e}")
+        return False
+
 def get_eastern_time():
     """Get current Eastern Time"""
     eastern = pytz.timezone('US/Eastern')
@@ -1490,6 +1570,60 @@ log #{log_entry['id']:03d} – {log_entry['date']}
             # Save conversation to persistent storage
             save_conversation_history()
             
+            # EMAIL NOTIFICATION: Send transcript after each interaction for comprehensive tracking
+            try:
+                # Build transcript for email
+                transcript_lines = []
+                issue_type = None
+                address_status = "unknown"
+                
+                for msg in conversation_history[call_sid]:
+                    timestamp = msg.get('timestamp', '')
+                    speaker = msg.get('speaker', 'Unknown')
+                    message = msg.get('message', '')
+                    
+                    # Detect issue type
+                    if not issue_type:
+                        if any(word in message.lower() for word in ['heating', 'heat', 'temperature']):
+                            issue_type = 'Heating'
+                        elif any(word in message.lower() for word in ['electrical', 'electric', 'power', 'lights']):
+                            issue_type = 'Electrical'
+                        elif any(word in message.lower() for word in ['plumbing', 'water', 'leak', 'pipe']):
+                            issue_type = 'Plumbing'
+                    
+                    # Detect address status
+                    if msg.get('unverified_address_proceeding'):
+                        address_status = f"Unverified - {msg.get('address_for_email', 'Unknown address')}"
+                    elif 'Great! I found' in message:
+                        address_status = "Verified"
+                    elif msg.get('address_spelling_request'):
+                        address_status = "Spelling requested"
+                    
+                    # Format timestamp
+                    try:
+                        from datetime import datetime
+                        dt = datetime.fromisoformat(timestamp.replace('Z', '+00:00'))
+                        time_str = dt.strftime('[%H:%M:%S]')
+                    except:
+                        time_str = '[--:--:--]'
+                    
+                    transcript_lines.append(f"{time_str} {speaker}: {message}")
+                
+                full_transcript = "\n".join(transcript_lines)
+                
+                # Send email notification
+                send_call_transcript_email(
+                    call_sid=call_sid,
+                    caller_phone=caller_phone,
+                    transcript=full_transcript,
+                    issue_type=issue_type,
+                    address_status=address_status
+                )
+                
+            except Exception as email_error:
+                logger.error(f"❌ EMAIL NOTIFICATION ERROR: {email_error}")
+                # Continue processing even if email fails
+            
             # REAL ADDRESS VERIFICATION using Rent Manager API
             address_context = ""
             verified_address = None
@@ -1818,13 +1952,14 @@ log #{log_entry['id']:03d} – {log_entry['date']}
                         logger.info(f"🔄 CONTINUING WITH UNVERIFIED ADDRESS: {unverified_address} after spelling attempt")
                         response_text = f"Thank you for the spelling. I still can't find that exact address in our system, but let me help you anyway. What's the issue you're experiencing?"
                         
-                        # Continue conversation without email notification
+                        # Continue conversation and prepare for email notification
                         conversation_history[call_sid].append({
                             'timestamp': datetime.now().isoformat(),
                             'speaker': 'Chris',
                             'message': response_text,
                             'caller_phone': caller_phone,
-                            'unverified_address_proceeding': True
+                            'unverified_address_proceeding': True,
+                            'address_for_email': unverified_address
                         })
                     
                     elif remembered_issue:
