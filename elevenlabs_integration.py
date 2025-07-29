@@ -28,40 +28,6 @@ AVAILABLE_VOICES = {
     "antoni": "ErXwobaYiN019PkySvjV", # Young American male
 }
 
-def generate_elevenlabs_audio(text: str, voice_id: str = None, voice_name: str = "adam") -> Optional[str]:
-    """
-    OPTIMIZED audio generation with caching and timing
-    """
-    # ⏰ START ELEVENLABS TIMING
-    elevenlabs_start = time.time()
-    
-    if not ELEVENLABS_API_KEY:
-        logger.warning("ElevenLabs API key not available")
-        return None
-    
-    # Use voice_id if provided, otherwise get from voice_name
-    if not voice_id:
-        voice_id = AVAILABLE_VOICES.get(voice_name, AVAILABLE_VOICES["adam"])
-    
-    # Check cache first for performance
-    cache_key = hashlib.md5(f"{text}_{voice_id}".encode()).hexdigest()
-    if cache_key in audio_cache:
-        cached_path = audio_cache[cache_key]
-        cache_time = time.time() - elevenlabs_start
-        logger.info(f"[Timing] ElevenLabs cache hit: {cache_time:.3f} seconds")
-        # Move to end (most recently used)
-        audio_cache.move_to_end(cache_key)
-        return cached_path
-    
-    try:
-        url = f"{ELEVENLABS_BASE_URL}/text-to-speech/{voice_id}"
-        
-        headers = {
-            "Accept": "audio/mpeg",
-            "Content-Type": "application/json",
-            "xi-api-key": ELEVENLABS_API_KEY
-        }
-        
 def generate_elevenlabs_audio(text: str, voice_id: str = None, voice_name: str = "adam", speed: float = 1.0) -> Optional[str]:
     """
     OPTIMIZED audio generation with caching, timing, and speed control
@@ -159,23 +125,13 @@ def get_voice_list():
             voices_data = response.json()
             return voices_data.get("voices", [])
         else:
-            logger.error(f"Error fetching voices: {response.status_code}")
+            logger.error(f"ElevenLabs voices API error: {response.status_code}")
             return []
             
     except Exception as e:
-        logger.error(f"Error fetching voice list: {e}")
+        logger.error(f"Error fetching ElevenLabs voices: {e}")
         return []
 
-def test_elevenlabs_connection():
-    """Test ElevenLabs API connection"""
-    if not ELEVENLABS_API_KEY:
-        return False, "No API key"
-    
-    try:
-        voices = get_voice_list()
-        if voices:
-            return True, f"Connected - {len(voices)} voices available"
-        else:
-            return False, "API key invalid or no voices"
-    except Exception as e:
-        return False, f"Connection error: {e}"
+def get_voice_id_by_name(voice_name):
+    """Get voice ID by name from available voices"""
+    return AVAILABLE_VOICES.get(voice_name.lower(), AVAILABLE_VOICES["adam"])
