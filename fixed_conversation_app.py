@@ -1700,10 +1700,20 @@ log #{log_entry['id']:03d} – {log_entry['date']}
                 
                 # Generate intelligent response
                 response_text = grok_ai.generate_response(messages, max_tokens=100, temperature=0.7, timeout=2.0)
+                logger.info(f"🤖 AI RESPONSE: '{response_text}' (length: {len(response_text) if response_text else 0})")
                 
                 # MINIMAL fallback - only if AI completely fails
                 if not response_text or len(response_text.strip()) < 3:
-                    response_text = "I understand. How can I help you with that?"
+                    logger.warning("⚠️ AI FAILED - using fallback response")
+                    # Use INTELLIGENT fallback based on detected issues
+                    if any(word in speech_result.lower() for word in ['electrical', 'electric', 'power', 'lights']):
+                        response_text = "Got it, electrical issue. What's your address?"
+                    elif any(word in speech_result.lower() for word in ['heat', 'heating', 'hot', 'cold', 'temperature']):
+                        response_text = "Got it, heating issue. What's your address?"
+                    elif any(word in speech_result.lower() for word in ['plumbing', 'water', 'leak', 'pipe']):
+                        response_text = "Got it, plumbing issue. What's your address?"
+                    else:
+                        response_text = "I understand. How can I help you with that?"
                     
             except Exception as e:
                 logger.error(f"AI response error: {e}")

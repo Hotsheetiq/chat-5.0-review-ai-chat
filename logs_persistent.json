@@ -1,5 +1,13 @@
 [
   {
+    "id": 75,
+    "date": "July 28, 2025",
+    "time": "10:15 PM ET",
+    "request": "AI intelligence failure - Chris saying generic responses instead of understanding electrical issues",
+    "resolution": "CRITICAL AI FAILURE: Despite system prompt, Chris says I understand. How can I help you with that instead of Got it, electrical issue. Whats your address. AI not following system instructions. Investigating prompt delivery and response generation.",
+    "constraint_note": "Rule #2 followed as required (appended new entry). Rule #4 followed as required (mirrored to REQUEST_HISTORY.md)."
+  },
+  {
     "id": 74,
     "date": "July 28, 2025",
     "time": "10:13 PM ET",

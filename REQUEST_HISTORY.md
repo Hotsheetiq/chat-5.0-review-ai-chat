@@ -379,3 +379,7 @@ log #073 – July 28, 2025
 log #074 – July 28, 2025  
 📝 Request: Remove harmful fallback logic overriding AI responses  
 ✅ Resolution: ✅ FALLBACK LOGIC FIXED: Removed harmful fallback systems that were overriding AI intelligent responses. System was detecting 640 terry avenue correctly, AI was saying Great! I found 630 Midland Avenue but fallbacks override with Whats your address. Now AI responses will come through properly.
+
+log #075 – July 28, 2025  
+📝 Request: AI intelligence failure - Chris saying generic responses instead of understanding electrical issues  
+✅ Resolution: CRITICAL AI FAILURE: Despite system prompt, Chris says I understand. How can I help you with that instead of Got it, electrical issue. Whats your address. AI not following system instructions. Investigating prompt delivery and response generation.
