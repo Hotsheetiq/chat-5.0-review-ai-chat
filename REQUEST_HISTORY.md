@@ -239,3 +239,7 @@ log #040 – July 28, 2025
 log #041 – July 28, 2025  
 📝 Request: This fix works — create a necessary constraint so its not undone in the future  
 ✅ Resolution: ELEVENLABS TTS CONSTRAINT PROTECTION CONFIRMED: User confirmed ElevenLabs voice system works perfectly - comprehensive constraint rules already implemented in CONSTRAINTS.md provide maximum protection against future removal or reversion to Polly voice
+
+log #042 – July 28, 2025  
+📝 Request: show me the constraint list  
+✅ Resolution: CONSTRAINT LIST DISPLAY: Showing user complete constraint protection system from CONSTRAINTS.md including automatic logging, ElevenLabs TTS, property backup system, and flag system protections
