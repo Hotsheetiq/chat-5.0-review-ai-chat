@@ -1,5 +1,13 @@
 [
   {
+    "id": 49,
+    "date": "July 28, 2025",
+    "time": "8:26 PM ET",
+    "request": "Constraints page error: name get_eastern_time is not defined",
+    "resolution": "MISSING FUNCTION FIX: Added get_eastern_time function import and definition to resolve constraints page error - function needed for timestamp display",
+    "constraint_note": "Rule #2 followed as required (appended new entry). Rule #4 followed as required (mirrored to REQUEST_HISTORY.md)."
+  },
+  {
     "id": 48,
     "date": "July 28, 2025",
     "time": "8:25 PM ET",

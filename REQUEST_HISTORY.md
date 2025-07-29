@@ -267,3 +267,7 @@ log #047 – July 28, 2025
 log #048 – July 28, 2025  
 📝 Request: still white  
 ✅ Resolution: BOOTSTRAP THEME OVERRIDE FIX: Removed bootstrap-agent-dark-theme.min.css and replaced with standard Bootstrap CSS to prevent dark theme from overriding light text colors
+
+log #049 – July 28, 2025  
+📝 Request: Constraints page error: name get_eastern_time is not defined  
+✅ Resolution: MISSING FUNCTION FIX: Added get_eastern_time function import and definition to resolve constraints page error - function needed for timestamp display

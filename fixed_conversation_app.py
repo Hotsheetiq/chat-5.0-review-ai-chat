@@ -51,6 +51,11 @@ def save_conversation_history():
 # Load existing conversation history on startup
 conversation_history = load_conversation_history()
 
+def get_eastern_time():
+    """Get current Eastern Time"""
+    eastern = pytz.timezone('US/Eastern')
+    return datetime.now(eastern)
+
 # =========================================================================
 # CRITICAL SYSTEM PROTECTION - Log #022 (ABSOLUTE PROTECTION)
 # COMPREHENSIVE PROPERTY BACKUP SYSTEM - DO NOT MODIFY OR REMOVE
@@ -141,6 +146,11 @@ def get_dynamic_happy_greeting():
 def create_app():
     app = Flask(__name__)
     app.secret_key = os.environ.get("SESSION_SECRET", "dev-secret-key")
+    
+    def get_eastern_time():
+        """Get current Eastern Time"""
+        eastern = pytz.timezone('US/Eastern')
+        return datetime.now(eastern)
     
     @app.route("/", methods=["GET"])
     def dashboard():
