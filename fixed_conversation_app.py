@@ -1704,9 +1704,8 @@ log #{log_entry['id']:03d} – {log_entry['date']}
                                             break
                                 
                                 if not found_match:
-                                    # ENHANCED ADDRESS VERIFICATION: Letter-by-letter spelling system
-                                    address_context = f"\n\nUNVERIFIED ADDRESS - REQUEST LETTER SPELLING: The caller mentioned '{potential_address}' which I cannot find in our system. YOU MUST SAY: 'I heard you say {potential_address}, but I can't find that exact address in our system. Could you please spell the street name for me, one letter at a time? And then tell me the house number, one digit at a time? This will help me find the correct property.'"
-                                    logger.warning(f"❌ UNVERIFIED ADDRESS: '{potential_address}' - requesting letter-by-letter spelling")
+                                    # Initialize suggestions list
+                                    suggestions = []
                                     caller_match = re.search(r'(\d+)\s+(.+)', potential_lower)
                                     
                                     if caller_match:
@@ -1732,9 +1731,9 @@ log #{log_entry['id']:03d} – {log_entry['date']}
                                         address_context = f"\n\nSUGGESTION MODE: The caller mentioned '{potential_address}' which I couldn't find exactly, but I found similar addresses: {suggestions_text}. YOU MUST SAY: 'I couldn't find {potential_address} exactly, but I found {suggestions_text}. Which one did you mean?' CRITICAL: Wait for their confirmation. Do NOT assume which one they meant."
                                         logger.info(f"💡 OFFERING SUGGESTIONS: '{potential_address}' → {suggestions}")
                                     else:
-                                        # NO SIMILAR ADDRESSES FOUND - acknowledge but explain can't help
-                                        address_context = f"\n\nUNVERIFIED ADDRESS ACKNOWLEDGMENT: The caller mentioned '{potential_address}' which I heard clearly but is NOT in our database. YOU MUST SAY: 'I heard you say {potential_address}, but I can't find that address in our system. We manage properties on Port Richmond Avenue, Targee Street, and Richmond Avenue. Could you double-check the address or let me know if it's one of our properties?'"
-                                        logger.warning(f"❌ UNVERIFIED ADDRESS: '{potential_address}' - acknowledging but can't help")
+                                        # ENHANCED ADDRESS VERIFICATION: Letter-by-letter spelling system
+                                        address_context = f"\n\nUNVERIFIED ADDRESS - REQUEST LETTER SPELLING: The caller mentioned '{potential_address}' which I cannot find in our system. YOU MUST SAY: 'I heard you say {potential_address}, but I can't find that exact address in our system. Could you please spell the street name for me, one letter at a time? And then tell me the house number, one digit at a time? This will help me find the correct property.'"
+                                        logger.warning(f"❌ UNVERIFIED ADDRESS: '{potential_address}' - requesting letter-by-letter spelling")
                             except ImportError:
                                 logger.error("❌ COMPREHENSIVE PROPERTY DATA NOT AVAILABLE")
                                 address_context = f"\n\nERROR FALLBACK: Could not verify address due to system issue. Ask: 'Let me help you with that address. Can you please repeat it slowly?'"
@@ -2040,7 +2039,6 @@ log #{log_entry['id']:03d} – {log_entry['date']}
                 
                 # Calculate duration and format timestamp correctly
                 try:
-                    from datetime import datetime
                     import pytz
                     
                     # Parse timestamps and convert to Eastern Time
