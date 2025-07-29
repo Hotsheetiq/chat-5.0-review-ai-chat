@@ -34,6 +34,36 @@ The following automatic logging components are CRITICAL and must NEVER be remove
 
 **VIOLATION WARNING**: Removing or disabling automatic logging breaks the user's request tracking workflow and violates established user requirements.
 
+## CRITICAL PROTECTION: DUPLICATE EMAIL PREVENTION SYSTEM (ABSOLUTE CONSTRAINT - Added: July 29, 2025 at 11:57 PM ET)
+
+**DUPLICATE EMAIL PREVENTION SYSTEM - DO NOT REMOVE OR DISABLE**
+
+The following email system components are CRITICAL and must NEVER be removed or disabled:
+
+### Protected Variables:
+- `email_sent_calls = set()` - Global tracker preventing duplicate emails per call_sid - PROTECTED
+- Must remain at module level in fixed_conversation_app.py - PROTECTED
+
+### Protected Logic:
+- `if call_sid not in email_sent_calls:` - Duplicate prevention check before ALL email sends - PROTECTED
+- `email_sent_calls.add(call_sid)` - Call tracking after successful email delivery - PROTECTED
+- All email triggers must check tracker before sending - PROTECTED
+
+### Protected Email Triggers:
+- AI promise fulfillment email trigger with duplicate prevention - PROTECTED
+- Pest control email triggers with duplicate prevention - PROTECTED  
+- Fallback email trigger with duplicate prevention - PROTECTED
+- All email triggers must use the tracker system - PROTECTED
+
+### Protected Functionality:
+- Single email guarantee: Exactly ONE email per call regardless of trigger count - PROTECTED
+- Email tracking across all conversation paths and AI responses - PROTECTED
+- Prevention of multiple transcript emails for same call_sid - PROTECTED
+
+**JUSTIFICATION**: User confirmed "email fix works - create a necessary constraint so it's not undone in the future"
+
+**VIOLATION WARNING**: Removing email_sent_calls tracker or disabling duplicate prevention will cause multiple emails per call, creating unprofessional spam and violating user requirements.
+
 Before updating the UI or any logs, read this file and confirm you're following the rules.
 
 ## CRITICAL SYSTEM PROTECTION - AI RESPONSE INTEGRITY (ABSOLUTE CONSTRAINT)
