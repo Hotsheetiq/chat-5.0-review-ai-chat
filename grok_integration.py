@@ -33,7 +33,7 @@ class GrokAI:
         except Exception as e:
             logger.warning(f"Pre-warm failed (non-critical): {e}")
     
-    def generate_response(self, messages, max_tokens=100, temperature=0.5, timeout=0.8):
+    def generate_response(self, messages, max_tokens=100, temperature=0.5, timeout=4.0):
         """Generate response using Grok 4.0 as default with Grok 2 fallback"""
         try:
             # Use Grok 4.0 as primary model - more advanced reasoning and conversation quality
@@ -55,7 +55,7 @@ class GrokAI:
                     messages=messages,
                     max_tokens=max_tokens,
                     temperature=temperature,
-                    timeout=timeout - 0.2  # Slightly faster timeout for Grok 2
+                    timeout=max(1.0, timeout - 0.5)  # Adequate timeout for Grok 2 fallback
                 )
                 logger.info("✅ Using Grok 2 as fallback")
                 return response.choices[0].message.content.strip()

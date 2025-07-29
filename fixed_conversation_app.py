@@ -1975,9 +1975,22 @@ log #{log_entry['id']:03d} – {log_entry['date']}
                     }
                 ]
                 
-                # Generate intelligent response
-                response_text = grok_ai.generate_response(messages, max_tokens=100, temperature=0.7, timeout=2.0)
-                logger.info(f"🤖 AI RESPONSE: '{response_text}' (length: {len(response_text) if response_text else 0})")
+                # Generate intelligent response with enhanced timeout and fallback
+                try:
+                    response_text = grok_ai.generate_response(messages, max_tokens=150, temperature=0.7, timeout=4.0)
+                    logger.info(f"🤖 AI RESPONSE: '{response_text}' (length: {len(response_text) if response_text else 0})")
+                    
+                    # If response is empty or too short, try again with different parameters
+                    if not response_text or len(response_text.strip()) < 5:
+                        logger.warning("⚠️ GROK RESPONSE TOO SHORT - retrying with enhanced parameters")
+                        enhanced_messages = messages.copy()
+                        enhanced_messages[0]["content"] += "\n\nIMPORTANT: Please provide a helpful, complete response to assist the caller. Do not return empty responses."
+                        response_text = grok_ai.generate_response(enhanced_messages, max_tokens=200, temperature=0.8, timeout=6.0)
+                        logger.info(f"🔄 ENHANCED RESPONSE: '{response_text}'")
+                        
+                except Exception as e:
+                    logger.error(f"❌ GROK ERROR: {e}")
+                    response_text = None
                 
                 # ANTI-REPETITION CHECK: Prevent AI from repeating exact phrases
                 if response_text and call_sid in response_tracker and response_text in response_tracker[call_sid]:
@@ -1985,7 +1998,7 @@ log #{log_entry['id']:03d} – {log_entry['date']}
                     # Request a varied response from AI
                     varied_messages = messages.copy()
                     varied_messages[0]["content"] += f"\n\nIMPORTANT: You already said '{response_text}' in this call. Please give a different response with the same meaning but different wording."
-                    response_text = grok_ai.generate_response(varied_messages, max_tokens=100, temperature=0.8, timeout=2.0)
+                    response_text = grok_ai.generate_response(varied_messages, max_tokens=150, temperature=0.8, timeout=4.0)
                     logger.info(f"🔄 VARIED RESPONSE: '{response_text}'")
                 
                 # Enhanced AI response validation and email triggers
