@@ -16,9 +16,9 @@ logger = logging.getLogger(__name__)
 ELEVENLABS_API_KEY = os.environ.get("ELEVENLABS_API_KEY")
 ELEVENLABS_BASE_URL = "https://api.elevenlabs.io/v1"
 
-# OPTIMIZED: Audio cache for performance
+# AGGRESSIVE: Audio cache for performance
 audio_cache = OrderedDict()
-MAX_CACHE_SIZE = 100
+MAX_CACHE_SIZE = 200  # Doubled cache size for better hit rate
 
 # Available male voices from our ElevenLabs account
 AVAILABLE_VOICES = {
@@ -62,8 +62,8 @@ def generate_elevenlabs_audio(text: str, voice_id: str = None, voice_name: str =
             "xi-api-key": ELEVENLABS_API_KEY
         }
         
-        # Calculate speaking rate based on speed parameter (1.0 = normal, 1.15 = 15% faster)
-        speaking_rate = min(1.5, max(0.5, speed))  # Clamp between 0.5x and 1.5x
+        # AGGRESSIVE: Calculate speaking rate based on speed parameter (1.0 = normal, 1.3 = 30% faster)
+        speaking_rate = min(1.8, max(0.5, speed))  # Clamp between 0.5x and 1.8x for maximum speed
         
         data = {
             "text": text,
@@ -78,7 +78,7 @@ def generate_elevenlabs_audio(text: str, voice_id: str = None, voice_name: str =
         }
         
         # OPTIMIZED: Reduced timeout for faster failure
-        response = requests.post(url, json=data, headers=headers, timeout=3)
+        response = requests.post(url, json=data, headers=headers, timeout=1.5)
         
         if response.status_code == 200:
             # Save audio to temporary file and cache it

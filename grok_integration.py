@@ -20,13 +20,13 @@ class GrokAI:
         self.client = OpenAI(
             base_url="https://api.x.ai/v1",
             api_key=self.api_key,
-            timeout=8.0,  # Optimized timeout
-            max_retries=1  # Faster failure for performance
+            timeout=2.5,  # AGGRESSIVE timeout for sub-2s responses
+            max_retries=0  # NO retries for maximum speed
         )
         
-        # Response cache for common requests
+        # AGGRESSIVE: Response cache for common requests
         self.response_cache = {}
-        self.cache_max_size = 50
+        self.cache_max_size = 100  # Increased cache size
         
         logger.info("✅ OPTIMIZED Grok AI client initialized with connection pooling")
         
@@ -85,7 +85,7 @@ class GrokAI:
         
         return optimized
     
-    def generate_response(self, messages, max_tokens=80, temperature=0.5, timeout=3.0):
+    def generate_response(self, messages, max_tokens=60, temperature=0.5, timeout=1.8):
         """OPTIMIZED response generation with caching and reduced tokens"""
         # ⏰ START GROK TIMING
         grok_start_time = time.time()

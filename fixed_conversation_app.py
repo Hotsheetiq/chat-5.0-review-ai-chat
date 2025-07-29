@@ -2083,10 +2083,10 @@ log #{log_entry['id']:03d} – {log_entry['date']}
                 {"role": "user", "content": f"Current input: {speech_result}"}
             ]
             
-            # Generate response with Grok AI
+            # AGGRESSIVE OPTIMIZATION: Generate response with Grok AI
             from grok_integration import GrokAI
             grok_ai_instance = GrokAI()
-            response_text = grok_ai_instance.generate_response(messages, max_tokens=80, temperature=0.7, timeout=3.0)
+            response_text = grok_ai_instance.generate_response(messages, max_tokens=40, temperature=0.7, timeout=1.2)
             grok_time = time.time() - grok_start
             log_timing_with_bottleneck("Background Grok AI", grok_time, request_start_time, call_sid)
             
@@ -2100,10 +2100,10 @@ log #{log_entry['id']:03d} – {log_entry['date']}
                 encoded_text = urllib.parse.quote(response_text)
                 audio_url = f"https://{host_header}/generate-audio/{call_sid}?text={encoded_text}"
                 
-                # Pre-generate the audio to cache it
+                # AGGRESSIVE: Pre-generate the audio to cache it with reduced timeout
                 try:
                     import requests
-                    cache_request = requests.get(audio_url, timeout=3.0)
+                    cache_request = requests.get(audio_url, timeout=1.0)
                     if cache_request.status_code == 200:
                         logger.info(f"✅ Audio pre-cached for background response")
                 except:
@@ -2564,8 +2564,8 @@ log #{log_entry['id']:03d} – {log_entry['date']}
                 # ⏰ 2. GROK AI PROCESSING TIMING
                 grok_start = time.time()
                 try:
-                    # OPTIMIZED: Reduced max_tokens for faster responses
-                    response_text = grok_ai.generate_response(messages, max_tokens=80, temperature=0.7, timeout=3.0)
+                    # AGGRESSIVE OPTIMIZATION: Ultra-fast responses
+                    response_text = grok_ai.generate_response(messages, max_tokens=50, temperature=0.7, timeout=1.5)
                     grok_time = time.time() - grok_start
                     log_timing_with_bottleneck("Grok AI processing", grok_time, request_start_time, call_sid)
                     
@@ -2577,7 +2577,7 @@ log #{log_entry['id']:03d} – {log_entry['date']}
                         retry_start = time.time()
                         enhanced_messages = messages.copy()
                         enhanced_messages[0]["content"] += "\n\nIMPORTANT: Please provide a helpful, complete response to assist the caller. Do not return empty responses."
-                        response_text = grok_ai.generate_response(enhanced_messages, max_tokens=120, temperature=0.8, timeout=4.0)
+                        response_text = grok_ai.generate_response(enhanced_messages, max_tokens=70, temperature=0.8, timeout=2.0)
                         retry_time = time.time() - retry_start
                         log_timing_with_bottleneck("Grok AI retry", retry_time, request_start_time, call_sid)
                         logger.info(f"🔄 ENHANCED RESPONSE: '{response_text}'")
@@ -2925,17 +2925,21 @@ log #{log_entry['id']:03d} – {log_entry['date']}
             elevenlabs_start = time.time()
             import urllib.parse
             
-            # Queue ElevenLabs generation in parallel
+            # AGGRESSIVE PARALLEL: Queue ElevenLabs generation with speed optimization
             def start_elevenlabs_generation():
                 try:
                     from elevenlabs_integration import generate_elevenlabs_audio
-                    audio_path = generate_elevenlabs_audio(response_text)
+                    audio_path = generate_elevenlabs_audio(
+                        response_text, 
+                        voice_name="adam",
+                        speed=1.3  # 30% faster for maximum speed
+                    )
                     return audio_path
                 except Exception as e:
                     logger.error(f"Background ElevenLabs error: {e}")
                     return None
             
-            # Submit to thread pool for parallel processing
+            # Submit to thread pool for parallel processing with timeout
             audio_future = executor.submit(start_elevenlabs_generation)
             
             encoded_text = urllib.parse.quote(response_text)
