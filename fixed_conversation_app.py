@@ -929,18 +929,19 @@ def create_app():
                                         <ul class="list-unstyled">
                                             ${Object.entries(data.system_health).map(([key, value]) => {
                                                 const badgeColor = value.includes('BOTTLENECK') || value.includes('DELAYS') ? 'warning' : 
-                                                                  value.includes('WORKING') || value.includes('OPERATIONAL') || value.includes('ENHANCED') ? 'success' : 'secondary';
-                                                return `<li><span class="badge bg-${badgeColor} me-2">${value}</span>${key.replace('_', ' ').toUpperCase()}</li>`;
+                                                                  value.includes('WORKING') || value.includes('OPERATIONAL') || value.includes('ENHANCED') || value.includes('SUCCESS') ? 'success' : 'secondary';
+                                                const displayKey = key.replace(/_/g, ' ').toUpperCase();
+                                                return `<li class="mb-2"><span class="badge bg-${badgeColor} me-2">${value}</span><strong>${displayKey}</strong></li>`;
                                             }).join('')}
                                         </ul>
                                     </div>
                                     <div class="col-md-6">
                                         <h6>Resolution Status:</h6>
-                                        <ul class="list-unstyled">
+                                        <div class="row">
                                             ${Object.entries(data.resolution_status).map(([key, value]) => 
-                                                `<li><small>${value} ${key.replace('_', ' ').toUpperCase()}</small></li>`
+                                                `<div class="col-12 mb-1"><small><strong>${value}</strong> ${key.replace(/_/g, ' ').toUpperCase()}</small></div>`
                                             ).join('')}
-                                        </ul>
+                                        </div>
                                     </div>
                                 </div>
                                 
@@ -1036,18 +1037,24 @@ def create_app():
         recent_operations = []
         
         try:
-            # Check for recent bottlenecks from conversation history
-            recent_calls = conversation_history[-5:] if conversation_history else []
+            # Check for recent bottlenecks from conversation history safely
+            recent_calls = []
+            if conversation_history and len(conversation_history) > 0:
+                try:
+                    recent_calls = list(conversation_history)[-5:] if len(conversation_history) >= 5 else list(conversation_history)
+                except (TypeError, IndexError):
+                    recent_calls = []
             
             for call in recent_calls:
-                if 'bottlenecks' in call:
+                if isinstance(call, dict) and 'bottlenecks' in call:
                     for bottleneck in call['bottlenecks']:
-                        bottlenecks.append({
-                            "call_id": call.get('call_id', 'Unknown'),
-                            "operation": bottleneck.get('operation', 'Unknown'),
-                            "duration": bottleneck.get('duration', 'Unknown'),
-                            "timestamp": call.get('timestamp', current_time.strftime('%I:%M:%S %p ET'))
-                        })
+                        if isinstance(bottleneck, dict):
+                            bottlenecks.append({
+                                "call_id": call.get('call_id', 'Unknown'),
+                                "operation": bottleneck.get('operation', 'Unknown'),
+                                "duration": bottleneck.get('duration', 'Unknown'),
+                                "timestamp": call.get('timestamp', current_time.strftime('%I:%M:%S %p ET'))
+                            })
             
             # Detect performance issues from recent logs
             performance_warnings = []
@@ -1060,9 +1067,14 @@ def create_app():
             current_session_issues = []
             if len(recent_calls) > 0:
                 latest_call = recent_calls[-1]
-                if 'grok_time' in latest_call and float(latest_call.get('grok_time', 0)) > 3.0:
-                    current_session_issues.append("⚠️ Grok AI processing delay detected")
-                    error_count += 1
+                if isinstance(latest_call, dict) and 'grok_time' in latest_call:
+                    try:
+                        grok_time = float(latest_call.get('grok_time', 0))
+                        if grok_time > 3.0:
+                            current_session_issues.append("⚠️ Grok AI processing delay detected")
+                            error_count += 1
+                    except (ValueError, TypeError):
+                        pass
             
             # Recent successful operations (real data from logs)
             recent_operations = [
