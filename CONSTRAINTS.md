@@ -94,6 +94,33 @@ The following anti-repetition components are CRITICAL and must NEVER be removed 
 
 **VIOLATION WARNING**: Removing response_tracker or disabling anti-repetition will cause Chris to repeat identical clarification phrases, creating poor user experience and violating conversation intelligence requirements.
 
+## CRITICAL PROTECTION: GROK 4.0 PRIMARY MODEL (ABSOLUTE CONSTRAINT - Added: July 29, 2025 at 12:17 AM ET)
+
+**GROK 4.0 PRIMARY MODEL - MUST ALWAYS BE USED**
+
+The following Grok 4.0 AI model components are CRITICAL and must NEVER be changed:
+
+### Protected Model Selection:
+- `model="grok-4-0709"` - MUST ALWAYS be primary AI model for Chris intelligence - PROTECTED
+- Grok 4.0 must be first choice for all conversation processing - PROTECTED
+- Only Grok 2 as emergency fallback for API connection errors (not empty responses) - PROTECTED
+
+### Protected Components:
+- Primary model selection in `grok_integration.py` - PROTECTED
+- All AI conversation processing must use Grok 4.0 first - PROTECTED
+- Response generation for Chris's intelligence - PROTECTED
+- Conversation understanding and context processing - PROTECTED
+
+### Protected Logic:
+- Grok 4.0 must be attempted first for all AI requests - PROTECTED
+- Enhanced debugging for empty responses from Grok 4.0 - PROTECTED
+- Intelligent fallback responses for empty Grok 4.0 responses - PROTECTED
+- Never switch primary model away from Grok 4.0 - PROTECTED
+
+**JUSTIFICATION**: User explicitly required "i want grock.40 to always be used so add that to the constraint"
+
+**VIOLATION WARNING**: Switching primary AI model away from Grok 4.0 violates direct user requirement and degrades conversation intelligence quality.
+
 Before updating the UI or any logs, read this file and confirm you're following the rules.
 
 ## CRITICAL SYSTEM PROTECTION - AI RESPONSE INTEGRITY (ABSOLUTE CONSTRAINT)

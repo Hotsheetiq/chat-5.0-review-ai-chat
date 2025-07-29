@@ -36,29 +36,52 @@ class GrokAI:
     def generate_response(self, messages, max_tokens=100, temperature=0.5, timeout=4.0):
         """Generate response using Grok 4.0 as default with Grok 2 fallback"""
         try:
+            # 🛡️ CONSTRAINT PROTECTION: ALWAYS USE GROK 4.0 AS PRIMARY (User Required)
             # Use Grok 4.0 as primary model - more advanced reasoning and conversation quality
             try:
                 response = self.client.chat.completions.create(
-                    model="grok-4-0709",  # Grok 4.0 - primary model for best quality
+                    model="grok-4-0709",  # 🛡️ CONSTRAINT: ALWAYS Grok 4.0 primary
                     messages=messages,
                     max_tokens=max_tokens,
                     temperature=temperature,
-                    timeout=timeout  # Timeout optimized for Grok 4.0
+                    timeout=timeout
                 )
-                logger.info("✅ Using Grok 4.0 - primary model for best conversation quality")
-                return response.choices[0].message.content.strip()
+                content = response.choices[0].message.content
+                logger.info(f"✅ Using Grok 4.0 - primary model (CONSTRAINT PROTECTED) - Response length: {len(content) if content else 0}")
+                
+                # Enhanced debugging for empty responses
+                if not content or len(content.strip()) == 0:
+                    logger.error(f"❌ GROK 4.0 EMPTY RESPONSE DEBUG:")
+                    logger.error(f"  Raw content: {repr(content)}")
+                    logger.error(f"  Response ID: {getattr(response, 'id', 'unknown')}")
+                    logger.error(f"  Model used: {getattr(response, 'model', 'unknown')}")
+                    logger.error(f"  Usage: {getattr(response, 'usage', 'unknown')}")
+                    # Don't fallback for empty responses - this is the core issue
+                    return "I understand you're having an issue. Can you tell me more details about what's happening so I can help you properly?"
+                
+                return content.strip()
+                
             except Exception as e:
-                # If Grok 4.0 fails, fallback to Grok 2 for speed
-                logger.warning(f"Grok 4.0 failed ({e}), falling back to Grok 2")
-                response = self.client.chat.completions.create(
-                    model="grok-2-1212",  # Fallback Grok 2 - faster backup
-                    messages=messages,
-                    max_tokens=max_tokens,
-                    temperature=temperature,
-                    timeout=max(1.0, timeout - 0.5)  # Adequate timeout for Grok 2 fallback
-                )
-                logger.info("✅ Using Grok 2 as fallback")
-                return response.choices[0].message.content.strip()
+                # Only fallback to Grok 2 for connection/API errors, not empty responses
+                logger.error(f"Grok 4.0 connection/API error: {e}")
+                try:
+                    response = self.client.chat.completions.create(
+                        model="grok-2-1212",  # Emergency fallback only for API errors
+                        messages=messages,
+                        max_tokens=max_tokens,
+                        temperature=temperature,
+                        timeout=max(2.0, timeout - 1.0)
+                    )
+                    content = response.choices[0].message.content
+                    if content and len(content.strip()) > 0:
+                        logger.warning("⚠️ Using Grok 2 emergency fallback due to API error")
+                        return content.strip()
+                    else:
+                        logger.error("❌ Grok 2 also returned empty response")
+                        return "I'm here to help with your concern. What's the issue you're experiencing?"
+                except Exception as e2:
+                    logger.error(f"All Grok models failed: {e}, {e2}")
+                    return "I understand you need assistance. Can you describe what's happening?"
             
         except Exception as e:
             logger.error(f"All Grok models failed: {e}")
