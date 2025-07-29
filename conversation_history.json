@@ -1475,8 +1475,185 @@
         "caller_phone": "",
         "background_processed": true
       }
+    ],
+    "CAde125d095fadd31f1aa6c591c3aee921": [
+      {
+        "timestamp": "2025-07-29T05:58:28.808415",
+        "speaker": "System",
+        "message": "Performance monitoring for call CAde125d095fadd31f1aa6c591c3aee921",
+        "caller_phone": "System",
+        "call_id": "CAde125d095fadd31f1aa6c591c3aee921",
+        "timing_data": {
+          "speech_transcription_processing": 0.00011301040649414062
+        },
+        "total_processing_time": 0.00011467933654785156,
+        "bottlenecks": []
+      },
+      {
+        "timestamp": "2025-07-29T05:58:28.808460",
+        "speaker": "Caller",
+        "message": "i'm having a problem with my electricity.",
+        "caller_phone": "Anonymous",
+        "timing_data": {
+          "pre-processing_complete": 0.00928044319152832,
+          "twiml_return_(hold_message)": 0.009672164916992188,
+          "background_grok_ai": 2.3889360427856445,
+          "background_elevenlabs": 0.4492218494415283,
+          "total_background_processing": 2.847949743270874
+        },
+        "call_id": "CAde125d095fadd31f1aa6c591c3aee921",
+        "total_processing_time": 2.847949981689453,
+        "bottlenecks": [
+          {
+            "operation": "Background Grok AI",
+            "duration": "2.389s",
+            "threshold_exceeded": true,
+            "timestamp": "2025-07-29T05:58:31.206847"
+          },
+          {
+            "operation": "Total background processing",
+            "duration": "2.848s",
+            "threshold_exceeded": true,
+            "timestamp": "2025-07-29T05:58:31.656249"
+          }
+        ]
+      }
+    ],
+    "REAL_TEST": [
+      {
+        "timestamp": "2025-07-29T05:58:52.502720",
+        "speaker": "System",
+        "message": "Performance monitoring for call REAL_TEST",
+        "caller_phone": "System",
+        "call_id": "REAL_TEST",
+        "timing_data": {
+          "speech_transcription_processing": 9.799003601074219e-05
+        },
+        "total_processing_time": 9.870529174804688e-05,
+        "bottlenecks": []
+      },
+      {
+        "timestamp": "2025-07-29T05:58:52.502751",
+        "speaker": "Caller",
+        "message": "hello",
+        "caller_phone": "+18886411102"
+      }
+    ],
+    "TIMEOUT_TEST": [
+      {
+        "timestamp": "2025-07-29T05:59:45.726990",
+        "speaker": "System",
+        "message": "Performance monitoring for call TIMEOUT_TEST",
+        "caller_phone": "System",
+        "call_id": "TIMEOUT_TEST",
+        "timing_data": {
+          "speech_transcription_processing": 0.00012731552124023438
+        },
+        "total_processing_time": 0.00012874603271484375,
+        "bottlenecks": []
+      }
+    ],
+    "FINAL_TEST": [
+      {
+        "timestamp": "2025-07-29T06:00:14.181285",
+        "speaker": "System",
+        "message": "Performance monitoring for call FINAL_TEST",
+        "caller_phone": "System",
+        "call_id": "FINAL_TEST",
+        "timing_data": {
+          "speech_transcription_processing": 8.869171142578125e-05
+        },
+        "total_processing_time": 8.988380432128906e-05,
+        "bottlenecks": []
+      },
+      {
+        "timestamp": "2025-07-29T06:00:14.181340",
+        "speaker": "Caller",
+        "message": "hello",
+        "caller_phone": "+18886411102"
+      }
+    ],
+    "TEST_SIMPLE": [
+      {
+        "timestamp": "2025-07-29T06:01:05.008302",
+        "speaker": "System",
+        "message": "Performance monitoring for call TEST_SIMPLE",
+        "caller_phone": "System",
+        "call_id": "TEST_SIMPLE",
+        "timing_data": {
+          "speech_transcription_processing": 0.00017595291137695312
+        },
+        "total_processing_time": 0.00017714500427246094,
+        "bottlenecks": []
+      },
+      {
+        "timestamp": "2025-07-29T06:01:05.008347",
+        "speaker": "Caller",
+        "message": "hello",
+        "caller_phone": "+18886411102",
+        "timing_data": {
+          "pre-processing_complete": 0.019327163696289062,
+          "grok_ai_processing": 1.5510587692260742
+        },
+        "call_id": "TEST_SIMPLE",
+        "total_processing_time": 5.173018932342529
+      },
+      {
+        "timestamp": "2025-07-29T06:01:10.188557",
+        "speaker": "Chris",
+        "message": "Hello! How can I assist you today?",
+        "caller_phone": "+18886411102",
+        "timing_data": {
+          "elevenlabs_parallel_queue": 0.021462678909301758
+        },
+        "call_id": "TEST_SIMPLE",
+        "total_processing_time": 5.209387540817261
+      },
+      {
+        "timestamp": "2025-07-29T06:01:10.223446",
+        "speaker": "Chris",
+        "message": "I understand. Let me help you with that right away.",
+        "caller_phone": "+18886411102",
+        "timeout_protection": true
+      }
+    ],
+    "TEST_COMPLEX": [
+      {
+        "timestamp": "2025-07-29T06:01:11.439700",
+        "speaker": "System",
+        "message": "Performance monitoring for call TEST_COMPLEX",
+        "caller_phone": "System",
+        "call_id": "TEST_COMPLEX",
+        "timing_data": {
+          "speech_transcription_processing": 9.751319885253906e-05
+        },
+        "total_processing_time": 9.918212890625e-05,
+        "bottlenecks": []
+      },
+      {
+        "timestamp": "2025-07-29T06:01:11.439753",
+        "speaker": "Caller",
+        "message": "i have a maintenance issue",
+        "caller_phone": "+18886411102",
+        "timing_data": {
+          "pre-processing_complete": 0.024602890014648438,
+          "twiml_return_(hold_message)": 0.08966922760009766,
+          "background_grok_ai": 1.4155237674713135,
+          "background_elevenlabs": 0.5032007694244385,
+          "total_background_processing": 1.9792888164520264
+        },
+        "call_id": "TEST_COMPLEX",
+        "total_processing_time": 1.9792897701263428
+      },
+      {
+        "timestamp": "2025-07-29T06:01:15.098227",
+        "speaker": "Chris",
+        "message": "Please describe the maintenance issue for immediate assistance.",
+        "caller_phone": "",
+        "background_processed": true
+      }
     ]
   },
-  "last_updated": "2025-07-29T01:57:14.704172-04:00",
-  "total_calls": 54
+  "last_updated": "2025-07-29T02:01:15.098248-04:00",
+  "total_calls": 60
 }

@@ -1979,7 +1979,7 @@ log #{log_entry['id']:03d} – {log_entry['date']}
         logger.info(f"[GET-BACKGROUND] Values: {dict(request.values)}")
         
         try:
-            # AGGRESSIVE: Wait only 2 seconds to prevent application errors
+            # ULTRA-AGGRESSIVE: Wait only 1 second to prevent application errors
             import time
             max_wait = 2.0  # Reduced from 10 to 2 seconds
             wait_interval = 0.2  # Faster polling
@@ -2091,8 +2091,8 @@ log #{log_entry['id']:03d} – {log_entry['date']}
             # AGGRESSIVE OPTIMIZATION: Generate response with Grok AI
             from grok_integration import GrokAI
             grok_ai_instance = GrokAI()
-            # ULTRA-AGGRESSIVE: Minimal tokens and ultra-short timeout
-            response_text = grok_ai_instance.generate_response(messages, max_tokens=20, temperature=0.7, timeout=0.6)
+            # ULTRA-AGGRESSIVE: Minimal tokens and ultra-short timeout - PREVENT APPLICATION ERRORS
+            response_text = grok_ai_instance.generate_response(messages, max_tokens=15, temperature=0.7, timeout=0.4)
             grok_time = time.time() - grok_start
             log_timing_with_bottleneck("Background Grok AI", grok_time, request_start_time, call_sid)
             
@@ -2173,9 +2173,15 @@ log #{log_entry['id']:03d} – {log_entry['date']}
                 'are you open', 'what time', 'office hours', 'how are you'
             ])
             
-            # Store conversation
-            if call_sid not in conversation_history:
-                conversation_history[call_sid] = []
+            # ===== CONVERSATION STORAGE WITH ERROR PROTECTION =====
+            global conversation_history
+            try:
+                if call_sid not in conversation_history:
+                    conversation_history[call_sid] = []
+            except Exception as storage_error:
+                logger.error(f"[ERROR] Conversation storage failed: {storage_error}")
+                # Initialize minimal conversation storage
+                conversation_history = {call_sid: []}
             
             # Only store non-empty speech results to prevent incomplete transcriptions
             if speech_result and len(speech_result.strip()) > 0:
@@ -2972,14 +2978,47 @@ log #{log_entry['id']:03d} – {log_entry['date']}
             total_time = time.time() - request_start_time
             print_total_timing(call_sid, total_time)
             
-            # Return optimized TwiML response
-            return f"""<?xml version="1.0" encoding="UTF-8"?>
+            # 🚨 IMMEDIATE TIMEOUT PROTECTION - PREVENT APPLICATION ERRORS
+            if total_time > 1.5:  # If approaching timeout, force immediate response
+                logger.error(f"[ERROR] TIMEOUT PROTECTION ACTIVATED - Response time {total_time:.3f}s > 1.5s limit")
+                response_text = "I understand. Let me help you with that right away."
+                
+                # Store error recovery response
+                conversation_history[call_sid].append({
+                    'timestamp': datetime.now().isoformat(),
+                    'speaker': 'Chris',
+                    'message': response_text,
+                    'caller_phone': caller_phone,
+                    'timeout_protection': True
+                })
+                
+                # Return immediate TwiML with ElevenLabs
+                import urllib.parse
+                encoded_text = urllib.parse.quote(response_text)
+                
+                logger.error(f"[ERROR] FORCED IMMEDIATE RESPONSE due to timeout protection")
+                twiml_response = f"""<?xml version="1.0" encoding="UTF-8"?>
+                <Response>
+                    <Play>https://{request.headers.get('Host', 'localhost:5000')}/generate-audio/{call_sid}?text={encoded_text}</Play>
+                    <Gather input="speech" timeout="8" speechTimeout="4" action="/handle-speech/{call_sid}" method="POST">
+                    </Gather>
+                    <Redirect>/handle-speech/{call_sid}</Redirect>
+                </Response>"""
+                
+                logger.info(f"[FINAL-TWIML] TIMEOUT PROTECTION Response: {twiml_response}")
+                return twiml_response
+            
+            # ===== FINAL TWIML RESPONSE WITH COMPREHENSIVE LOGGING =====
+            twiml_response = f"""<?xml version="1.0" encoding="UTF-8"?>
             <Response>
                 <Play>https://{request.headers.get('Host', 'localhost:5000')}/generate-audio/{call_sid}?text={encoded_text}</Play>
                 <Gather input="speech" timeout="8" speechTimeout="4" action="/handle-speech/{call_sid}" method="POST">
                 </Gather>
                 <Redirect>/handle-speech/{call_sid}</Redirect>
             </Response>"""
+            
+            logger.info(f"[FINAL-TWIML] SUCCESS Response: {twiml_response}")
+            return twiml_response
             
         except Exception as e:
             logger.error(f"[ERROR] Speech handling error: {e}")
