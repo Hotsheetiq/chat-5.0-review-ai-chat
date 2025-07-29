@@ -24,40 +24,40 @@ class GrokAI:
         # PRE-WARM: Make a quick test call to reduce first-response latency
         try:
             self.client.chat.completions.create(
-                model="grok-2-1212",
+                model="grok-4-0709",
                 messages=[{"role": "user", "content": "Hi"}],
                 max_tokens=5,
                 temperature=0.1
             )
-            logger.info("🚀 Grok AI pre-warmed - first responses will be faster")
+            logger.info("🚀 Grok 4.0 pre-warmed - first responses will be faster")
         except Exception as e:
             logger.warning(f"Pre-warm failed (non-critical): {e}")
     
-    def generate_response(self, messages, max_tokens=100, temperature=0.5, timeout=0.6):
-        """Generate fast response using optimized Grok settings"""
+    def generate_response(self, messages, max_tokens=100, temperature=0.5, timeout=0.8):
+        """Generate response using Grok 4.0 as default with Grok 2 fallback"""
         try:
-            # Use Grok 2 for speed - it's faster than Grok 4.0 with similar quality
+            # Use Grok 4.0 as primary model - more advanced reasoning and conversation quality
             try:
                 response = self.client.chat.completions.create(
-                    model="grok-2-1212",  # Grok 2 - faster and more reliable
+                    model="grok-4-0709",  # Grok 4.0 - primary model for best quality
                     messages=messages,
                     max_tokens=max_tokens,
                     temperature=temperature,
-                    timeout=timeout  # Fast timeout for speed
+                    timeout=timeout  # Timeout optimized for Grok 4.0
                 )
-                logger.info("✅ Using Grok 2 - optimized for speed")
+                logger.info("✅ Using Grok 4.0 - primary model for best conversation quality")
                 return response.choices[0].message.content.strip()
             except Exception as e:
-                # If Grok 2 fails, try Grok 4.0 as backup
-                logger.warning(f"Grok 2 failed ({e}), trying Grok 4.0")
+                # If Grok 4.0 fails, fallback to Grok 2 for speed
+                logger.warning(f"Grok 4.0 failed ({e}), falling back to Grok 2")
                 response = self.client.chat.completions.create(
-                    model="grok-4-0709",  # Backup Grok 4.0
+                    model="grok-2-1212",  # Fallback Grok 2 - faster backup
                     messages=messages,
                     max_tokens=max_tokens,
                     temperature=temperature,
-                    timeout=timeout + 0.2  # Slightly longer timeout for Grok 4.0
+                    timeout=timeout - 0.2  # Slightly faster timeout for Grok 2
                 )
-                logger.info("✅ Using Grok 4.0 as backup")
+                logger.info("✅ Using Grok 2 as fallback")
                 return response.choices[0].message.content.strip()
             
         except Exception as e:

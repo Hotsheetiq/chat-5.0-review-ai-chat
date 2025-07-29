@@ -1,5 +1,21 @@
 [
   {
+    "id": 52,
+    "date": "July 28, 2025",
+    "time": "8:36 PM ET",
+    "request": "Update AI integration to use Grok 4.0 as default model",
+    "resolution": "\u2705 GROK 4.0 DEFAULT MODEL IMPLEMENTED: Updated grok_integration.py to use Grok 4.0 (grok-4-0709) as primary model with Grok 2 fallback. Pre-warming updated to Grok 4.0. Timeout increased to 0.8s for optimal performance. Chris will now use advanced Grok 4.0 reasoning by default. \ud83d\udee1\ufe0f Constraint Note: All rules followed as required",
+    "constraint_note": "Rule #2 followed as required (appended new entry). Rule #4 followed as required (mirrored to REQUEST_HISTORY.md)."
+  },
+  {
+    "id": 51,
+    "date": "July 28, 2025",
+    "time": "8:35 PM ET",
+    "request": "Update AI integration to use Grok 4.0 as default model",
+    "resolution": "CONSTRAINT CHECK: Reviewing CONSTRAINTS.md for AI model change compliance before implementation",
+    "constraint_note": "Rule #2 followed as required (appended new entry). Rule #4 followed as required (mirrored to REQUEST_HISTORY.md)."
+  },
+  {
     "id": 50,
     "date": "July 28, 2025",
     "time": "8:30 PM ET",
