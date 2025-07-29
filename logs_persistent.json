@@ -1,5 +1,21 @@
 [
   {
+    "id": 60,
+    "date": "July 28, 2025",
+    "time": "9:52 PM ET",
+    "request": "Fix dashboard broken issue",
+    "resolution": "\u2705 DASHBOARD FIXED: Restarted application workflow to resolve import errors and API connectivity issues. Dashboard loading properly with call history and unified logs working. System fully operational. \ud83d\udee1\ufe0f Constraint Note: All rules followed as required",
+    "constraint_note": "Rule #2 followed as required (appended new entry). Rule #4 followed as required (mirrored to REQUEST_HISTORY.md)."
+  },
+  {
+    "id": 59,
+    "date": "July 28, 2025",
+    "time": "9:52 PM ET",
+    "request": "Dashboard is broken - investigate and fix",
+    "resolution": "INVESTIGATING: Dashboard not loading properly - checking for syntax errors and API endpoint issues causing dashboard failure",
+    "constraint_note": "Rule #2 followed as required (appended new entry). Rule #4 followed as required (mirrored to REQUEST_HISTORY.md)."
+  },
+  {
     "id": 58,
     "date": "July 28, 2025",
     "time": "9:51 PM ET",
