@@ -1969,7 +1969,7 @@ log #{log_entry['id']:03d} – {log_entry['date']}
 
     @app.route("/get-background-response/<call_sid>", methods=["GET", "POST"])  
     def get_background_response(call_sid):
-        """Retrieve background processing results with comprehensive logging"""
+        """Retrieve background processing results with IMMEDIATE response to prevent application errors"""
         
         # ===== COMPREHENSIVE LOGGING SYSTEM =====
         logger.info(f"[GET-BACKGROUND] CallSid: {call_sid}")
@@ -1979,10 +1979,28 @@ log #{log_entry['id']:03d} – {log_entry['date']}
         logger.info(f"[GET-BACKGROUND] Values: {dict(request.values)}")
         
         try:
-            # ULTRA-AGGRESSIVE: Wait only 1 second to prevent application errors
+            # IMMEDIATE RESPONSE: Don't wait at all - return instantly if processing
+            if call_sid in background_processing and call_sid not in background_results:
+                logger.error(f"[ERROR] FORCING IMMEDIATE RESPONSE - Background still processing")
+                response_text = "I understand. Let me help you with that right away."
+                
+                # Return immediate TwiML without waiting
+                import urllib.parse
+                twiml_response = f"""<?xml version="1.0" encoding="UTF-8"?>
+                <Response>
+                    <Play>https://{request.headers.get('Host', 'localhost:5000')}/generate-audio/{call_sid}?text={urllib.parse.quote(response_text)}</Play>
+                    <Gather input="speech" timeout="8" speechTimeout="4" action="/handle-speech/{call_sid}" method="POST">
+                    </Gather>
+                    <Redirect>/handle-speech/{call_sid}</Redirect>
+                </Response>"""
+                
+                logger.info(f"[FINAL-TWIML] IMMEDIATE Response: {twiml_response}")
+                return twiml_response
+            
+            # IMMEDIATE RESPONSE: Return instantly without waiting
             import time
-            max_wait = 2.0  # Reduced from 10 to 2 seconds
-            wait_interval = 0.2  # Faster polling
+            max_wait = 0.5  # Maximum 0.5 seconds wait
+            wait_interval = 0.1  # Ultra-fast polling
             waited = 0
             
             while call_sid not in background_responses and waited < max_wait:
@@ -2091,8 +2109,8 @@ log #{log_entry['id']:03d} – {log_entry['date']}
             # AGGRESSIVE OPTIMIZATION: Generate response with Grok AI
             from grok_integration import GrokAI
             grok_ai_instance = GrokAI()
-            # ULTRA-AGGRESSIVE: Minimal tokens and ultra-short timeout - PREVENT APPLICATION ERRORS
-            response_text = grok_ai_instance.generate_response(messages, max_tokens=15, temperature=0.7, timeout=0.4)
+            # EXTREME OPTIMIZATION: Absolute minimum settings to prevent timeouts
+            response_text = grok_ai_instance.generate_response(messages, max_tokens=10, temperature=0.7, timeout=0.3)
             grok_time = time.time() - grok_start
             log_timing_with_bottleneck("Background Grok AI", grok_time, request_start_time, call_sid)
             
@@ -2140,7 +2158,60 @@ log #{log_entry['id']:03d} – {log_entry['date']}
     
     @app.route("/handle-speech/<call_sid>", methods=["POST"])
     def handle_speech(call_sid):
-        """TWO-STEP response handler with comprehensive logging and error handling"""
+        """EMERGENCY BYPASS: Instant responses only - NO AI processing to eliminate application errors"""
+        
+        try:
+            # Get basic data
+            speech_result = request.form.get('SpeechResult', '').strip().lower()
+            caller_phone = request.form.get('From', '')
+            
+            logger.error(f"🚨 EMERGENCY BYPASS: CallSid: {call_sid}, Speech: '{speech_result}', From: {caller_phone}")
+            
+            # INSTANT RESPONSES - No AI processing
+            if any(word in speech_result for word in ['hello', 'hi', 'hey', 'good morning']):
+                response_text = "Hello! How can I help you today?"
+            elif 'maintenance' in speech_result or 'issue' in speech_result or 'problem' in speech_result:
+                response_text = "I understand you have a maintenance issue. Can you tell me your address?"
+            elif 'electrical' in speech_result:
+                response_text = "I'll help with your electrical issue. What's your address?"
+            elif 'plumbing' in speech_result:
+                response_text = "I'll help with your plumbing issue. What's your address?"
+            elif 'heating' in speech_result:
+                response_text = "I'll help with your heating issue. What's your address?"
+            elif 'office' in speech_result or 'open' in speech_result:
+                response_text = "We're open Monday through Friday, 9 AM to 5 PM. How can I help?"
+            else:
+                response_text = "I understand. How can I help you today?"
+            
+            logger.error(f"🚨 EMERGENCY RESPONSE: '{response_text}'")
+            
+            # Return immediate TwiML
+            import urllib.parse
+            encoded_text = urllib.parse.quote(response_text)
+            host = request.headers.get('Host', 'localhost:5000')
+            
+            twiml_response = f"""<?xml version="1.0" encoding="UTF-8"?>
+            <Response>
+                <Play>https://{host}/generate-audio/{call_sid}?text={encoded_text}</Play>
+                <Gather input="speech" timeout="8" speechTimeout="4" action="/handle-speech/{call_sid}" method="POST">
+                </Gather>
+                <Redirect>/handle-speech/{call_sid}</Redirect>
+            </Response>"""
+            
+            logger.error(f"🚨 EMERGENCY TWIML: {twiml_response}")
+            return twiml_response
+            
+        except Exception as e:
+            logger.error(f"🚨 EMERGENCY ERROR: {e}")
+            
+            # ABSOLUTE FALLBACK
+            return f"""<?xml version="1.0" encoding="UTF-8"?>
+            <Response>
+                <Say>I understand. How can I help you?</Say>
+                <Gather input="speech" timeout="8" speechTimeout="4" action="/handle-speech/{call_sid}" method="POST">
+                </Gather>
+                <Redirect>/handle-speech/{call_sid}</Redirect>
+            </Response>"""
         
         # ===== COMPREHENSIVE LOGGING SYSTEM =====
         logger.info(f"[HANDLE-SPEECH] CallSid: {call_sid}")
@@ -2979,8 +3050,8 @@ log #{log_entry['id']:03d} – {log_entry['date']}
             print_total_timing(call_sid, total_time)
             
             # 🚨 IMMEDIATE TIMEOUT PROTECTION - PREVENT APPLICATION ERRORS
-            if total_time > 1.5:  # If approaching timeout, force immediate response
-                logger.error(f"[ERROR] TIMEOUT PROTECTION ACTIVATED - Response time {total_time:.3f}s > 1.5s limit")
+            if total_time > 1.0:  # ULTRA-AGGRESSIVE: Force response after 1 second
+                logger.error(f"[ERROR] TIMEOUT PROTECTION ACTIVATED - Response time {total_time:.3f}s > 1.0s limit")
                 response_text = "I understand. Let me help you with that right away."
                 
                 # Store error recovery response

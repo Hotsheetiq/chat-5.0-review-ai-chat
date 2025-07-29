@@ -1652,8 +1652,123 @@
         "caller_phone": "",
         "background_processed": true
       }
+    ],
+    "CAb6612a8ad9d28a11b5d66e238e134104": [
+      {
+        "timestamp": "2025-07-29T06:02:43.424109",
+        "speaker": "System",
+        "message": "Performance monitoring for call CAb6612a8ad9d28a11b5d66e238e134104",
+        "caller_phone": "System",
+        "call_id": "CAb6612a8ad9d28a11b5d66e238e134104",
+        "timing_data": {
+          "speech_transcription_processing": 0.00019812583923339844
+        },
+        "total_processing_time": 0.0001990795135498047,
+        "bottlenecks": []
+      },
+      {
+        "timestamp": "2025-07-29T06:02:43.424223",
+        "speaker": "Caller",
+        "message": "have an electrical problem.",
+        "caller_phone": "Anonymous",
+        "timing_data": {
+          "pre-processing_complete": 0.02038884162902832,
+          "twiml_return_(hold_message)": 0.02557516098022461,
+          "background_grok_ai": 1.5337944030761719,
+          "background_elevenlabs": 0.3343663215637207,
+          "total_background_processing": 1.8938477039337158
+        },
+        "call_id": "CAb6612a8ad9d28a11b5d66e238e134104",
+        "total_processing_time": 1.893847942352295
+      }
+    ],
+    "LIVE_TEST": [
+      {
+        "timestamp": "2025-07-29T06:03:01.955415",
+        "speaker": "System",
+        "message": "Performance monitoring for call LIVE_TEST",
+        "caller_phone": "System",
+        "call_id": "LIVE_TEST",
+        "timing_data": {
+          "speech_transcription_processing": 0.000911712646484375
+        },
+        "total_processing_time": 0.0009131431579589844,
+        "bottlenecks": []
+      },
+      {
+        "timestamp": "2025-07-29T06:03:01.955475",
+        "speaker": "Caller",
+        "message": "test",
+        "caller_phone": "+18886411102"
+      }
+    ],
+    "ERROR_TEST": [
+      {
+        "timestamp": "2025-07-29T06:03:41.285588",
+        "speaker": "System",
+        "message": "Performance monitoring for call ERROR_TEST",
+        "caller_phone": "System",
+        "call_id": "ERROR_TEST",
+        "timing_data": {
+          "speech_transcription_processing": 0.0001804828643798828
+        },
+        "total_processing_time": 0.00018143653869628906,
+        "bottlenecks": []
+      },
+      {
+        "timestamp": "2025-07-29T06:03:41.285635",
+        "speaker": "Caller",
+        "message": "i need help",
+        "caller_phone": "+18886411102"
+      }
+    ],
+    "EMERGENCY_TEST": [
+      {
+        "timestamp": "2025-07-29T06:04:28.469926",
+        "speaker": "System",
+        "message": "Performance monitoring for call EMERGENCY_TEST",
+        "caller_phone": "System",
+        "call_id": "EMERGENCY_TEST",
+        "timing_data": {
+          "speech_transcription_processing": 0.00012063980102539062
+        },
+        "total_processing_time": 0.00012183189392089844,
+        "bottlenecks": []
+      },
+      {
+        "timestamp": "2025-07-29T06:04:28.469979",
+        "speaker": "Caller",
+        "message": "i have an electrical issue",
+        "caller_phone": "+18886411102",
+        "timing_data": {
+          "pre-processing_complete": 0.027618885040283203,
+          "twiml_return_(hold_message)": 0.02813124656677246
+        },
+        "call_id": "EMERGENCY_TEST",
+        "total_processing_time": 0.028132200241088867
+      }
+    ],
+    "SIMPLE_TEST": [
+      {
+        "timestamp": "2025-07-29T06:04:28.756361",
+        "speaker": "System",
+        "message": "Performance monitoring for call SIMPLE_TEST",
+        "caller_phone": "System",
+        "call_id": "SIMPLE_TEST",
+        "timing_data": {
+          "speech_transcription_processing": 0.0001361370086669922
+        },
+        "total_processing_time": 0.00013780593872070312,
+        "bottlenecks": []
+      },
+      {
+        "timestamp": "2025-07-29T06:04:28.756405",
+        "speaker": "Caller",
+        "message": "hello",
+        "caller_phone": "+18886411102"
+      }
     ]
   },
-  "last_updated": "2025-07-29T02:01:15.098248-04:00",
-  "total_calls": 60
+  "last_updated": "2025-07-29T02:04:28.756415-04:00",
+  "total_calls": 65
 }
