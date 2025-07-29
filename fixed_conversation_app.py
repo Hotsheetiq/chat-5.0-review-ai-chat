@@ -51,6 +51,9 @@ def save_conversation_history():
 # Load existing conversation history on startup
 conversation_history = load_conversation_history()
 
+# Email tracking to prevent duplicates
+email_sent_calls = set()
+
 # EMAIL NOTIFICATION SYSTEM - GMAIL SMTP FALLBACK
 def send_call_transcript_email(call_sid, caller_phone, transcript, issue_type=None, address_status="unknown"):
     """Send call transcript email to grinbergchat@gmail.com"""
@@ -1985,19 +1988,24 @@ log #{log_entry['id']:03d} – {log_entry['date']}
                         elif any(word in full_transcript.lower() for word in ['plumbing', 'water', 'leak']):
                             issue_type = "Plumbing"
                         
-                        # Send email immediately
-                        email_sent = send_call_transcript_email(
-                            call_sid=call_sid,
-                            caller_phone=caller_phone,
-                            transcript=full_transcript.strip(),
-                            issue_type=issue_type,
-                            address_status="From conversation"
-                        )
-                        
-                        if email_sent:
-                            logger.info("✅ EMAIL SENT: AI promise fulfilled - transcript delivered to grinbergchat@gmail.com")
+                        # Send email immediately (with duplicate prevention)
+                        global email_sent_calls
+                        if call_sid not in email_sent_calls:
+                            email_sent = send_call_transcript_email(
+                                call_sid=call_sid,
+                                caller_phone=caller_phone,
+                                transcript=full_transcript.strip(),
+                                issue_type=issue_type,
+                                address_status="From conversation"
+                            )
+                            
+                            if email_sent:
+                                email_sent_calls.add(call_sid)
+                                logger.info("✅ EMAIL SENT: AI promise fulfilled - transcript delivered to grinbergchat@gmail.com")
+                            else:
+                                logger.error("❌ EMAIL FAILED: Could not fulfill AI's email promise")
                         else:
-                            logger.error("❌ EMAIL FAILED: Could not fulfill AI's email promise")
+                            logger.info("📧 EMAIL SKIPPED: Already sent for this call")
                             
                     except Exception as e:
                         logger.error(f"❌ EMAIL ERROR: Failed to fulfill AI's email promise: {e}")
@@ -2038,19 +2046,23 @@ log #{log_entry['id']:03d} – {log_entry['date']}
                                         message = msg.get('message', '')
                                         full_transcript += f"[{timestamp[-8:]}] {speaker}: {message}\n"
                                 
-                                # Send email immediately
-                                email_sent = send_call_transcript_email(
-                                    call_sid=call_sid,
-                                    caller_phone=caller_phone,
-                                    transcript=full_transcript.strip(),
-                                    issue_type="Pest Control",
-                                    address_status="Provided by caller"
-                                )
-                                
-                                if email_sent:
-                                    logger.info("✅ EMAIL SENT: Transcript delivered to grinbergchat@gmail.com as promised")
+                                # Send email immediately (with duplicate prevention)
+                                if call_sid not in email_sent_calls:
+                                    email_sent = send_call_transcript_email(
+                                        call_sid=call_sid,
+                                        caller_phone=caller_phone,
+                                        transcript=full_transcript.strip(),
+                                        issue_type="Pest Control",
+                                        address_status="Provided by caller"
+                                    )
+                                    
+                                    if email_sent:
+                                        email_sent_calls.add(call_sid)
+                                        logger.info("✅ EMAIL SENT: Transcript delivered to grinbergchat@gmail.com as promised")
+                                    else:
+                                        logger.error("❌ EMAIL FAILED: Could not deliver transcript as promised")
                                 else:
-                                    logger.error("❌ EMAIL FAILED: Could not deliver transcript as promised")
+                                    logger.info("📧 EMAIL SKIPPED: Already sent for this call")
                                     
                             except Exception as e:
                                 logger.error(f"❌ EMAIL ERROR: Failed to send promised transcript: {e}")
@@ -2074,19 +2086,23 @@ log #{log_entry['id']:03d} – {log_entry['date']}
                                     message = msg.get('message', '')
                                     full_transcript += f"[{timestamp[-8:]}] {speaker}: {message}\n"
                             
-                            # Send email immediately
-                            email_sent = send_call_transcript_email(
-                                call_sid=call_sid,
-                                caller_phone=caller_phone,
-                                transcript=full_transcript.strip(),
-                                issue_type="Pest Control",
-                                address_status="Provided by caller"
-                            )
-                            
-                            if email_sent:
-                                logger.info("✅ EMAIL SENT: Transcript delivered to grinbergchat@gmail.com as promised")
+                            # Send email immediately (with duplicate prevention)
+                            if call_sid not in email_sent_calls:
+                                email_sent = send_call_transcript_email(
+                                    call_sid=call_sid,
+                                    caller_phone=caller_phone,
+                                    transcript=full_transcript.strip(),
+                                    issue_type="Pest Control",
+                                    address_status="Provided by caller"
+                                )
+                                
+                                if email_sent:
+                                    email_sent_calls.add(call_sid)
+                                    logger.info("✅ EMAIL SENT: Transcript delivered to grinbergchat@gmail.com as promised")
+                                else:
+                                    logger.error("❌ EMAIL FAILED: Could not deliver transcript as promised")
                             else:
-                                logger.error("❌ EMAIL FAILED: Could not deliver transcript as promised")
+                                logger.info("📧 EMAIL SKIPPED: Already sent for this call")
                                 
                         except Exception as e:
                             logger.error(f"❌ EMAIL ERROR: Failed to send promised transcript: {e}")
@@ -2201,8 +2217,8 @@ log #{log_entry['id']:03d} – {log_entry['date']}
                 'caller_phone': caller_phone
             })
             
-            # Additional email trigger check for fallback responses
-            if response_text and ("email" in response_text.lower() and "team" in response_text.lower()):
+            # Additional email trigger check for fallback responses (with duplicate prevention)
+            if response_text and ("email" in response_text.lower() and "team" in response_text.lower()) and call_sid not in email_sent_calls:
                 logger.info("📧 FALLBACK EMAIL TRIGGER - sending transcript")
                 try:
                     # Build full transcript
@@ -2233,6 +2249,7 @@ log #{log_entry['id']:03d} – {log_entry['date']}
                     )
                     
                     if email_sent:
+                        email_sent_calls.add(call_sid)
                         logger.info("✅ EMAIL SENT: Fallback trigger successful - transcript delivered")
                         
                 except Exception as e:
