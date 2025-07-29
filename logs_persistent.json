@@ -1,5 +1,13 @@
 [
   {
+    "id": 84,
+    "date": "July 28, 2025",
+    "time": "10:41 PM ET",
+    "request": "Every call must be emailed to grinbergchat@gmail.com - no service issues, just email notifications",
+    "resolution": "UNIVERSAL EMAIL NOTIFICATION SYSTEM: Implementing email notifications for ALL calls to grinbergchat@gmail.com. Removing service issue creation, focusing on comprehensive email transcripts with caller details, conversation history, and address verification status.",
+    "constraint_note": "Rule #2 followed as required (appended new entry). Rule #4 followed as required (mirrored to REQUEST_HISTORY.md)."
+  },
+  {
     "id": 83,
     "date": "July 28, 2025",
     "time": "10:39 PM ET",
