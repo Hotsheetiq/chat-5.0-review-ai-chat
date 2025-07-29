@@ -1159,8 +1159,42 @@
         "message": "hello",
         "caller_phone": " 13477430880"
       }
+    ],
+    "CAa1f6461caa4bd067c6688de2bf286059": [
+      {
+        "timestamp": "2025-07-29T06:09:09.935806",
+        "speaker": "Caller",
+        "message": "i have no power.",
+        "caller_phone": "Anonymous"
+      },
+      {
+        "timestamp": "2025-07-29T06:09:13.599255",
+        "speaker": "Chris",
+        "message": "I encountered a technical issue. Let me help you anyway. What can I do for you?",
+        "caller_phone": "Anonymous",
+        "background_processed": true
+      },
+      {
+        "timestamp": "2025-07-29T06:09:25.839858",
+        "speaker": "Caller",
+        "message": "i have no power.",
+        "caller_phone": "Anonymous"
+      },
+      {
+        "timestamp": "2025-07-29T06:09:29.212943",
+        "speaker": "Chris",
+        "message": "I encountered a technical issue. Let me help you anyway. What can I do for you?",
+        "caller_phone": "Anonymous",
+        "background_processed": true
+      },
+      {
+        "timestamp": "2025-07-29T06:09:35.168025",
+        "speaker": "Chris",
+        "message": "I didn't catch that. Could you please repeat what you said?",
+        "caller_phone": "Anonymous"
+      }
     ]
   },
-  "last_updated": "2025-07-29T01:14:34.067785-04:00",
-  "total_calls": 30
+  "last_updated": "2025-07-29T02:09:35.168039-04:00",
+  "total_calls": 31
 }
