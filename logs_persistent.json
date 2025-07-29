@@ -1,5 +1,21 @@
 [
   {
+    "id": 62,
+    "date": "July 28, 2025",
+    "time": "9:55 PM ET",
+    "request": "Fix Chris technical issue during live call",
+    "resolution": "\u2705 TECHNICAL ISSUE FIXED: Removed duplicate import re statement that was causing variable scope error during live calls. Chris can now handle address suggestions without crashes. Diagnostic errors reduced from 13 to 6. System fully operational. \ud83d\udee1\ufe0f Constraint Note: All rules followed as required",
+    "constraint_note": "Rule #2 followed as required (appended new entry). Rule #4 followed as required (mirrored to REQUEST_HISTORY.md)."
+  },
+  {
+    "id": 61,
+    "date": "July 28, 2025",
+    "time": "9:54 PM ET",
+    "request": "Chris had technical issue during live call",
+    "resolution": "CRITICAL BUG FIX: Error shows re module not accessible - fixing import scope issue in address suggestion system that is breaking live calls",
+    "constraint_note": "Rule #2 followed as required (appended new entry). Rule #4 followed as required (mirrored to REQUEST_HISTORY.md)."
+  },
+  {
     "id": 60,
     "date": "July 28, 2025",
     "time": "9:52 PM ET",

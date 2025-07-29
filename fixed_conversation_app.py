@@ -1528,7 +1528,6 @@ log #{log_entry['id']:03d} – {log_entry['date']}
                                         break
                                     
                                     # STRICT STREET NUMBER + STREET NAME MATCHING (more secure than fuzzy)
-                                    import re
                                     caller_match = re.search(r'(\d+)\s+(.+)', potential_lower)
                                     prop_match = re.search(r'(\d+)\s+(.+)', prop_name)
                                     
