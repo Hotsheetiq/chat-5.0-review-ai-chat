@@ -1,5 +1,13 @@
 [
   {
+    "id": 47,
+    "date": "July 28, 2025",
+    "time": "8:24 PM ET",
+    "request": "look at /constraints page text is white",
+    "resolution": "CRITICAL CSS OVERRIDE FIX: Updated CSS style section to use black text colors instead of white - fixed pre element, card-body, and constraint-section styles that were overriding inline styles",
+    "constraint_note": "Rule #2 followed as required (appended new entry). Rule #4 followed as required (mirrored to REQUEST_HISTORY.md)."
+  },
+  {
     "id": 46,
     "date": "July 28, 2025",
     "time": "8:22 PM ET",

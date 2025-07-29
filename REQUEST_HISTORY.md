@@ -259,3 +259,7 @@ log #045 – July 28, 2025
 log #046 – July 28, 2025  
 📝 Request: box background color is white change text color to black  
 ✅ Resolution: CONSTRAINT TEXT COLOR FIX: Changed all text colors from white to black for proper visibility against white background - updated pre element, strong elements, and card body text colors
+
+log #047 – July 28, 2025  
+📝 Request: look at /constraints page text is white  
+✅ Resolution: CRITICAL CSS OVERRIDE FIX: Updated CSS style section to use black text colors instead of white - fixed pre element, card-body, and constraint-section styles that were overriding inline styles

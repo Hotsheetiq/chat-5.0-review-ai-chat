@@ -717,15 +717,19 @@ def create_app():
                 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
                 <style>
                     .constraint-section { border-left: 4px solid #007bff; padding-left: 15px; margin: 20px 0; }
-                    .protection-rule { background: #2d3a4e; padding: 10px; border-radius: 5px; margin: 10px 0; color: #ffffff; }
+                    .protection-rule { background: #f8f9fa; padding: 10px; border-radius: 5px; margin: 10px 0; color: #000000; border: 1px solid #dee2e6; }
                     .timestamp { color: #6c757d; font-size: 0.9em; }
-                    pre { background: #1e2a3a; padding: 15px; border-radius: 5px; overflow-x: auto; color: #ffffff !important; }
+                    pre { background: #ffffff; padding: 15px; border-radius: 5px; overflow-x: auto; color: #000000 !important; border: 1px solid #ccc; white-space: pre-wrap; }
                     .add-constraint-btn { position: fixed; bottom: 20px; right: 20px; z-index: 1000; }
-                    .card-body { color: #ffffff; }
-                    .constraint-section strong { color: #ffffff; }
+                    .card-body { color: #000000; }
+                    .constraint-section strong { color: #000000; }
+                    body { background-color: #ffffff !important; color: #000000 !important; }
+                    .card { background-color: #ffffff !important; }
+                    .card-header { background-color: #f8f9fa !important; color: #000000 !important; }
+                    .alert { background-color: #fff3cd !important; color: #856404 !important; border-color: #ffeaa7 !important; }
                 </style>
             </head>
-            <body class="bg-dark text-light">
+            <body style="background-color: #ffffff; color: #000000;">
                 <div class="container mt-4">
                     <div class="d-flex justify-content-between align-items-center mb-4">
                         <h1>🛡️ System Constraints</h1>
