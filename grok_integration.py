@@ -154,7 +154,7 @@ class GrokAI:
                                 messages=optimized_messages,
                                 max_tokens=max_tokens,
                                 temperature=temperature,
-                                timeout=max(2.0, timeout - 1.0)
+                                timeout=max(1.0, timeout - 0.5)
                             )
                             fallback_content = fallback_response.choices[0].message.content
                             if fallback_content and fallback_content.strip():

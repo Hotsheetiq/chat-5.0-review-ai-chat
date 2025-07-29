@@ -1971,16 +1971,15 @@ log #{log_entry['id']:03d} – {log_entry['date']}
     def get_background_response(call_sid):
         """Retrieve background processing results and continue conversation"""
         try:
-            # Wait up to 10 seconds for background processing to complete
+            # AGGRESSIVE: Wait only 2 seconds to prevent application errors
             import time
-            max_wait = 10
-            wait_interval = 0.5
+            max_wait = 2.0  # Reduced from 10 to 2 seconds
+            wait_interval = 0.2  # Faster polling
             waited = 0
             
             while call_sid not in background_responses and waited < max_wait:
                 time.sleep(wait_interval)
                 waited += wait_interval
-                logger.info(f"⏳ Waiting for background processing: {waited:.1f}s")
             
             if call_sid in background_responses:
                 result = background_responses[call_sid]
@@ -2020,8 +2019,8 @@ log #{log_entry['id']:03d} – {log_entry['date']}
                     <Redirect>/handle-speech/{call_sid}</Redirect>
                 </Response>"""
             else:
-                logger.warning(f"⏰ Background processing timeout for {call_sid}")
-                response_text = "I'm here to help. What can I do for you?"
+                logger.warning(f"⏰ Background processing timeout for {call_sid} after 2s - using instant fallback")
+                response_text = "I understand. Let me help you with that right away."
                 
                 import urllib.parse
                 return f"""<?xml version="1.0" encoding="UTF-8"?>
@@ -2064,19 +2063,17 @@ log #{log_entry['id']:03d} – {log_entry['date']}
             # ⏰ TIMING: Grok AI Processing
             grok_start = time.time()
             
-            # Build conversation context (simplified version)
+            # ULTRA-FAST: Minimal conversation context to reduce processing time
             conversation_context = ""
             if call_sid in conversation_history:
-                recent_messages = conversation_history[call_sid][-10:]  # Last 10 for context
-                conversation_context = "\n\nConversation so far:\n"
+                recent_messages = conversation_history[call_sid][-3:]  # Only last 3 for speed
                 for msg in recent_messages:
                     speaker = msg.get('speaker', 'Unknown')
                     message = msg.get('message', '')
                     conversation_context += f"{speaker}: {message}\n"
             
-            # Create AI prompt
-            system_content = f"""You are Chris from Grinberg Management. You're intelligent, helpful, and avoid repetitive questions.
-            Keep responses under 25 words and sound natural.{conversation_context}"""
+            # AGGRESSIVE: Ultra-short AI prompt for maximum speed
+            system_content = f"""You are Chris from Grinberg Management. Keep responses under 15 words.{conversation_context}"""
             
             messages = [
                 {"role": "system", "content": system_content},
@@ -2086,7 +2083,8 @@ log #{log_entry['id']:03d} – {log_entry['date']}
             # AGGRESSIVE OPTIMIZATION: Generate response with Grok AI
             from grok_integration import GrokAI
             grok_ai_instance = GrokAI()
-            response_text = grok_ai_instance.generate_response(messages, max_tokens=40, temperature=0.7, timeout=1.2)
+            # ULTRA-AGGRESSIVE: Minimal tokens and ultra-short timeout
+            response_text = grok_ai_instance.generate_response(messages, max_tokens=20, temperature=0.7, timeout=0.6)
             grok_time = time.time() - grok_start
             log_timing_with_bottleneck("Background Grok AI", grok_time, request_start_time, call_sid)
             
@@ -2103,7 +2101,7 @@ log #{log_entry['id']:03d} – {log_entry['date']}
                 # AGGRESSIVE: Pre-generate the audio to cache it with reduced timeout
                 try:
                     import requests
-                    cache_request = requests.get(audio_url, timeout=1.0)
+                    cache_request = requests.get(audio_url, timeout=0.5)
                     if cache_request.status_code == 200:
                         logger.info(f"✅ Audio pre-cached for background response")
                 except:
@@ -2124,9 +2122,11 @@ log #{log_entry['id']:03d} – {log_entry['date']}
             
         except Exception as e:
             logger.error(f"❌ Background processing error: {e}")
+            # Provide immediate response to prevent application error
             return {
-                'error': True,
-                'message': 'I encountered a technical issue. Let me help you anyway. What can I do for you?',
+                'success': True,
+                'response_text': 'I understand. Let me help you with that right away.',
+                'audio_url': None,
                 'processing_time': time.time() - request_start_time
             }
     

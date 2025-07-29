@@ -1362,8 +1362,28 @@
         "message": "i need help with maintenance",
         "caller_phone": "+13477430880"
       }
+    ],
+    "CAec6e89ad9c7660667f8d0f653dc0c509": [
+      {
+        "timestamp": "2025-07-29T05:50:03.712740",
+        "speaker": "System",
+        "message": "Performance monitoring for call CAec6e89ad9c7660667f8d0f653dc0c509",
+        "caller_phone": "System",
+        "call_id": "CAec6e89ad9c7660667f8d0f653dc0c509",
+        "timing_data": {
+          "speech_transcription_processing": 0.0001862049102783203
+        },
+        "total_processing_time": 0.0001876354217529297,
+        "bottlenecks": []
+      },
+      {
+        "timestamp": "2025-07-29T05:50:03.712771",
+        "speaker": "Caller",
+        "message": "my electricity is off.",
+        "caller_phone": "Anonymous"
+      }
     ]
   },
-  "last_updated": "2025-07-29T01:43:18.494667-04:00",
-  "total_calls": 50
+  "last_updated": "2025-07-29T01:50:03.714434-04:00",
+  "total_calls": 51
 }
