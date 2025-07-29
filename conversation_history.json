@@ -1382,8 +1382,101 @@
         "message": "my electricity is off.",
         "caller_phone": "Anonymous"
       }
+    ],
+    "CA7705a111b8f332614a28764597060dbb": [
+      {
+        "timestamp": "2025-07-29T05:52:50.810661",
+        "speaker": "System",
+        "message": "Performance monitoring for call CA7705a111b8f332614a28764597060dbb",
+        "caller_phone": "System",
+        "call_id": "CA7705a111b8f332614a28764597060dbb",
+        "timing_data": {
+          "speech_transcription_processing": 0.00021648406982421875
+        },
+        "total_processing_time": 0.0002181529998779297,
+        "bottlenecks": []
+      },
+      {
+        "timestamp": "2025-07-29T05:52:50.810697",
+        "speaker": "Caller",
+        "message": "my electricity is off.",
+        "caller_phone": "Anonymous"
+      }
+    ],
+    "TEST123": [
+      {
+        "timestamp": "2025-07-29T05:57:04.400488",
+        "speaker": "System",
+        "message": "Performance monitoring for call TEST123",
+        "caller_phone": "System",
+        "call_id": "TEST123",
+        "timing_data": {
+          "speech_transcription_processing": 0.00011610984802246094
+        },
+        "total_processing_time": 0.00011730194091796875,
+        "bottlenecks": []
+      },
+      {
+        "timestamp": "2025-07-29T05:57:04.400525",
+        "speaker": "Caller",
+        "message": "hello",
+        "caller_phone": "+17182345678",
+        "timing_data": {
+          "pre-processing_complete": 0.013811588287353516,
+          "grok_ai_processing": 1.3530454635620117
+        },
+        "call_id": "TEST123",
+        "total_processing_time": 3.5439369678497314
+      },
+      {
+        "timestamp": "2025-07-29T05:57:07.944442",
+        "speaker": "Chris",
+        "message": "Hello! How can I assist you today?",
+        "caller_phone": "+17182345678",
+        "timing_data": {
+          "elevenlabs_parallel_queue": 0.0003337860107421875
+        },
+        "call_id": "TEST123",
+        "total_processing_time": 3.5444979667663574
+      }
+    ],
+    "TEST456": [
+      {
+        "timestamp": "2025-07-29T05:57:08.138789",
+        "speaker": "System",
+        "message": "Performance monitoring for call TEST456",
+        "caller_phone": "System",
+        "call_id": "TEST456",
+        "timing_data": {
+          "speech_transcription_processing": 0.00016307830810546875
+        },
+        "total_processing_time": 0.00016546249389648438,
+        "bottlenecks": []
+      },
+      {
+        "timestamp": "2025-07-29T05:57:08.138861",
+        "speaker": "Caller",
+        "message": "i have a maintenance issue",
+        "caller_phone": "+17182345678",
+        "timing_data": {
+          "pre-processing_complete": 0.006112098693847656,
+          "twiml_return_(hold_message)": 0.008518218994140625,
+          "background_grok_ai": 1.4252028465270996,
+          "background_elevenlabs": 0.5035338401794434,
+          "total_background_processing": 1.9361064434051514
+        },
+        "call_id": "TEST456",
+        "total_processing_time": 1.9361069202423096
+      },
+      {
+        "timestamp": "2025-07-29T05:57:14.704151",
+        "speaker": "Chris",
+        "message": "Please describe the maintenance issue for TEST456.",
+        "caller_phone": "",
+        "background_processed": true
+      }
     ]
   },
-  "last_updated": "2025-07-29T01:50:03.714434-04:00",
-  "total_calls": 51
+  "last_updated": "2025-07-29T01:57:14.704172-04:00",
+  "total_calls": 54
 }

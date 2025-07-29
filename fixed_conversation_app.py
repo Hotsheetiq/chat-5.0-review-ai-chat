@@ -1969,7 +1969,15 @@ log #{log_entry['id']:03d} – {log_entry['date']}
 
     @app.route("/get-background-response/<call_sid>", methods=["GET", "POST"])  
     def get_background_response(call_sid):
-        """Retrieve background processing results and continue conversation"""
+        """Retrieve background processing results with comprehensive logging"""
+        
+        # ===== COMPREHENSIVE LOGGING SYSTEM =====
+        logger.info(f"[GET-BACKGROUND] CallSid: {call_sid}")
+        logger.info(f"[GET-BACKGROUND] Method: {request.method}")
+        logger.info(f"[GET-BACKGROUND] Headers: {dict(request.headers)}")
+        logger.info(f"[GET-BACKGROUND] Form Data: {dict(request.form)}")
+        logger.info(f"[GET-BACKGROUND] Values: {dict(request.values)}")
+        
         try:
             # AGGRESSIVE: Wait only 2 seconds to prevent application errors
             import time
@@ -2132,15 +2140,28 @@ log #{log_entry['id']:03d} – {log_entry['date']}
     
     @app.route("/handle-speech/<call_sid>", methods=["POST"])
     def handle_speech(call_sid):
-        """TWO-STEP response handler with immediate hold message and background processing"""
-        # ⏰ START REQUEST TIMING
-        request_start_time = time.time()
+        """TWO-STEP response handler with comprehensive logging and error handling"""
+        
+        # ===== COMPREHENSIVE LOGGING SYSTEM =====
+        logger.info(f"[HANDLE-SPEECH] CallSid: {call_sid}")
+        logger.info(f"[HANDLE-SPEECH] Method: {request.method}")
+        logger.info(f"[HANDLE-SPEECH] Headers: {dict(request.headers)}")
+        logger.info(f"[HANDLE-SPEECH] Form Data: {dict(request.form)}")
+        logger.info(f"[HANDLE-SPEECH] Values: {dict(request.values)}")
         
         try:
+            # ⏰ START REQUEST TIMING
+            request_start_time = time.time()
             # ⏰ 1. SPEECH TRANSCRIPTION TIMING
             transcription_start = time.time()
             speech_result = request.values.get("SpeechResult", "").lower().strip()
             caller_phone = request.values.get("From", "")
+            
+            # ===== DETAILED SPEECH LOGGING =====
+            logger.info(f"[SPEECH-DATA] SpeechResult: '{speech_result}' (length: {len(speech_result)})")
+            logger.info(f"[SPEECH-DATA] CallSid: {call_sid}")
+            logger.info(f"[SPEECH-DATA] From: {caller_phone}")
+            logger.info(f"[SPEECH-DATA] Confidence: {request.values.get('Confidence', 'N/A')}")
             transcription_time = time.time() - transcription_start
             log_timing_with_bottleneck("Speech transcription processing", transcription_time, request_start_time, call_sid)
             
@@ -2961,12 +2982,57 @@ log #{log_entry['id']:03d} – {log_entry['date']}
             </Response>"""
             
         except Exception as e:
-            logger.error(f"Speech handling error: {e}")
-            return """<?xml version="1.0" encoding="UTF-8"?>
-            <Response>
-                <Say voice="Polly.Matthew-Neural">I'm sorry, I had a technical issue. Please try again.</Say>
-                <Gather input="speech" timeout="8" speechTimeout="4"/>
-            </Response>"""
+            logger.error(f"[ERROR] Speech handling error: {e}")
+            logger.error(f"[ERROR] Exception type: {type(e).__name__}")
+            
+            # ===== ERROR TIMING CHECK =====
+            try:
+                total_time = time.time() - request_start_time
+                logger.error(f"[ERROR] Call duration: {total_time:.3f}s")
+                if total_time > 3.0:
+                    logger.error(f"[ERROR] Request exceeded 3 second threshold: {total_time:.3f}s")
+            except:
+                logger.error(f"[ERROR] Could not calculate timing")
+            
+            # ===== COMPREHENSIVE ERROR HANDLING =====
+            fallback_text = "I understand. Let me help you with that right away."
+            
+            try:
+                # Store error response in conversation history  
+                if call_sid not in conversation_history:
+                    conversation_history[call_sid] = []
+                    
+                conversation_history[call_sid].append({
+                    'timestamp': datetime.now().isoformat(),
+                    'speaker': 'Chris',
+                    'message': fallback_text,
+                    'caller_phone': request.values.get("From", ""),
+                    'error_recovery': True
+                })
+                
+                save_conversation_history()
+                
+                # ===== FINAL TWIML LOGGING =====
+                import urllib.parse
+                twiml_response = f"""<?xml version="1.0" encoding="UTF-8"?>
+                <Response>
+                    <Play>https://{request.headers.get('Host', 'localhost:5000')}/generate-audio/{call_sid}?text={urllib.parse.quote(fallback_text)}</Play>
+                    <Gather input="speech" timeout="8" speechTimeout="4" action="/handle-speech/{call_sid}" method="POST">
+                    </Gather>
+                    <Redirect>/handle-speech/{call_sid}</Redirect>
+                </Response>"""
+                
+                logger.info(f"[FINAL-TWIML] Error Recovery Response: {twiml_response}")
+                return twiml_response
+                
+            except Exception as nested_error:
+                logger.error(f"[ERROR] Nested error in error handling: {nested_error}")
+                # Ultimate fallback - simple TwiML that always works
+                return """<?xml version="1.0" encoding="UTF-8"?>
+                <Response>
+                    <Say voice="Polly.Matthew-Neural">I'm here to help. What can I do for you?</Say>
+                    <Gather input="speech" timeout="8" speechTimeout="4"/>
+                </Response>"""
 
     @app.route("/api/calls/history", methods=["GET"])
     def get_call_history():
