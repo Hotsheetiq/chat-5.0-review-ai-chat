@@ -36,6 +36,34 @@ The following automatic logging components are CRITICAL and must NEVER be remove
 
 Before updating the UI or any logs, read this file and confirm you're following the rules.
 
+## CRITICAL SYSTEM PROTECTION - AI RESPONSE INTEGRITY (ABSOLUTE CONSTRAINT)
+
+**NEVER OVERRIDE AI RESPONSES WITH GENERIC FALLBACK - MAXIMUM PROTECTION**
+
+The following AI response system components are CRITICAL and must NEVER be overridden:
+
+### Protected AI Behavior:
+- AI-generated intelligent responses must NEVER be replaced with generic fallbacks
+- Grok AI responses should be trusted and used as-is when generated successfully  
+- Generic responses like "I understand. How can I help you with that?" are BANNED as AI overrides
+- Fallbacks should only be used when AI completely fails to generate ANY response
+
+### Prohibited Override Patterns:
+- NEVER replace intelligent AI responses with "I understand. How can I help you with that?"
+- NEVER use keyword detection to override AI responses (e.g., checking for "electrical" and forcing generic response)
+- NEVER assume AI responses are inadequate without evidence of complete generation failure
+
+### Protected Response Flow:
+1. AI generates intelligent response → USE IT
+2. AI generates empty/invalid response → Use intelligent fallback based on detected issues
+3. AI completely fails → Only then use minimal generic fallback
+
+**JUSTIFICATION**: User explicitly requested "never override ai responses with generic fallback. add this to constraint list"
+
+**VIOLATION WARNING**: Overriding intelligent AI responses with generic fallbacks destroys conversation intelligence and violates user requirements.
+
+**TIMESTAMP**: Added July 29, 2025 at 2:16 AM ET
+
 ## Additional Constraints
 
 ### Data Structure Management

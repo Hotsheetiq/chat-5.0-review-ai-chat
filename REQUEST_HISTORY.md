@@ -383,3 +383,11 @@ log #074 – July 28, 2025
 log #075 – July 28, 2025  
 📝 Request: AI intelligence failure - Chris saying generic responses instead of understanding electrical issues  
 ✅ Resolution: CRITICAL AI FAILURE: Despite system prompt, Chris says I understand. How can I help you with that instead of Got it, electrical issue. Whats your address. AI not following system instructions. Investigating prompt delivery and response generation.
+
+log #076 – July 28, 2025  
+📝 Request: Add constraint: Never override AI responses with generic fallback  
+✅ Resolution: CRITICAL CONSTRAINT ADDITION: User explicitly requested Never override AI responses with generic fallback be added to constraint list. This prevents intelligent AI responses from being replaced with I understand. How can I help you with that generic messages.
+
+log #077 – July 28, 2025  
+📝 Request: AI Response Override Constraint Added to CONSTRAINTS.md  
+✅ Resolution: ✅ CRITICAL CONSTRAINT ADDED: Never override AI responses with generic fallback added to CONSTRAINTS.md with maximum protection. Updated code to log AI responses and protect intelligent responses from being overridden. 🛡️ Constraint Note: AI response integrity now protected as requested

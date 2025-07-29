@@ -1,5 +1,21 @@
 [
   {
+    "id": 77,
+    "date": "July 28, 2025",
+    "time": "10:17 PM ET",
+    "request": "AI Response Override Constraint Added to CONSTRAINTS.md",
+    "resolution": "\u2705 CRITICAL CONSTRAINT ADDED: Never override AI responses with generic fallback added to CONSTRAINTS.md with maximum protection. Updated code to log AI responses and protect intelligent responses from being overridden. \ud83d\udee1\ufe0f Constraint Note: AI response integrity now protected as requested",
+    "constraint_note": "Rule #2 followed as required (appended new entry). Rule #4 followed as required (mirrored to REQUEST_HISTORY.md)."
+  },
+  {
+    "id": 76,
+    "date": "July 28, 2025",
+    "time": "10:16 PM ET",
+    "request": "Add constraint: Never override AI responses with generic fallback",
+    "resolution": "CRITICAL CONSTRAINT ADDITION: User explicitly requested Never override AI responses with generic fallback be added to constraint list. This prevents intelligent AI responses from being replaced with I understand. How can I help you with that generic messages.",
+    "constraint_note": "Rule #2 followed as required (appended new entry). Rule #4 followed as required (mirrored to REQUEST_HISTORY.md)."
+  },
+  {
     "id": 75,
     "date": "July 28, 2025",
     "time": "10:15 PM ET",

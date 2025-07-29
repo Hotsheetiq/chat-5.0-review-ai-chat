@@ -1702,10 +1702,11 @@ log #{log_entry['id']:03d} – {log_entry['date']}
                 response_text = grok_ai.generate_response(messages, max_tokens=100, temperature=0.7, timeout=2.0)
                 logger.info(f"🤖 AI RESPONSE: '{response_text}' (length: {len(response_text) if response_text else 0})")
                 
-                # MINIMAL fallback - only if AI completely fails
+                # 🛡️ CONSTRAINT PROTECTION: NEVER OVERRIDE AI RESPONSES WITH GENERIC FALLBACK
+                # Only use fallback if AI completely fails to generate ANY response
                 if not response_text or len(response_text.strip()) < 3:
-                    logger.warning("⚠️ AI FAILED - using fallback response")
-                    # Use INTELLIGENT fallback based on detected issues
+                    logger.warning("⚠️ AI COMPLETELY FAILED - using intelligent fallback (CONSTRAINT PROTECTED)")
+                    # Use INTELLIGENT fallback based on detected issues (NOT generic)
                     if any(word in speech_result.lower() for word in ['electrical', 'electric', 'power', 'lights']):
                         response_text = "Got it, electrical issue. What's your address?"
                     elif any(word in speech_result.lower() for word in ['heat', 'heating', 'hot', 'cold', 'temperature']):
@@ -1713,12 +1714,22 @@ log #{log_entry['id']:03d} – {log_entry['date']}
                     elif any(word in speech_result.lower() for word in ['plumbing', 'water', 'leak', 'pipe']):
                         response_text = "Got it, plumbing issue. What's your address?"
                     else:
-                        response_text = "I understand. How can I help you with that?"
+                        response_text = "What can I help you with today?"
+                else:
+                    logger.info("✅ AI RESPONSE ACCEPTED - using intelligent AI-generated response (CONSTRAINT PROTECTED)")
                     
             except Exception as e:
                 logger.error(f"AI response error: {e}")
-                # Simple fallback only on complete AI failure
-                response_text = "I understand. How can I help you with that?"
+                # 🛡️ CONSTRAINT PROTECTION: NEVER OVERRIDE AI RESPONSES WITH GENERIC FALLBACK
+                # Use intelligent fallback based on detected issues (NOT generic)
+                if any(word in speech_result.lower() for word in ['electrical', 'electric', 'power', 'lights']):
+                    response_text = "Got it, electrical issue. What's your address?"
+                elif any(word in speech_result.lower() for word in ['heat', 'heating', 'hot', 'cold', 'temperature']):
+                    response_text = "Got it, heating issue. What's your address?"
+                elif any(word in speech_result.lower() for word in ['plumbing', 'water', 'leak', 'pipe']):
+                    response_text = "Got it, plumbing issue. What's your address?"
+                else:
+                    response_text = "What can I help you with today?"
             
             # Store AI response
             conversation_history[call_sid].append({
