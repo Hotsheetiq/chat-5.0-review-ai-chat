@@ -1314,8 +1314,36 @@
         "message": "hi, chris. i'm having a problem with my power.",
         "caller_phone": "Anonymous"
       }
+    ],
+    "CA46cf4bf69565b4f3f0913d55391be1ff": [
+      {
+        "timestamp": "2025-07-29T05:37:50.820825",
+        "speaker": "Caller",
+        "message": "i am looking for an exterminator.",
+        "caller_phone": "Anonymous"
+      }
+    ],
+    "TEST_CALL_12345": [
+      {
+        "timestamp": "2025-07-29T05:40:50.221680",
+        "speaker": "System",
+        "message": "Performance monitoring for call TEST_CALL_12345",
+        "caller_phone": "System",
+        "call_id": "TEST_CALL_12345",
+        "timing_data": {
+          "speech_transcription_processing": 0.0005042552947998047
+        },
+        "total_processing_time": 0.0005059242248535156,
+        "bottlenecks": []
+      },
+      {
+        "timestamp": "2025-07-29T05:40:50.221737",
+        "speaker": "Caller",
+        "message": "i have a heating problem",
+        "caller_phone": "+13477430880"
+      }
     ]
   },
-  "last_updated": "2025-07-29T01:32:51.141589-04:00",
-  "total_calls": 47
+  "last_updated": "2025-07-29T01:40:50.224770-04:00",
+  "total_calls": 49
 }
