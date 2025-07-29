@@ -1,21 +1,5 @@
 [
   {
-    "id": 80,
-    "date": "July 28, 2025",
-    "time": "10:25 PM ET",
-    "request": "Enhanced address collection system implementation complete",
-    "resolution": "\u2705 IMPLEMENTATION COMPLETE: Enhanced AddressMatcher with detailed collection system. When exact match not found, Chris asks caller to say house number one digit at a time and spell street name letter by letter. Then uses intelligent matching with street similarity priority for best guess matching. Updated conversation flow to use new enhanced system.",
-    "constraint_note": "Rule #2 followed as required (appended new entry). Rule #4 followed as required (mirrored to REQUEST_HISTORY.md)."
-  },
-  {
-    "id": 79,
-    "date": "July 28, 2025",
-    "time": "10:23 PM ET",
-    "request": "Enhanced address collection: letter-by-letter spelling and closest match with street similarity priority",
-    "resolution": "IMPLEMENTATION: When exact match not found, Chris asks caller to say house number one digit at a time and spell street name one letter at a time. Then uses intelligent matching with street similarity carrying most weight for best guess.",
-    "constraint_note": "Rule #2 followed as required (appended new entry). Rule #4 followed as required (mirrored to REQUEST_HISTORY.md)."
-  },
-  {
     "id": 78,
     "date": "July 28, 2025",
     "time": "10:20 PM ET",
