@@ -1,5 +1,21 @@
 [
   {
+    "id": 56,
+    "date": "July 28, 2025",
+    "time": "9:47 PM ET",
+    "request": "Fix critical address matching bug - Chris making dangerous address assumptions",
+    "resolution": "CRITICAL BUG IDENTIFIED: Address matcher incorrectly suggests similar addresses (628 terry avenue \u2192 627 Cary Avenue) instead of rejecting invalid addresses. Must fix fuzzy matching logic to prevent false confirmations.",
+    "constraint_note": "Rule #2 followed as required (appended new entry). Rule #4 followed as required (mirrored to REQUEST_HISTORY.md)."
+  },
+  {
+    "id": 55,
+    "date": "July 28, 2025",
+    "time": "9:47 PM ET",
+    "request": "Chris did not understand complaint - investigate AI comprehension issue",
+    "resolution": "INVESTIGATING: Chris is AI-powered with Grok 4.0 but failed to understand user complaint - checking conversation history and AI prompt system for comprehension issues",
+    "constraint_note": "Rule #2 followed as required (appended new entry). Rule #4 followed as required (mirrored to REQUEST_HISTORY.md)."
+  },
+  {
     "id": 54,
     "date": "July 28, 2025",
     "time": "8:41 PM ET",

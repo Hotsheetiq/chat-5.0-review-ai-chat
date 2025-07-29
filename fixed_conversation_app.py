@@ -1512,15 +1512,39 @@ log #{log_entry['id']:03d} – {log_entry['date']}
                                 comprehensive_properties = get_comprehensive_property_database()
                                 logger.info(f"🏢 LOADED COMPREHENSIVE FALLBACK: {len(comprehensive_properties)} properties")
                                 
-                                # Simple string matching against comprehensive database
-                                potential_lower = potential_address.lower()
+                                # STRICT EXACT ADDRESS MATCHING ONLY - No fuzzy matching to prevent dangerous assumptions
+                                potential_lower = potential_address.lower().strip()
+                                found_match = False
+                                
                                 for prop in comprehensive_properties:
-                                    prop_name = prop.get('Name', '').lower()
-                                    if potential_lower in prop_name or prop_name in potential_lower:
+                                    prop_name = prop.get('Name', '').lower().strip()
+                                    
+                                    # EXACT MATCH ONLY - prevent "628 terry" matching "627 cary" 
+                                    if potential_lower == prop_name:
                                         verified_address = prop.get('Name', potential_address)
-                                        address_context = f"\n\nVERIFIED ADDRESS: The caller mentioned '{potential_address}' which matches '{verified_address}' in our comprehensive property database. Confirm: 'Great! I found {verified_address} in our system.'"
-                                        logger.info(f"✅ COMPREHENSIVE DATABASE VERIFIED: '{potential_address}' → '{verified_address}'")
+                                        address_context = f"\n\nVERIFIED ADDRESS: The caller mentioned '{potential_address}' which EXACTLY matches '{verified_address}' in our comprehensive property database. Confirm: 'Great! I found {verified_address} in our system.'"
+                                        logger.info(f"✅ EXACT MATCH VERIFIED: '{potential_address}' → '{verified_address}'")
+                                        found_match = True
                                         break
+                                    
+                                    # STRICT STREET NUMBER + STREET NAME MATCHING (more secure than fuzzy)
+                                    import re
+                                    caller_match = re.search(r'(\d+)\s+(.+)', potential_lower)
+                                    prop_match = re.search(r'(\d+)\s+(.+)', prop_name)
+                                    
+                                    if caller_match and prop_match:
+                                        caller_number, caller_street = caller_match.groups()
+                                        prop_number, prop_street = prop_match.groups()
+                                        
+                                        # EXACT street number + street name match required
+                                        if caller_number == prop_number and caller_street.strip() == prop_street.strip():
+                                            verified_address = prop.get('Name', potential_address)
+                                            address_context = f"\n\nVERIFIED ADDRESS: The caller mentioned '{potential_address}' which EXACTLY matches '{verified_address}' in our comprehensive property database. Confirm: 'Great! I found {verified_address} in our system.'"
+                                            logger.info(f"✅ STRICT MATCH VERIFIED: '{potential_address}' → '{verified_address}'")
+                                            found_match = True
+                                            break
+                                
+                                if not found_match:
                                 else:
                                     address_context = f"\n\nABSOLUTE REJECTION REQUIRED: The caller mentioned '{potential_address}' which is NOT in our 430+ property database. YOU MUST SAY EXACTLY: 'I couldn't find {potential_address} in our property system. Could you double-check the address? We manage properties on Port Richmond Avenue and Targee Street.' CRITICAL: Do not suggest any other addresses. Do not assume they meant anything else. REJECT COMPLETELY and ask for verification."
                                     logger.warning(f"❌ ABSOLUTE DATABASE REJECTION: '{potential_address}' not found - must reject completely")
