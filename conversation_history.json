@@ -1347,8 +1347,33 @@
         "message": "hello chris how are you",
         "caller_phone": " 13477430880"
       }
+    ],
+    "test-debug-call-123": [],
+    "test-live-debug-456": [
+      {
+        "timestamp": "2025-07-29T16:57:58.150066",
+        "speaker": "Caller",
+        "message": "hello chris how are you today",
+        "caller_phone": " 13477430880"
+      }
+    ],
+    "test-final-working-call-999": [],
+    "test-complete-workflow-final": [
+      {
+        "timestamp": "2025-07-29T16:59:30.713450",
+        "speaker": "Caller",
+        "message": "i have an electrical issue at 29 port richmond avenue",
+        "caller_phone": " 13477430880"
+      },
+      {
+        "timestamp": "2025-07-29T16:59:34.372516",
+        "speaker": "Chris",
+        "message": "Thank you for letting me know. I understand you mentioned: i have an electrical issue at 29 port richmond avenue. Let me help you with that.",
+        "caller_phone": "Anonymous",
+        "background_processed": true
+      }
     ]
   },
-  "last_updated": "2025-07-29T12:39:19.075445-04:00",
-  "total_calls": 41
+  "last_updated": "2025-07-29T12:59:34.372532-04:00",
+  "total_calls": 45
 }

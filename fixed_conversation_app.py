@@ -242,7 +242,7 @@ Issue Type: {issue_type or 'Not specified'}
 Address Status: {address_status}
 
 Complete Conversation:
-{simple_transcript}
+{transcript or 'No transcript available'}
 
 Next Actions:
 - Review conversation for follow-up
@@ -1609,6 +1609,7 @@ log #{log_entry['id']:03d} – {log_entry['date']}
             return jsonify({'success': False, 'message': 'Error updating flag'}), 500
 
     @app.route("/voice", methods=["GET", "POST"])
+    @app.route("/voice-webhook", methods=["GET", "POST"])
     @app.route("/webhook", methods=["GET", "POST"])
     @app.route("/incoming-call", methods=["GET", "POST"])
     def voice_incoming():
