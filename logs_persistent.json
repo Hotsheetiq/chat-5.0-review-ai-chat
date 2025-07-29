@@ -1,5 +1,13 @@
 [
   {
+    "id": 85,
+    "date": "July 28, 2025",
+    "time": "10:41 PM ET",
+    "request": "Remove email notifications - no emails to grinbergchat@gmail.com",
+    "resolution": "\u2705 EMAIL SYSTEM DISABLED: Removing all email notification functionality. Chris will handle calls normally without sending emails. Focus on conversation handling and address verification only.",
+    "constraint_note": "Rule #2 followed as required (appended new entry). Rule #4 followed as required (mirrored to REQUEST_HISTORY.md)."
+  },
+  {
     "id": 84,
     "date": "July 28, 2025",
     "time": "10:41 PM ET",

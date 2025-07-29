@@ -1815,17 +1815,16 @@ log #{log_entry['id']:03d} – {log_entry['date']}
                     
                     # If we previously asked for spelling and still can't verify, continue with unverified address
                     if has_spelling_request and unverified_address:
-                        logger.info(f"📧 CONTINUING WITH UNVERIFIED ADDRESS: {unverified_address} after spelling attempt")
-                        response_text = f"Thank you for the spelling. I still can't find that exact address in our system, but let me help you anyway. I'll make a note that the address needs verification. What's the issue you're experiencing?"
+                        logger.info(f"🔄 CONTINUING WITH UNVERIFIED ADDRESS: {unverified_address} after spelling attempt")
+                        response_text = f"Thank you for the spelling. I still can't find that exact address in our system, but let me help you anyway. What's the issue you're experiencing?"
                         
-                        # Mark for email notification with unverified address
+                        # Continue conversation without email notification
                         conversation_history[call_sid].append({
                             'timestamp': datetime.now().isoformat(),
                             'speaker': 'Chris',
                             'message': response_text,
                             'caller_phone': caller_phone,
-                            'unverified_address_proceeding': True,
-                            'address_for_email': unverified_address
+                            'unverified_address_proceeding': True
                         })
                     
                     elif remembered_issue:
