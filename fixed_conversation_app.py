@@ -63,18 +63,37 @@ conversation_history = load_conversation_history()
 # Email tracking to prevent duplicates
 email_sent_calls = set()
 
-# Performance timing functions
+# Enhanced timing functions with bottleneck detection
+def log_timing_with_bottleneck(stage, duration, request_start_time, call_sid=None):
+    """Log timing with bottleneck detection and elapsed time from request start"""
+    elapsed = time.time() - request_start_time
+    bottleneck = "[BOTTLENECK]" if duration > 2.0 else ""
+    
+    logger.info(f"[TIMER] {stage}: {duration:.3f}s {bottleneck}")
+    logger.info(f"[TIMER] Elapsed from request start: {elapsed:.3f}s")
+    
+    if bottleneck:
+        logger.warning(f"{bottleneck} {stage} took {duration:.3f}s - exceeds 2s threshold")
+    
+    timing_data[stage].append(duration)
+    if call_sid:
+        logger.info(f"[Call {call_sid}] {stage}: {duration:.3f}s {bottleneck}")
+
 def log_timing(stage, duration, call_sid=None):
-    """Log timing data for performance monitoring"""
+    """Legacy timing function - kept for compatibility"""
     timing_data[stage].append(duration)
     logger.info(f"[Timing] {stage}: {duration:.3f} seconds")
     if call_sid:
         logger.info(f"[Call {call_sid}] {stage}: {duration:.3f}s")
 
 def print_total_timing(call_sid, total_time):
-    """Print total response time as requested"""
-    print(f"[Timing] Total AI response cycle: {total_time:.2f} seconds")
-    logger.info(f"[Call {call_sid}] Total AI response cycle: {total_time:.2f} seconds")
+    """Print total response time with bottleneck analysis"""
+    bottleneck = "[BOTTLENECK]" if total_time > 2.0 else ""
+    print(f"[TIMER] TOTAL RESPONSE TIME: {total_time:.3f}s {bottleneck}")
+    logger.info(f"[TIMER] TOTAL RESPONSE TIME: {total_time:.3f}s {bottleneck}")
+    if bottleneck:
+        logger.warning(f"{bottleneck} Total response exceeded 2s threshold")
+    logger.info(f"[Call {call_sid}] Total: {total_time:.3f}s {bottleneck}")
 
 # Anti-repetition system - prevent Chris from repeating exact phrases
 response_tracker = {}
@@ -1645,21 +1664,181 @@ log #{log_entry['id']:03d} – {log_entry['date']}
                 <Gather input="speech" timeout="8" speechTimeout="4"/>
             </Response>"""
 
+    @app.route("/get-background-response/<call_sid>", methods=["GET", "POST"])  
+    def get_background_response(call_sid):
+        """Retrieve background processing results and continue conversation"""
+        try:
+            # Wait up to 10 seconds for background processing to complete
+            import time
+            max_wait = 10
+            wait_interval = 0.5
+            waited = 0
+            
+            while call_sid not in background_responses and waited < max_wait:
+                time.sleep(wait_interval)
+                waited += wait_interval
+                logger.info(f"⏳ Waiting for background processing: {waited:.1f}s")
+            
+            if call_sid in background_responses:
+                result = background_responses[call_sid]
+                
+                # Clean up
+                del background_responses[call_sid]
+                
+                if result.get('error'):
+                    response_text = result.get('message', 'I encountered a technical issue. How can I help you?')
+                    logger.error(f"❌ Background error: {response_text}")
+                else:
+                    response_text = result.get('response_text', 'How can I help you?')
+                    processing_time = result.get('processing_time', 0)
+                    logger.info(f"✅ Background response ready: '{response_text}' (processed in {processing_time:.2f}s)")
+                
+                # Store Chris's response in conversation history
+                if call_sid not in conversation_history:
+                    conversation_history[call_sid] = []
+                    
+                conversation_history[call_sid].append({
+                    'timestamp': datetime.now().isoformat(),
+                    'speaker': 'Chris',
+                    'message': response_text,
+                    'caller_phone': request.values.get("From", ""),
+                    'background_processed': True
+                })
+                
+                save_conversation_history()
+                
+                # Return TwiML with response
+                import urllib.parse
+                return f"""<?xml version="1.0" encoding="UTF-8"?>
+                <Response>
+                    <Play>https://{request.headers.get('Host', 'localhost:5000')}/generate-audio/{call_sid}?text={urllib.parse.quote(response_text)}</Play>
+                    <Gather input="speech" timeout="8" speechTimeout="4" action="/handle-speech/{call_sid}" method="POST">
+                    </Gather>
+                    <Redirect>/handle-speech/{call_sid}</Redirect>
+                </Response>"""
+            else:
+                logger.warning(f"⏰ Background processing timeout for {call_sid}")
+                response_text = "I'm here to help. What can I do for you?"
+                
+                import urllib.parse
+                return f"""<?xml version="1.0" encoding="UTF-8"?>
+                <Response>
+                    <Play>https://{request.headers.get('Host', 'localhost:5000')}/generate-audio/{call_sid}?text={urllib.parse.quote(response_text)}</Play>
+                    <Gather input="speech" timeout="8" speechTimeout="4" action="/handle-speech/{call_sid}" method="POST">
+                    </Gather>
+                    <Redirect>/handle-speech/{call_sid}</Redirect>
+                </Response>"""
+                
+        except Exception as e:
+            logger.error(f"❌ Background response retrieval error: {e}")
+            response_text = "I encountered a technical issue. How can I help you?"
+            
+            import urllib.parse
+            return f"""<?xml version="1.0" encoding="UTF-8"?>
+            <Response>
+                <Play>https://{request.headers.get('Host', 'localhost:5000')}/generate-audio/{call_sid}?text={urllib.parse.quote(response_text)}</Play>
+                <Gather input="speech" timeout="8" speechTimeout="4" action="/handle-speech/{call_sid}" method="POST">
+                </Gather>
+                <Redirect>/handle-speech/{call_sid}</Redirect>
+            </Response>"""
+
+    # Global storage for background processing results
+    background_responses = {}
+    
+    def process_complex_request_background(call_sid, speech_result, caller_phone, request_start_time):
+        """Process complex requests in background with detailed timing"""
+        try:
+            # This contains the main AI processing logic from the original function
+            # ⏰ TIMING: Grok AI Processing
+            grok_start = time.time()
+            
+            # Build conversation context (simplified version)
+            conversation_context = ""
+            if call_sid in conversation_history:
+                recent_messages = conversation_history[call_sid][-10:]  # Last 10 for context
+                conversation_context = "\n\nConversation so far:\n"
+                for msg in recent_messages:
+                    speaker = msg.get('speaker', 'Unknown')
+                    message = msg.get('message', '')
+                    conversation_context += f"{speaker}: {message}\n"
+            
+            # Create AI prompt
+            system_content = f"""You are Chris from Grinberg Management. You're intelligent, helpful, and avoid repetitive questions.
+            Keep responses under 25 words and sound natural.{conversation_context}"""
+            
+            messages = [
+                {"role": "system", "content": system_content},
+                {"role": "user", "content": f"Current input: {speech_result}"}
+            ]
+            
+            # Generate response with Grok AI
+            from grok_integration import GrokAI
+            grok_ai_instance = GrokAI()
+            response_text = grok_ai_instance.generate_response(messages, max_tokens=80, temperature=0.7, timeout=3.0)
+            grok_time = time.time() - grok_start
+            log_timing_with_bottleneck("Background Grok AI", grok_time, request_start_time, call_sid)
+            
+            # ⏰ TIMING: ElevenLabs Processing (start parallel)
+            elevenlabs_start = time.time()
+            audio_url = None
+            
+            if response_text:
+                # Generate audio with ElevenLabs in background
+                import urllib.parse
+                encoded_text = urllib.parse.quote(response_text)
+                audio_url = f"https://{request.headers.get('Host', 'localhost:5000')}/generate-audio/{call_sid}?text={encoded_text}"
+                
+                # Pre-generate the audio to cache it
+                try:
+                    import requests
+                    cache_request = requests.get(audio_url, timeout=3.0)
+                    if cache_request.status_code == 200:
+                        logger.info(f"✅ Audio pre-cached for background response")
+                except:
+                    logger.warning("⚠️ Audio pre-caching failed, will generate on demand")
+            
+            elevenlabs_time = time.time() - elevenlabs_start
+            log_timing_with_bottleneck("Background ElevenLabs", elevenlabs_time, request_start_time, call_sid)
+            
+            total_background_time = time.time() - request_start_time
+            log_timing_with_bottleneck("Total background processing", total_background_time, request_start_time, call_sid)
+            
+            return {
+                'success': True,
+                'response_text': response_text or "I'm here to help. What can I do for you?",
+                'audio_url': audio_url,
+                'processing_time': total_background_time
+            }
+            
+        except Exception as e:
+            logger.error(f"❌ Background processing error: {e}")
+            return {
+                'error': True,
+                'message': 'I encountered a technical issue. Let me help you anyway. What can I do for you?',
+                'processing_time': time.time() - request_start_time
+            }
+    
     @app.route("/handle-speech/<call_sid>", methods=["POST"])
     def handle_speech(call_sid):
-        """OPTIMIZED speech handler with comprehensive timing"""
-        # ⏰ START TOTAL TIMING
-        total_start_time = time.time()
+        """TWO-STEP response handler with immediate hold message and background processing"""
+        # ⏰ START REQUEST TIMING
+        request_start_time = time.time()
         
         try:
-            # ⏰ 1. SPEECH TRANSCRIPTION TIMING (already done by Twilio)
+            # ⏰ 1. SPEECH TRANSCRIPTION TIMING
             transcription_start = time.time()
             speech_result = request.values.get("SpeechResult", "").lower().strip()
             caller_phone = request.values.get("From", "")
             transcription_time = time.time() - transcription_start
-            log_timing("Speech transcription processing", transcription_time, call_sid)
+            log_timing_with_bottleneck("Speech transcription processing", transcription_time, request_start_time, call_sid)
             
             logger.info(f"🎤 SPEECH from {caller_phone}: '{speech_result}'")
+            
+            # TWO-STEP SYSTEM: Determine if this needs immediate response or background processing
+            is_simple_request = any(pattern in speech_result for pattern in [
+                'hello', 'hi ', 'hey ', 'good morning', 'good afternoon', 'thank you', 'thanks',
+                'are you open', 'what time', 'office hours', 'how are you'
+            ])
             
             # Store conversation
             if call_sid not in conversation_history:
@@ -1700,6 +1879,49 @@ log #{log_entry['id']:03d} – {log_entry['date']}
             
             # Save conversation to persistent storage
             save_conversation_history()
+            
+            # ⏰ TIMING: Check elapsed time before deciding response strategy
+            elapsed_time = time.time() - request_start_time
+            log_timing_with_bottleneck("Pre-processing complete", elapsed_time, request_start_time, call_sid)
+            
+            # TWO-STEP DECISION: Simple requests get instant processing, complex get hold message + background
+            if is_simple_request:
+                logger.info("🚀 INSTANT PROCESSING: Simple request detected, using instant response path")
+                # Continue with normal processing for simple requests
+            else:
+                logger.info("⏳ BACKGROUND PROCESSING: Complex request detected, returning hold message immediately")
+                
+                # Start background processing in thread
+                import threading
+                def background_process():
+                    try:
+                        # Process in background and store result
+                        result = process_complex_request_background(call_sid, speech_result, caller_phone, request_start_time)
+                        background_responses[call_sid] = result
+                        logger.info(f"✅ Background processing complete for {call_sid}")
+                    except Exception as e:
+                        logger.error(f"❌ Background processing error: {e}")
+                        background_responses[call_sid] = {
+                            'error': True,
+                            'message': 'I encountered a technical issue. Let me help you anyway. What can I do for you?'
+                        }
+                
+                # Start background thread
+                thread = threading.Thread(target=background_process)
+                thread.daemon = True
+                thread.start()
+                
+                # Return immediate hold message
+                hold_message = "Please hold for just a moment while I process that for you."
+                twiml_return_time = time.time() - request_start_time
+                log_timing_with_bottleneck("TwiML return (hold message)", twiml_return_time, request_start_time, call_sid)
+                
+                import urllib.parse
+                return f"""<?xml version="1.0" encoding="UTF-8"?>
+                <Response>
+                    <Play>https://{request.headers.get('Host', 'localhost:5000')}/generate-audio/{call_sid}?text={urllib.parse.quote(hold_message)}</Play>
+                    <Redirect>/get-background-response/{call_sid}</Redirect>
+                </Response>"""
             
             # EMAIL NOTIFICATION: Send transcript after each interaction for comprehensive tracking
             try:
@@ -2028,8 +2250,7 @@ log #{log_entry['id']:03d} – {log_entry['date']}
                     # OPTIMIZED: Reduced max_tokens for faster responses
                     response_text = grok_ai.generate_response(messages, max_tokens=80, temperature=0.7, timeout=3.0)
                     grok_time = time.time() - grok_start
-                    log_timing("Grok AI processing", grok_time, call_sid)
-                    print(f"[Timing] Grok AI processing: {grok_time:.2f} seconds")
+                    log_timing_with_bottleneck("Grok AI processing", grok_time, request_start_time, call_sid)
                     
                     logger.info(f"🤖 AI RESPONSE: '{response_text}' (length: {len(response_text) if response_text else 0})")
                     
@@ -2041,13 +2262,12 @@ log #{log_entry['id']:03d} – {log_entry['date']}
                         enhanced_messages[0]["content"] += "\n\nIMPORTANT: Please provide a helpful, complete response to assist the caller. Do not return empty responses."
                         response_text = grok_ai.generate_response(enhanced_messages, max_tokens=120, temperature=0.8, timeout=4.0)
                         retry_time = time.time() - retry_start
-                        log_timing("Grok AI retry", retry_time, call_sid)
-                        print(f"[Timing] Grok AI retry: {retry_time:.2f} seconds")
+                        log_timing_with_bottleneck("Grok AI retry", retry_time, request_start_time, call_sid)
                         logger.info(f"🔄 ENHANCED RESPONSE: '{response_text}'")
                         
                 except Exception as e:
                     grok_time = time.time() - grok_start
-                    log_timing("Grok AI error", grok_time, call_sid)
+                    log_timing_with_bottleneck("Grok AI error", grok_time, request_start_time, call_sid)
                     logger.error(f"❌ GROK ERROR: {e}")
                     response_text = None
                 
@@ -2403,7 +2623,7 @@ log #{log_entry['id']:03d} – {log_entry['date']}
             
             encoded_text = urllib.parse.quote(response_text)
             elevenlabs_time = time.time() - elevenlabs_start
-            log_timing("ElevenLabs parallel queue", elevenlabs_time, call_sid)
+            log_timing_with_bottleneck("ElevenLabs parallel queue", elevenlabs_time, request_start_time, call_sid)
             print(f"[Timing] ElevenLabs parallel queue: {elevenlabs_time:.3f} seconds")
             
             # ⏰ 4. TOTAL RESPONSE TIME CALCULATION

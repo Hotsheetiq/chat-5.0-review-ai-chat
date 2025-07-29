@@ -1069,8 +1069,52 @@
         "message": "I didn't catch that. Could you please repeat what you said?",
         "caller_phone": "Anonymous"
       }
+    ],
+    "CAa34f26c224da9152309836366ec6f36b": [
+      {
+        "timestamp": "2025-07-29T05:06:41.041021",
+        "speaker": "Caller",
+        "message": "i'm having a problem with my electricity.",
+        "caller_phone": "Anonymous"
+      },
+      {
+        "timestamp": "2025-07-29T05:06:45.641321",
+        "speaker": "Chris",
+        "message": "I'm sorry to hear that. Can you tell me more about the issue with your electricity? Is it a complete outage, or are you experiencing something else?",
+        "caller_phone": "Anonymous"
+      },
+      {
+        "timestamp": "2025-07-29T05:07:02.446757",
+        "speaker": "Caller",
+        "message": "one of my rooms doesn't have power.",
+        "caller_phone": "Anonymous"
+      },
+      {
+        "timestamp": "2025-07-29T05:07:08.749818",
+        "speaker": "Chris",
+        "message": "I'm sorry to hear that. Can you please confirm the address where this is happening and which specific room is without power?",
+        "caller_phone": "Anonymous"
+      },
+      {
+        "timestamp": "2025-07-29T05:07:29.039834",
+        "speaker": "Caller",
+        "message": "this is happening in 43044 richmond avenue.  does announced new york.",
+        "caller_phone": "Anonymous"
+      },
+      {
+        "timestamp": "2025-07-29T05:07:31.594971",
+        "speaker": "Chris",
+        "message": "Great! I found 29 Port Richmond Avenue in our system. How can I assist you today with this address?",
+        "caller_phone": "Anonymous"
+      },
+      {
+        "timestamp": "2025-07-29T05:07:39.465849",
+        "speaker": "Chris",
+        "message": "I didn't catch that. Could you please repeat what you said?",
+        "caller_phone": "Anonymous"
+      }
     ]
   },
-  "last_updated": "2025-07-29T00:37:24.823489-04:00",
-  "total_calls": 25
+  "last_updated": "2025-07-29T01:07:39.465865-04:00",
+  "total_calls": 26
 }
