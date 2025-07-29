@@ -1,5 +1,21 @@
 [
   {
+    "id": 81,
+    "date": "July 28, 2025",
+    "time": "10:35 PM ET",
+    "request": "Technical issue fixed - removed duplicate import re statements",
+    "resolution": "\u2705 TECHNICAL ERROR RESOLVED: Removed duplicate import re statements that were causing variable scope error. re module already imported at top of file (line 7). Chris should now handle heating system calls without technical issues. \ud83d\udee1\ufe0f Constraint Note: AI response integrity maintained while fixing technical error",
+    "constraint_note": "Rule #2 followed as required (appended new entry). Rule #4 followed as required (mirrored to REQUEST_HISTORY.md)."
+  },
+  {
+    "id": 80,
+    "date": "July 28, 2025",
+    "time": "10:34 PM ET",
+    "request": "Chris had a technical issue - cannot access local variable re",
+    "resolution": "CRITICAL TECHNICAL ERROR: Variable scope error with re module - cannot access local variable re where it is not associated with a value. Fixing import statement placement to resolve scope issue.",
+    "constraint_note": "Rule #2 followed as required (appended new entry). Rule #4 followed as required (mirrored to REQUEST_HISTORY.md)."
+  },
+  {
     "id": 79,
     "date": "July 28, 2025",
     "time": "10:33 PM ET",

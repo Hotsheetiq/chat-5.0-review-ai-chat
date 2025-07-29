@@ -1710,7 +1710,6 @@ log #{log_entry['id']:03d} – {log_entry['date']}
                     # INTELLIGENT fallback that remembers conversation context
                     if address_context and "VERIFIED ADDRESS" in address_context:
                         # Extract the found address from context
-                        import re
                         address_match = re.search(r"'Great! I found ([^']+) in our system", address_context)
                         if address_match:
                             found_address = address_match.group(1)
@@ -1751,7 +1750,6 @@ log #{log_entry['id']:03d} – {log_entry['date']}
                 # Use intelligent fallback that remembers conversation context
                 if address_context and "VERIFIED ADDRESS" in address_context:
                     # Extract the found address from context
-                    import re
                     address_match = re.search(r"'Great! I found ([^']+) in our system", address_context)
                     if address_match:
                         found_address = address_match.group(1)
