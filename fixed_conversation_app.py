@@ -967,7 +967,7 @@ def create_app():
                                                 const badgeColor = value.includes('BOTTLENECK') || value.includes('DELAYS') ? 'warning' : 
                                                                   value.includes('WORKING') || value.includes('OPERATIONAL') || value.includes('ENHANCED') || value.includes('SUCCESS') ? 'success' : 'secondary';
                                                 const displayKey = key.replace(/_/g, ' ').toUpperCase();
-                                                return `<li class="mb-2"><span class="badge bg-${badgeColor} me-2">${value}</span><strong>${displayKey}</strong></li>`;
+                                                return `<li class="mb-2"><span class="badge bg-${badgeColor} me-2">${value}</span> <strong>${displayKey}</strong></li>`;
                                             }).join('')}
                                         </ul>
                                     </div>
