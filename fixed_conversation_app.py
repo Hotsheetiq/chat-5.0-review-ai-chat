@@ -1510,9 +1510,12 @@ log #{log_entry['id']:03d} – {log_entry['date']}
     def get_unified_logs():
         """API endpoint for unified logs with hardened structure"""
         try:
+            # Load fresh logs from file to ensure we have latest updates
+            fresh_logs = load_logs_from_file()
+            
             # Convert logs to expected format for dashboard using hardened structure
             unified_logs = []
-            for log in request_history_logs:
+            for log in fresh_logs:
                 unified_logs.append({
                     'id': f'log_{log["id"]:03d}',
                     'date': log['date'],
