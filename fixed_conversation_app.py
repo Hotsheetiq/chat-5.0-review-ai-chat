@@ -2627,7 +2627,7 @@ log #{log_entry['id']:03d} – {log_entry['date']}
             print(f"[Timing] ElevenLabs parallel queue: {elevenlabs_time:.3f} seconds")
             
             # ⏰ 4. TOTAL RESPONSE TIME CALCULATION
-            total_time = time.time() - total_start_time
+            total_time = time.time() - request_start_time
             print_total_timing(call_sid, total_time)
             
             # Return optimized TwiML response
