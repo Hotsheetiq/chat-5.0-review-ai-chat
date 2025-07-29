@@ -64,6 +64,39 @@ The following email system components are CRITICAL and must NEVER be removed or 
 
 **VIOLATION WARNING**: Removing email_sent_calls tracker or disabling duplicate prevention will cause multiple emails per call, creating unprofessional spam and violating user requirements.
 
+## CRITICAL PROTECTION: COMPLAINT CONFIRMATION SYSTEM (ABSOLUTE CONSTRAINT - Added: July 29, 2025 at 11:23 PM ET)
+
+**COMPLAINT CONFIRMATION PROTOCOL - DO NOT REMOVE OR DISABLE**
+
+The following complaint confirmation components are CRITICAL and must NEVER be removed or disabled:
+
+### Protected AI System Prompt Rules:
+- "CRITICAL COMPLAINT CONFIRMATION PROTOCOL" section in AI system prompt - PROTECTED
+- Complaint repeat-back requirement for tenant issues/concerns/problems - PROTECTED
+- Confirmation phrases: "Let me make sure I understand...", "So you're saying...", "Just to confirm..." - PROTECTED
+- Summary requirement: "Summarize their issue in your own words to show you heard them correctly" - PROTECTED
+- Confirmation verification: "Did I get that right?" or "Is that correct?" - PROTECTED
+
+### Protected Conversation Flow:
+- Step 1: REPEAT BACK tenant complaint to confirm understanding - PROTECTED
+- Step 2: Summarize issue in Chris's own words - PROTECTED  
+- Step 3: Ask for confirmation before proceeding - PROTECTED
+- Step 4: Only proceed with solution AFTER tenant confirms - PROTECTED
+
+### Protected Examples:
+- Heat issue example: "Let me make sure I understand - you're saying the heating in your unit isn't working properly. Is that correct?" - PROTECTED
+- Roach issue example: "So you're telling me there's a roach problem in your apartment. Did I get that right?" - PROTECTED
+
+### Protected Functionality:
+- Chris must demonstrate active listening by repeating complaints back - PROTECTED
+- Prevents misunderstandings by confirming what tenant actually said - PROTECTED
+- Builds trust through acknowledgment before moving to solutions - PROTECTED
+- Ensures accurate problem documentation for service tickets - PROTECTED
+
+**JUSTIFICATION**: User requested "Add complaint confirmation - Chris should repeat back complaints to confirm understanding before proceeding"
+
+**VIOLATION WARNING**: Removing complaint confirmation protocol will cause Chris to skip acknowledgment of tenant concerns, leading to misunderstandings and poor customer service experience.
+
 ## CRITICAL PROTECTION: ANTI-REPETITION SYSTEM (ABSOLUTE CONSTRAINT - Added: July 29, 2025 at 12:05 AM ET)
 
 **ANTI-REPETITION SYSTEM - DO NOT REMOVE OR DISABLE**
