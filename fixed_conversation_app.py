@@ -1957,6 +1957,51 @@ log #{log_entry['id']:03d} – {log_entry['date']}
                 response_text = grok_ai.generate_response(messages, max_tokens=100, temperature=0.7, timeout=2.0)
                 logger.info(f"🤖 AI RESPONSE: '{response_text}' (length: {len(response_text) if response_text else 0})")
                 
+                # Enhanced AI response validation and email triggers
+                if response_text and ("email" in response_text.lower() and ("management" in response_text.lower() or "team" in response_text.lower())):
+                    # AI promised to email - trigger email immediately
+                    logger.info("📧 AI PROMISED EMAIL - triggering transcript delivery")
+                    try:
+                        # Build full transcript from conversation history
+                        full_transcript = ""
+                        if call_sid in conversation_history:
+                            for msg in conversation_history[call_sid]:
+                                timestamp = msg.get('timestamp', '')[:19]  # Remove microseconds
+                                speaker = msg.get('speaker', 'Unknown')
+                                message = msg.get('message', '')
+                                full_transcript += f"[{timestamp[-8:]}] {speaker}: {message}\n"
+                        
+                        # Add current AI response to transcript
+                        full_transcript += f"[{datetime.now().strftime('%H:%M:%S')}] Chris: {response_text}\n"
+                        
+                        # Determine issue type from conversation
+                        issue_type = "General Inquiry"
+                        if any(word in full_transcript.lower() for word in ['roach', 'bug', 'pest', 'cockroach']):
+                            issue_type = "Pest Control"
+                        elif any(word in full_transcript.lower() for word in ['electrical', 'electric', 'power']):
+                            issue_type = "Electrical"
+                        elif any(word in full_transcript.lower() for word in ['heat', 'heating', 'hot', 'cold']):
+                            issue_type = "Heating"
+                        elif any(word in full_transcript.lower() for word in ['plumbing', 'water', 'leak']):
+                            issue_type = "Plumbing"
+                        
+                        # Send email immediately
+                        email_sent = send_call_transcript_email(
+                            call_sid=call_sid,
+                            caller_phone=caller_phone,
+                            transcript=full_transcript.strip(),
+                            issue_type=issue_type,
+                            address_status="From conversation"
+                        )
+                        
+                        if email_sent:
+                            logger.info("✅ EMAIL SENT: AI promise fulfilled - transcript delivered to grinbergchat@gmail.com")
+                        else:
+                            logger.error("❌ EMAIL FAILED: Could not fulfill AI's email promise")
+                            
+                    except Exception as e:
+                        logger.error(f"❌ EMAIL ERROR: Failed to fulfill AI's email promise: {e}")
+                
                 # 🛡️ CONSTRAINT PROTECTION: NEVER OVERRIDE AI RESPONSES WITH GENERIC FALLBACK
                 # Only use fallback if AI completely fails to generate ANY response
                 if not response_text or len(response_text.strip()) < 3:
@@ -1981,6 +2026,35 @@ log #{log_entry['id']:03d} – {log_entry['date']}
                         if caller_provided_address:
                             response_text = "I heard the address you mentioned. Let me help you with your pest problem. I'll email the details to our management team and someone will contact you soon."
                             logger.info("🔄 ADDRESSING PROVIDED INFO: Caller gave address but we kept asking - proceeding with issue")
+                            
+                            # TRIGGER EMAIL: Send transcript when Chris promises to email
+                            try:
+                                # Build full transcript from conversation history
+                                full_transcript = ""
+                                if call_sid in conversation_history:
+                                    for msg in conversation_history[call_sid]:
+                                        timestamp = msg.get('timestamp', '')[:19]  # Remove microseconds
+                                        speaker = msg.get('speaker', 'Unknown')
+                                        message = msg.get('message', '')
+                                        full_transcript += f"[{timestamp[-8:]}] {speaker}: {message}\n"
+                                
+                                # Send email immediately
+                                email_sent = send_call_transcript_email(
+                                    call_sid=call_sid,
+                                    caller_phone=caller_phone,
+                                    transcript=full_transcript.strip(),
+                                    issue_type="Pest Control",
+                                    address_status="Provided by caller"
+                                )
+                                
+                                if email_sent:
+                                    logger.info("✅ EMAIL SENT: Transcript delivered to grinbergchat@gmail.com as promised")
+                                else:
+                                    logger.error("❌ EMAIL FAILED: Could not deliver transcript as promised")
+                                    
+                            except Exception as e:
+                                logger.error(f"❌ EMAIL ERROR: Failed to send promised transcript: {e}")
+                                
                         else:
                             response_text = "Let me help you with your pest problem anyway. Can you describe exactly what you're seeing - roaches, bats, or other pests?"
                             logger.info("🔄 BREAKING LOOP COMPLETELY: Switching to direct problem solving")
@@ -1988,6 +2062,34 @@ log #{log_entry['id']:03d} – {log_entry['date']}
                         # Caller provided address - acknowledge and proceed
                         response_text = "Thank you for the address. I'll make sure to include that in your pest control request. Someone from our team will contact you about the roach problem."
                         logger.info("✅ ADDRESSING PROVIDED ADDRESS: Moving forward with pest issue resolution")
+                        
+                        # TRIGGER EMAIL: Send transcript when addressing provided address
+                        try:
+                            # Build full transcript from conversation history
+                            full_transcript = ""
+                            if call_sid in conversation_history:
+                                for msg in conversation_history[call_sid]:
+                                    timestamp = msg.get('timestamp', '')[:19]  # Remove microseconds
+                                    speaker = msg.get('speaker', 'Unknown')
+                                    message = msg.get('message', '')
+                                    full_transcript += f"[{timestamp[-8:]}] {speaker}: {message}\n"
+                            
+                            # Send email immediately
+                            email_sent = send_call_transcript_email(
+                                call_sid=call_sid,
+                                caller_phone=caller_phone,
+                                transcript=full_transcript.strip(),
+                                issue_type="Pest Control",
+                                address_status="Provided by caller"
+                            )
+                            
+                            if email_sent:
+                                logger.info("✅ EMAIL SENT: Transcript delivered to grinbergchat@gmail.com as promised")
+                            else:
+                                logger.error("❌ EMAIL FAILED: Could not deliver transcript as promised")
+                                
+                        except Exception as e:
+                            logger.error(f"❌ EMAIL ERROR: Failed to send promised transcript: {e}")
                     else:
                         # INTELLIGENT fallback that remembers conversation context
                         if address_context and "VERIFIED ADDRESS" in address_context:
@@ -2091,13 +2193,50 @@ log #{log_entry['id']:03d} – {log_entry['date']}
                     else:
                         response_text = "How can I help you today?"
             
-            # Store AI response
+            # Store AI response and check for email promises
             conversation_history[call_sid].append({
                 'timestamp': datetime.now().isoformat(),
                 'speaker': 'Chris',
                 'message': response_text,
                 'caller_phone': caller_phone
             })
+            
+            # Additional email trigger check for fallback responses
+            if response_text and ("email" in response_text.lower() and "team" in response_text.lower()):
+                logger.info("📧 FALLBACK EMAIL TRIGGER - sending transcript")
+                try:
+                    # Build full transcript
+                    full_transcript = ""
+                    for msg in conversation_history[call_sid]:
+                        timestamp = msg.get('timestamp', '')[:19]
+                        speaker = msg.get('speaker', 'Unknown')
+                        message = msg.get('message', '')
+                        full_transcript += f"[{timestamp[-8:]}] {speaker}: {message}\n"
+                    
+                    # Determine issue type
+                    issue_type = "General Inquiry"
+                    if any(word in full_transcript.lower() for word in ['roach', 'bug', 'pest']):
+                        issue_type = "Pest Control"
+                    elif any(word in full_transcript.lower() for word in ['electrical', 'electric']):
+                        issue_type = "Electrical"
+                    elif any(word in full_transcript.lower() for word in ['heating', 'heat']):
+                        issue_type = "Heating"
+                    elif any(word in full_transcript.lower() for word in ['plumbing', 'water']):
+                        issue_type = "Plumbing"
+                    
+                    email_sent = send_call_transcript_email(
+                        call_sid=call_sid,
+                        caller_phone=caller_phone,
+                        transcript=full_transcript.strip(),
+                        issue_type=issue_type,
+                        address_status="From conversation"
+                    )
+                    
+                    if email_sent:
+                        logger.info("✅ EMAIL SENT: Fallback trigger successful - transcript delivered")
+                        
+                except Exception as e:
+                    logger.error(f"❌ EMAIL ERROR: Fallback trigger failed: {e}")
             
             # Return TwiML response
             import urllib.parse

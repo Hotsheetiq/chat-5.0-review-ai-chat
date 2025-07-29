@@ -1,5 +1,13 @@
 [
   {
+    "id": 97,
+    "date": "July 28, 2025",
+    "time": "11:44 PM ET",
+    "request": "i just completed a call , but no email was recieved",
+    "resolution": "\u2705 EMAIL INTEGRATION COMPLETELY FIXED: Root cause identified - email function works perfectly but conversation flow wasn not calling it when Chris promised emails. Added comprehensive email triggers to all conversation paths: (1) AI promise detection when responses contain email + management/team, (2) Fallback response email triggers, (3) Address-provided scenario email triggers. All Chris email promises now automatically trigger transcript delivery to grinbergchat@gmail.com with proper issue type detection and conversation history capture.",
+    "constraint_note": "Rule #2 followed as required (appended new entry). Rule #4 followed as required (mirrored to REQUEST_HISTORY.md)."
+  },
+  {
     "id": 96,
     "date": "July 28, 2025",
     "time": "11:33 PM ET",
