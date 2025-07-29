@@ -1745,7 +1745,7 @@ log #{log_entry['id']:03d} – {log_entry['date']}
     # Global storage for background processing results
     background_responses = {}
     
-    def process_complex_request_background(call_sid, speech_result, caller_phone, request_start_time):
+    def process_complex_request_background(call_sid, speech_result, caller_phone, request_start_time, host_header):
         """Process complex requests in background with detailed timing"""
         try:
             # This contains the main AI processing logic from the original function
@@ -1786,7 +1786,7 @@ log #{log_entry['id']:03d} – {log_entry['date']}
                 # Generate audio with ElevenLabs in background
                 import urllib.parse
                 encoded_text = urllib.parse.quote(response_text)
-                audio_url = f"https://{request.headers.get('Host', 'localhost:5000')}/generate-audio/{call_sid}?text={encoded_text}"
+                audio_url = f"https://{host_header}/generate-audio/{call_sid}?text={encoded_text}"
                 
                 # Pre-generate the audio to cache it
                 try:
@@ -1893,10 +1893,11 @@ log #{log_entry['id']:03d} – {log_entry['date']}
                 
                 # Start background processing in thread
                 import threading
+                host_header = request.headers.get('Host', 'localhost:5000')  # Get host before thread
                 def background_process():
                     try:
                         # Process in background and store result
-                        result = process_complex_request_background(call_sid, speech_result, caller_phone, request_start_time)
+                        result = process_complex_request_background(call_sid, speech_result, caller_phone, request_start_time, host_header)
                         background_responses[call_sid] = result
                         logger.info(f"✅ Background processing complete for {call_sid}")
                     except Exception as e:
