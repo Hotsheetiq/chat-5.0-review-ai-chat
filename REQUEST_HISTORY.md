@@ -355,3 +355,11 @@ log #067 – July 28, 2025
 log #068 – July 28, 2025  
 📝 Request: Fix generic fallback overriding intelligent AI responses  
 ✅ Resolution: ✅ CRITICAL FALLBACK FIX: Removed the stupid generic I understand how can I help fallback that was overriding AI responses. Changed fallback threshold from 10 characters to 3. Added intelligent heating-specific fallbacks: heating problem → Got it, heating issue. Whats your address. AI responses now preserved. 🛡️ Constraint Note: All rules followed as required
+
+log #069 – July 28, 2025  
+📝 Request: Chris keeps asking for address even when caller provides it  
+✅ Resolution: ADDRESS RECOGNITION ISSUE: Chris understands heating problem but address verification system not recognizing addresses like 62084 richmond avenue. Investigating address detection patterns and API verification logic.
+
+log #070 – July 28, 2025  
+📝 Request: Fix address acknowledgment system  
+✅ Resolution: ✅ INTELLIGENT ADDRESS ACKNOWLEDGMENT FIXED: Changed from rejection to acknowledgment. Chris now says I heard you say 62084 richmond avenue, but I cannot find that address in our system instead of asking What is your address again. Shows he heard them but explains limitations. Progressive conversation maintained. 🛡️ Constraint Note: All rules followed as required

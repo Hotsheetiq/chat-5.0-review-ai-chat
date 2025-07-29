@@ -1528,8 +1528,9 @@ log #{log_entry['id']:03d} – {log_entry['date']}
                                 address_context = f"\n\nVERIFIED ADDRESS: The caller mentioned '{potential_address}' which matches '{verified_address}' in our Rent Manager system. Confirm: 'Great! I found {verified_address} in our system.'"
                                 logger.info(f"✅ API VERIFIED: '{potential_address}' → '{verified_address}'")
                             else:
-                                address_context = f"\n\nABSOLUTE REJECTION REQUIRED: The caller mentioned '{potential_address}' which is NOT in our database. YOU MUST SAY EXACTLY: 'I couldn't find {potential_address} in our property system. Could you double-check the address? We manage properties on Port Richmond Avenue and Targee Street.' CRITICAL: Do not suggest any other addresses. Do not assume they meant anything else. REJECT COMPLETELY."
-                                logger.warning(f"❌ ABSOLUTE API REJECTION: '{potential_address}' not found - must reject completely")
+                                # INTELLIGENT ADDRESS REJECTION - acknowledge they provided an address but can't find it
+                                address_context = f"\n\nUNVERIFIED ADDRESS ACKNOWLEDGMENT: The caller mentioned '{potential_address}' which I heard clearly but is NOT in our database. YOU MUST SAY: 'I heard you say {potential_address}, but I can't find that address in our system. We manage properties on Port Richmond Avenue, Targee Street, and Richmond Avenue. Could you double-check the address or let me know if it's one of our properties?'"
+                                logger.warning(f"❌ UNVERIFIED ADDRESS: '{potential_address}' - acknowledging but rejecting")
                         else:
                             logger.warning("⚠️ COMPREHENSIVE PROPERTY SYSTEM NOT AVAILABLE - Loading minimal backup")
                             # Load comprehensive properties as fallback
@@ -1597,9 +1598,9 @@ log #{log_entry['id']:03d} – {log_entry['date']}
                                         address_context = f"\n\nSUGGESTION MODE: The caller mentioned '{potential_address}' which I couldn't find exactly, but I found similar addresses: {suggestions_text}. YOU MUST SAY: 'I couldn't find {potential_address} exactly, but I found {suggestions_text}. Which one did you mean?' CRITICAL: Wait for their confirmation. Do NOT assume which one they meant."
                                         logger.info(f"💡 OFFERING SUGGESTIONS: '{potential_address}' → {suggestions}")
                                     else:
-                                        # NO SIMILAR ADDRESSES FOUND - complete rejection
-                                        address_context = f"\n\nABSOLUTE REJECTION REQUIRED: The caller mentioned '{potential_address}' which is NOT in our database and no similar addresses found. YOU MUST SAY EXACTLY: 'I couldn't find {potential_address} in our property system. Could you double-check the address? We manage properties on Port Richmond Avenue and Targee Street.' CRITICAL: Do not suggest any other addresses. Do not assume they meant anything else. REJECT COMPLETELY and ask for verification."
-                                        logger.warning(f"❌ ABSOLUTE DATABASE REJECTION: '{potential_address}' not found - no similar addresses")
+                                        # NO SIMILAR ADDRESSES FOUND - acknowledge but explain can't help
+                                        address_context = f"\n\nUNVERIFIED ADDRESS ACKNOWLEDGMENT: The caller mentioned '{potential_address}' which I heard clearly but is NOT in our database. YOU MUST SAY: 'I heard you say {potential_address}, but I can't find that address in our system. We manage properties on Port Richmond Avenue, Targee Street, and Richmond Avenue. Could you double-check the address or let me know if it's one of our properties?'"
+                                        logger.warning(f"❌ UNVERIFIED ADDRESS: '{potential_address}' - acknowledging but can't help")
                             except ImportError:
                                 logger.error("❌ COMPREHENSIVE PROPERTY DATA NOT AVAILABLE")
                                 address_context = f"\n\nERROR FALLBACK: Could not verify address due to system issue. Ask: 'Let me help you with that address. Can you please repeat it slowly?'"
@@ -1610,26 +1611,26 @@ log #{log_entry['id']:03d} – {log_entry['date']}
                     
                     break
 
-            # MANDATORY PRE-CHECK: Force rejection for unverified addresses BEFORE AI processing
-            if "ABSOLUTE REJECTION REQUIRED" in address_context:
-                # Extract the invalid address from the context
+            # INTELLIGENT ADDRESS HANDLING: Acknowledge addresses but explain limitations
+            if "UNVERIFIED ADDRESS ACKNOWLEDGMENT" in address_context:
+                # Extract the address and provide intelligent response
                 address_match = re.search(r"mentioned '([^']+)'", address_context)
                 if address_match:
-                    invalid_address = address_match.group(1)
-                    # FORCE REJECTION - bypass AI completely
-                    response_text = f"I couldn't find {invalid_address} in our property system. Could you double-check the address? We manage properties on Port Richmond Avenue and Targee Street."
-                    logger.warning(f"🚫 FORCED REJECTION: '{invalid_address}' - bypassing AI to prevent assumptions")
+                    mentioned_address = address_match.group(1)
+                    # INTELLIGENT ACKNOWLEDGMENT - show we heard them but can't help
+                    response_text = f"I heard you say {mentioned_address}, but I can't find that address in our system. We manage properties on Port Richmond Avenue, Targee Street, and Richmond Avenue. Could you double-check the address?"
+                    logger.info(f"🏠 INTELLIGENT ADDRESS ACKNOWLEDGMENT: '{mentioned_address}' - heard but not in system")
                     
-                    # Store forced rejection response
+                    # Store intelligent response
                     conversation_history[call_sid].append({
                         'timestamp': datetime.now().isoformat(),
                         'speaker': 'Chris',
                         'message': response_text,
                         'caller_phone': caller_phone,
-                        'forced_rejection': True
+                        'address_acknowledgment': True
                     })
                     
-                    # Return TwiML immediately - no AI processing
+                    # Return TwiML with intelligent response
                     import urllib.parse
                     return f"""<?xml version="1.0" encoding="UTF-8"?>
                     <Response>
