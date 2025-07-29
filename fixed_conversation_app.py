@@ -1545,9 +1545,36 @@ log #{log_entry['id']:03d} – {log_entry['date']}
                                             break
                                 
                                 if not found_match:
-                                else:
-                                    address_context = f"\n\nABSOLUTE REJECTION REQUIRED: The caller mentioned '{potential_address}' which is NOT in our 430+ property database. YOU MUST SAY EXACTLY: 'I couldn't find {potential_address} in our property system. Could you double-check the address? We manage properties on Port Richmond Avenue and Targee Street.' CRITICAL: Do not suggest any other addresses. Do not assume they meant anything else. REJECT COMPLETELY and ask for verification."
-                                    logger.warning(f"❌ ABSOLUTE DATABASE REJECTION: '{potential_address}' not found - must reject completely")
+                                    # INTELLIGENT SUGGESTION SYSTEM - Find similar addresses and offer choices
+                                    suggestions = []
+                                    caller_match = re.search(r'(\d+)\s+(.+)', potential_lower)
+                                    
+                                    if caller_match:
+                                        caller_number = int(caller_match.group(1))
+                                        caller_street = caller_match.group(2).strip()
+                                        
+                                        # Find addresses on same street with similar numbers
+                                        for prop in comprehensive_properties:
+                                            prop_name = prop.get('Name', '').lower().strip()
+                                            prop_match = re.search(r'(\d+)\s+(.+)', prop_name)
+                                            
+                                            if prop_match:
+                                                prop_number = int(prop_match.group(1))
+                                                prop_street = prop_match.group(2).strip()
+                                                
+                                                # Same street name and number within 2 of what they said
+                                                if prop_street == caller_street and abs(prop_number - caller_number) <= 2:
+                                                    suggestions.append(prop.get('Name', ''))
+                                    
+                                    if suggestions:
+                                        # OFFER SUGGESTIONS - don't assume, let user choose
+                                        suggestions_text = ", ".join(suggestions[:3])  # Max 3 suggestions
+                                        address_context = f"\n\nSUGGESTION MODE: The caller mentioned '{potential_address}' which I couldn't find exactly, but I found similar addresses: {suggestions_text}. YOU MUST SAY: 'I couldn't find {potential_address} exactly, but I found {suggestions_text}. Which one did you mean?' CRITICAL: Wait for their confirmation. Do NOT assume which one they meant."
+                                        logger.info(f"💡 OFFERING SUGGESTIONS: '{potential_address}' → {suggestions}")
+                                    else:
+                                        # NO SIMILAR ADDRESSES FOUND - complete rejection
+                                        address_context = f"\n\nABSOLUTE REJECTION REQUIRED: The caller mentioned '{potential_address}' which is NOT in our database and no similar addresses found. YOU MUST SAY EXACTLY: 'I couldn't find {potential_address} in our property system. Could you double-check the address? We manage properties on Port Richmond Avenue and Targee Street.' CRITICAL: Do not suggest any other addresses. Do not assume they meant anything else. REJECT COMPLETELY and ask for verification."
+                                        logger.warning(f"❌ ABSOLUTE DATABASE REJECTION: '{potential_address}' not found - no similar addresses")
                             except ImportError:
                                 logger.error("❌ COMPREHENSIVE PROPERTY DATA NOT AVAILABLE")
                                 address_context = f"\n\nERROR FALLBACK: Could not verify address due to system issue. Ask: 'Let me help you with that address. Can you please repeat it slowly?'"
@@ -1599,8 +1626,15 @@ log #{log_entry['id']:03d} – {log_entry['date']}
                 CRITICAL: ADDRESS VERIFICATION IS MANDATORY AND ABSOLUTE:
                 - You MUST ONLY work with addresses that are explicitly VERIFIED in the system message
                 - If the system message says "UNVERIFIED ADDRESS", you MUST reject it completely
+                - If the system message says "SUGGESTION MODE", you MUST offer the suggestions and wait for confirmation
                 - NEVER create service tickets, NEVER suggest alternatives for unverified addresses
-                - NEVER assume what address the caller meant - reject and ask for verification
+                - NEVER assume what address the caller meant - always get confirmation first
+
+                SUGGESTION MODE HANDLING:
+                - When system message contains "SUGGESTION MODE", offer the provided suggestions exactly as instructed
+                - Say "I couldn't find [address] exactly, but I found [suggestions]. Which one did you mean?"
+                - WAIT for caller to confirm which address they meant before proceeding
+                - Do NOT assume or pick an address for them
 
                 IMPORTANT NAME HANDLING RULES:
                 - NEVER extract or use names from speech unless crystal clear and confirmed by caller

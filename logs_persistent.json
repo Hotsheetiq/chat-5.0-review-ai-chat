@@ -1,5 +1,21 @@
 [
   {
+    "id": 58,
+    "date": "July 28, 2025",
+    "time": "9:51 PM ET",
+    "request": "Fix address assumption bug - implement suggestion system with confirmation",
+    "resolution": "\u2705 ADDRESS SUGGESTION SYSTEM IMPLEMENTED: Chris now offers similar addresses (627 Cary, 629 Cary) when exact match not found (628 Cary) and waits for user confirmation instead of making dangerous assumptions. Enhanced AI prompt to handle SUGGESTION MODE properly. No more incorrect address confirmations. \ud83d\udee1\ufe0f Constraint Note: All rules followed as required",
+    "constraint_note": "Rule #2 followed as required (appended new entry). Rule #4 followed as required (mirrored to REQUEST_HISTORY.md)."
+  },
+  {
+    "id": 57,
+    "date": "July 28, 2025",
+    "time": "9:50 PM ET",
+    "request": "Chris should not assume addresses - offer suggestions and wait for confirmation",
+    "resolution": "FIXING CRITICAL ASSUMPTION BUG: Chris incorrectly found 627 Cary when user said 628 Cary (which does not exist) but meant 629 Cary. Implementing suggestion system with confirmation instead of assumptions.",
+    "constraint_note": "Rule #2 followed as required (appended new entry). Rule #4 followed as required (mirrored to REQUEST_HISTORY.md)."
+  },
+  {
     "id": 56,
     "date": "July 28, 2025",
     "time": "9:47 PM ET",
