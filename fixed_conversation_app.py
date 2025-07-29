@@ -1933,16 +1933,23 @@ log #{log_entry['id']:03d} – {log_entry['date']}
 
                 CRITICAL INTELLIGENCE RULES:
                 - READ THE CONVERSATION HISTORY carefully to understand what has already been discussed
-                - If caller already mentioned their problem (heating, electrical, plumbing), DON'T ask "how can I help" again
-                - If they repeat the same issue, move forward: ask for their address or create a service ticket
-                - NEVER ask the same question twice in one conversation
-                - Show you remember what they told you: "Got it, heating issue. What's your address?"
+                - You are a COMPREHENSIVE TENANT ASSISTANT - help with ALL tenant issues, not just maintenance
+                - Continue conversations naturally - ask follow-up questions and provide complete assistance
+                - NEVER assume every call needs maintenance - listen to what tenants actually need
+
+                COMPREHENSIVE ASSISTANCE AREAS:
+                - Maintenance issues (heating, electrical, plumbing) → Ask for details and address
+                - Rent questions → Help with payment info, lease questions, account issues
+                - Building amenities → Provide information about facilities, rules, policies
+                - General inquiries → Answer questions about management, contacts, procedures
+                - Complaints → Listen actively and gather details for proper resolution
+                - After resolving one issue → Always ask "Is there anything else I can help you with?"
 
                 CONVERSATION FLOW INTELLIGENCE:
-                - Caller says "heating problem" → You ask for address (not "how can I help")
-                - Caller repeats "heating problem" → You say "Got it, heating issue. What's your address?"
-                - If you already asked for address, ask for different information or create ticket
-                - Move the conversation forward, don't get stuck in loops
+                - Listen to the FULL request before categorizing
+                - Ask clarifying questions to understand their complete needs
+                - Don't rush to get address - first understand what they need help with
+                - Be helpful and comprehensive - tenants may need multiple types of assistance
 
                 ADDRESS VERIFICATION (same rules as before):
                 - You MUST ONLY work with addresses that are explicitly VERIFIED in the system message
@@ -2165,7 +2172,7 @@ log #{log_entry['id']:03d} – {log_entry['date']}
                                         break
                             
                             if remembered_issue:
-                                response_text = f"I understand you have a {remembered_issue}. What's your address?"
+                                response_text = f"I understand you mentioned a {remembered_issue}. Can you give me more details about what's happening?"
                             else:
                                 # ANTI-REPETITION SYSTEM: Use varied clarification phrases
                                 clarification_options = [
@@ -2208,11 +2215,11 @@ log #{log_entry['id']:03d} – {log_entry['date']}
                     else:
                         response_text = "Great! I found that address in our system. What's the issue there?"
                 elif any(word in speech_result.lower() for word in ['electrical', 'electric', 'power', 'lights']):
-                    response_text = "Got it, electrical issue. What's your address?"
+                    response_text = "I can help with your electrical issue. Can you tell me more details about what's happening?"
                 elif any(word in speech_result.lower() for word in ['heat', 'heating', 'hot', 'cold', 'temperature']):
-                    response_text = "Got it, heating issue. What's your address?"
+                    response_text = "I can help with your heating concern. What exactly is going on with the heating?"
                 elif any(word in speech_result.lower() for word in ['plumbing', 'water', 'leak', 'pipe']):
-                    response_text = "Got it, plumbing issue. What's your address?"
+                    response_text = "I can help with your plumbing issue. Can you describe what's happening?"
                 else:
                     # Check conversation history for remembered issue AND check for address spelling attempts
                     remembered_issue = None
@@ -2250,9 +2257,9 @@ log #{log_entry['id']:03d} – {log_entry['date']}
                         })
                     
                     elif remembered_issue:
-                        response_text = f"Got it, {remembered_issue} issue. What's your address?"
+                        response_text = f"I understand you mentioned a {remembered_issue} issue. Can you tell me more about what's happening so I can help you properly?"
                     else:
-                        response_text = "How can I help you today?"
+                        response_text = "I'm here to help with any questions or concerns you have. What can I assist you with?"
             
             # ANTI-REPETITION TRACKING: Record this response to prevent future duplicates
             if response_text and call_sid in response_tracker:
