@@ -1706,30 +1706,83 @@ log #{log_entry['id']:03d} – {log_entry['date']}
                 # Only use fallback if AI completely fails to generate ANY response
                 if not response_text or len(response_text.strip()) < 3:
                     logger.warning("⚠️ AI COMPLETELY FAILED - using intelligent fallback (CONSTRAINT PROTECTED)")
-                    # Use INTELLIGENT fallback based on detected issues (NOT generic)
-                    if any(word in speech_result.lower() for word in ['electrical', 'electric', 'power', 'lights']):
+                    
+                    # INTELLIGENT fallback that remembers conversation context
+                    if address_context and "VERIFIED ADDRESS" in address_context:
+                        # Extract the found address from context
+                        import re
+                        address_match = re.search(r"'Great! I found ([^']+) in our system", address_context)
+                        if address_match:
+                            found_address = address_match.group(1)
+                            response_text = f"Great! I found {found_address} in our system. What's the issue there?"
+                        else:
+                            response_text = "Great! I found that address in our system. What's the issue there?"
+                    elif any(word in speech_result.lower() for word in ['electrical', 'electric', 'power', 'lights']):
                         response_text = "Got it, electrical issue. What's your address?"
                     elif any(word in speech_result.lower() for word in ['heat', 'heating', 'hot', 'cold', 'temperature']):
                         response_text = "Got it, heating issue. What's your address?"
                     elif any(word in speech_result.lower() for word in ['plumbing', 'water', 'leak', 'pipe']):
                         response_text = "Got it, plumbing issue. What's your address?"
                     else:
-                        response_text = "What can I help you with today?"
+                        # Check conversation history for remembered issue
+                        remembered_issue = None
+                        if call_sid in conversation_history:
+                            for msg in conversation_history[call_sid]:
+                                if 'heating' in msg.get('message', '').lower():
+                                    remembered_issue = 'heating'
+                                    break
+                                elif 'electrical' in msg.get('message', '').lower() or 'electric' in msg.get('message', '').lower():
+                                    remembered_issue = 'electrical'
+                                    break
+                                elif 'plumbing' in msg.get('message', '').lower():
+                                    remembered_issue = 'plumbing'
+                                    break
+                        
+                        if remembered_issue:
+                            response_text = f"Got it, {remembered_issue} issue. What's your address?"
+                        else:
+                            response_text = "How can I help you today?"
                 else:
                     logger.info("✅ AI RESPONSE ACCEPTED - using intelligent AI-generated response (CONSTRAINT PROTECTED)")
                     
             except Exception as e:
                 logger.error(f"AI response error: {e}")
                 # 🛡️ CONSTRAINT PROTECTION: NEVER OVERRIDE AI RESPONSES WITH GENERIC FALLBACK
-                # Use intelligent fallback based on detected issues (NOT generic)
-                if any(word in speech_result.lower() for word in ['electrical', 'electric', 'power', 'lights']):
+                # Use intelligent fallback that remembers conversation context
+                if address_context and "VERIFIED ADDRESS" in address_context:
+                    # Extract the found address from context
+                    import re
+                    address_match = re.search(r"'Great! I found ([^']+) in our system", address_context)
+                    if address_match:
+                        found_address = address_match.group(1)
+                        response_text = f"Great! I found {found_address} in our system. What's the issue there?"
+                    else:
+                        response_text = "Great! I found that address in our system. What's the issue there?"
+                elif any(word in speech_result.lower() for word in ['electrical', 'electric', 'power', 'lights']):
                     response_text = "Got it, electrical issue. What's your address?"
                 elif any(word in speech_result.lower() for word in ['heat', 'heating', 'hot', 'cold', 'temperature']):
                     response_text = "Got it, heating issue. What's your address?"
                 elif any(word in speech_result.lower() for word in ['plumbing', 'water', 'leak', 'pipe']):
                     response_text = "Got it, plumbing issue. What's your address?"
                 else:
-                    response_text = "What can I help you with today?"
+                    # Check conversation history for remembered issue
+                    remembered_issue = None
+                    if call_sid in conversation_history:
+                        for msg in conversation_history[call_sid]:
+                            if 'heating' in msg.get('message', '').lower():
+                                remembered_issue = 'heating'
+                                break
+                            elif 'electrical' in msg.get('message', '').lower() or 'electric' in msg.get('message', '').lower():
+                                remembered_issue = 'electrical'
+                                break
+                            elif 'plumbing' in msg.get('message', '').lower():
+                                remembered_issue = 'plumbing'
+                                break
+                    
+                    if remembered_issue:
+                        response_text = f"Got it, {remembered_issue} issue. What's your address?"
+                    else:
+                        response_text = "How can I help you today?"
             
             # Store AI response
             conversation_history[call_sid].append({

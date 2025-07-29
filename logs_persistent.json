@@ -1,5 +1,13 @@
 [
   {
+    "id": 78,
+    "date": "July 28, 2025",
+    "time": "10:20 PM ET",
+    "request": "Chris forgets call reason and asks what he can help with again",
+    "resolution": "CRITICAL MEMORY FIX: AI returning empty responses so fallback system doesnt remember heating issue context. Enhanced fallback to extract verified address from context and remember conversation history issues. Now when AI fails, fallback says Great! I found 630 Midland Avenue in our system. Whats the issue there?",
+    "constraint_note": "Rule #2 followed as required (appended new entry). Rule #4 followed as required (mirrored to REQUEST_HISTORY.md)."
+  },
+  {
     "id": 77,
     "date": "July 28, 2025",
     "time": "10:17 PM ET",
