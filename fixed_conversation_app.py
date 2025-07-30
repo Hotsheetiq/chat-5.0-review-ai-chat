@@ -1877,8 +1877,8 @@ log #{log_entry['id']:03d} – {log_entry['date']}
                     call_type = "maintenance" if any(word in speech_result for word in ['issue', 'problem', 'broken', 'not working', 'repair', 'fix']) else "general"
                     
                     auto_log_request(
-                        user_request=f"Live call - {call_type}: {speech_result[:60]}{'...' if len(speech_result) > 60 else ''}",
-                        resolution_text=f"✅ AUTOMATIC CALL PROCESSING: Chris handled {call_type} call from {caller_phone or 'caller'}. Input: '{speech_result}'. System fully operational with production host detection and auto-logging."
+                        user_request=f"📞 LIVE CALL - {call_type.upper()}: {speech_result[:60]}{'...' if len(speech_result) > 60 else ''}",
+                        resolution_text=f"✅ CALL LOG: Chris processed {call_type} call from {caller_phone or 'Anonymous'}. Caller said: '{speech_result}'. System operational with auto-response generation and logging."
                     )
                     
                     # Silent operation - only log errors, not successes to avoid spam
