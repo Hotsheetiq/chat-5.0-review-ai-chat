@@ -24,6 +24,12 @@ def process_complex_request_isolated(call_sid, speech_result, caller_phone, requ
         # Generate audio URL
         encoded_text = urllib.parse.quote(response_text)
         host_to_use = host_header or 'localhost:5000'
+        
+        # Fix production host detection
+        import os
+        if host_to_use.startswith('0.0.0.0'):
+            host_to_use = f"{os.environ.get('REPL_SLUG', 'workspace')}.{os.environ.get('REPL_OWNER', 'brokeropenhouse')}.repl.co"
+        
         audio_url = f"https://{host_to_use}/generate-audio/{call_sid}?text={encoded_text}"
         
         total_background_time = time.time() - request_start_time

@@ -1632,7 +1632,14 @@ log #{log_entry['id']:03d} – {log_entry['date']}
                 # Generate audio URL for Twilio
                 import urllib.parse
                 encoded_greeting = urllib.parse.quote(dynamic_greeting)
-                audio_url = f"https://{request.headers.get('Host', 'localhost:5000')}/generate-audio/{call_sid}?text={encoded_greeting}"
+                
+                # Get proper host for production environment
+                host = request.headers.get('Host', 'localhost:5000')
+                if host.startswith('0.0.0.0'):
+                    # Production environment - use replit domain
+                    host = f"{os.environ.get('REPL_SLUG', 'maintenancelinker')}.{os.environ.get('REPL_OWNER', 'brokeropenhouse')}.repl.co"
+                
+                audio_url = f"https://{host}/generate-audio/{call_sid}?text={encoded_greeting}"
                 
                 logger.info(f"🎵 Using ElevenLabs audio URL: {audio_url}")
                 
@@ -1723,9 +1730,14 @@ log #{log_entry['id']:03d} – {log_entry['date']}
                 response_text = "I'm here to help. What can I do for you?"
                 
                 import urllib.parse
+                # Get proper host for production environment  
+                host = request.headers.get('Host', 'localhost:5000')
+                if host.startswith('0.0.0.0'):
+                    host = f"{os.environ.get('REPL_SLUG', 'maintenancelinker')}.{os.environ.get('REPL_OWNER', 'brokeropenhouse')}.repl.co"
+                
                 return f"""<?xml version="1.0" encoding="UTF-8"?>
                 <Response>
-                    <Play>https://{request.headers.get('Host', 'localhost:5000')}/generate-audio/{call_sid}?text={urllib.parse.quote(response_text)}</Play>
+                    <Play>https://{host}/generate-audio/{call_sid}?text={urllib.parse.quote(response_text)}</Play>
                     <Gather input="speech" timeout="8" speechTimeout="4" action="/handle-speech/{call_sid}" method="POST">
                     </Gather>
                     <Redirect>/handle-speech/{call_sid}</Redirect>
@@ -1837,9 +1849,14 @@ log #{log_entry['id']:03d} – {log_entry['date']}
                 save_conversation_history()
                 
                 import urllib.parse
+                # Get proper host for production environment  
+                host = request.headers.get('Host', 'localhost:5000')
+                if host.startswith('0.0.0.0'):
+                    host = f"{os.environ.get('REPL_SLUG', 'maintenancelinker')}.{os.environ.get('REPL_OWNER', 'brokeropenhouse')}.repl.co"
+                
                 return f"""<?xml version="1.0" encoding="UTF-8"?>
                 <Response>
-                    <Play>https://{request.headers.get('Host', 'localhost:5000')}/generate-audio/{call_sid}?text={urllib.parse.quote(response_text)}</Play>
+                    <Play>https://{host}/generate-audio/{call_sid}?text={urllib.parse.quote(response_text)}</Play>
                     <Gather input="speech" timeout="8" speechTimeout="4" action="/handle-speech/{call_sid}" method="POST">
                     </Gather>
                     <Redirect>/handle-speech/{call_sid}</Redirect>
@@ -1892,9 +1909,14 @@ log #{log_entry['id']:03d} – {log_entry['date']}
                 log_timing_with_bottleneck("TwiML return (hold message)", twiml_return_time, request_start_time, call_sid)
                 
                 import urllib.parse
+                # Get proper host for production environment
+                host = request.headers.get('Host', 'localhost:5000')
+                if host.startswith('0.0.0.0'):
+                    host = f"{os.environ.get('REPL_SLUG', 'maintenancelinker')}.{os.environ.get('REPL_OWNER', 'brokeropenhouse')}.repl.co"
+                
                 return f"""<?xml version="1.0" encoding="UTF-8"?>
                 <Response>
-                    <Play>https://{request.headers.get('Host', 'localhost:5000')}/generate-audio/{call_sid}?text={urllib.parse.quote(hold_message)}</Play>
+                    <Play>https://{host}/generate-audio/{call_sid}?text={urllib.parse.quote(hold_message)}</Play>
                     <Redirect>/get-background-response/{call_sid}</Redirect>
                 </Response>"""
             
