@@ -1886,60 +1886,36 @@ log #{log_entry['id']:03d} – {log_entry['date']}
                     logger.error(f"❌ Auto-logging system error: {e}")
             
             
-            # ⏰ TIMING: Check elapsed time before deciding response strategy
-            elapsed_time = time.time() - request_start_time
-            log_timing_with_bottleneck("Pre-processing complete", elapsed_time, request_start_time, call_sid)
+            # DIRECT PROCESSING: Simplified processing to prevent application errors
+            logger.info("🚀 DIRECT PROCESSING: Using fast AI processing to prevent delays and errors")
             
-            # TWO-STEP DECISION: Simple requests get instant processing, complex get hold message + background
-            if is_simple_request:
-                logger.info("🚀 INSTANT PROCESSING: Simple request detected, using instant response path")
-                # Continue with normal processing for simple requests
-            else:
-                logger.info("⏳ BACKGROUND PROCESSING: Complex request detected, returning hold message immediately")
-                
-                # Capture Flask context data BEFORE starting thread
-                host_header = request.headers.get('Host', 'localhost:5000')
-                
-                # Start background processing in thread
-                import threading
-                def background_process():
-                    try:
-                        # Import the isolated processing function
-                        from background_processor import process_complex_request_isolated
-                        
-                        # Use pre-captured host header to avoid Flask context access
-                        result = process_complex_request_isolated(call_sid, speech_result, caller_phone, request_start_time, host_header)
-                        background_responses[call_sid] = result
-                        logger.info(f"✅ Background processing complete for {call_sid}")
-                    except Exception as e:
-                        logger.error(f"❌ Background processing error: {e}")
-                        background_responses[call_sid] = {
-                            'error': True,
-                            'message': 'I encountered a technical issue. Let me help you anyway. What can I do for you?',
-                            'host_header': host_header
-                        }
-                
-                # Start background thread
-                thread = threading.Thread(target=background_process)
-                thread.daemon = True
-                thread.start()
-                
-                # Return immediate hold message
-                hold_message = "Please hold for just a moment while I process that for you."
-                twiml_return_time = time.time() - request_start_time
-                log_timing_with_bottleneck("TwiML return (hold message)", twiml_return_time, request_start_time, call_sid)
-                
-                import urllib.parse
-                # Get proper host for production environment
-                host = request.headers.get('Host', 'localhost:5000')
-                if host.startswith('0.0.0.0'):
-                    host = f"{os.environ.get('REPL_SLUG', 'maintenancelinker')}.{os.environ.get('REPL_OWNER', 'brokeropenhouse')}.repl.co"
-                
-                return f"""<?xml version="1.0" encoding="UTF-8"?>
-                <Response>
-                    <Play>https://{host}/generate-audio/{call_sid}?text={urllib.parse.quote(hold_message)}</Play>
-                    <Redirect>/get-background-response/{call_sid}</Redirect>
-                </Response>"""
+            # Generate fast AI response with reduced timeouts to prevent application errors
+            try:
+                response_text = grok_ai.generate_response(
+                    messages=enhanced_context,
+                    max_tokens=40,      # REDUCED: For ultra-fast responses
+                    temperature=0.6,
+                    timeout=1.0         # REDUCED: 1 second max to prevent delays
+                )
+                if not response_text or len(response_text.strip()) < 5:
+                    response_text = "I'm here to help. What can I do for you?"
+            except Exception as e:
+                logger.error(f"❌ Fast AI error: {e}")
+                response_text = "How can I help you today?"
+            
+            # Return immediate response with optimized audio
+            import urllib.parse
+            host = request.headers.get('Host', 'localhost:5000')
+            if host.startswith('0.0.0.0'):
+                host = f"{os.environ.get('REPL_SLUG', 'maintenancelinker')}.{os.environ.get('REPL_OWNER', 'brokeropenhouse')}.repl.co"
+            
+            return f"""<?xml version="1.0" encoding="UTF-8"?>
+            <Response>
+                <Play>https://{host}/generate-audio/{call_sid}?text={urllib.parse.quote(response_text)}</Play>
+                <Gather input="speech" timeout="8" speechTimeout="4" action="/handle-speech/{call_sid}" method="POST">
+                </Gather>
+                <Redirect>/handle-speech/{call_sid}</Redirect>
+            </Response>"""
             
             # EMAIL NOTIFICATION: Send transcript after each interaction for comprehensive tracking
             try:

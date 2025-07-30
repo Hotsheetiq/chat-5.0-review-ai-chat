@@ -85,7 +85,7 @@ class GrokAI:
         
         return optimized
     
-    def generate_response(self, messages, max_tokens=80, temperature=0.5, timeout=3.0):
+    def generate_response(self, messages, max_tokens=60, temperature=0.5, timeout=2.0):
         """OPTIMIZED response generation with caching and reduced tokens"""
         # ⏰ START GROK TIMING
         grok_start_time = time.time()

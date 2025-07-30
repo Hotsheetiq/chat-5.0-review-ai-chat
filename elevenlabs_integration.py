@@ -66,11 +66,13 @@ def generate_elevenlabs_audio(text: str, voice_id: str = None, voice_name: str =
             "text": text,
             "model_id": "eleven_turbo_v2_5",  # Fastest model for real-time
             "voice_settings": {
-                "stability": 0.85,        # VERY HIGH stability for absolutely consistent professional tone
-                "similarity_boost": 0.90, # Maximum consistency for same voice character
-                "style": 0.1,            # MINIMAL style for neutral, professional tone - no emotion variation
-                "use_speaker_boost": True # Enhanced clarity for phone calls
-            }
+                "stability": 0.75,        # Reduced stability for softer, more natural tone
+                "similarity_boost": 0.75, # Reduced boost for gentler voice projection
+                "style": 0.2,            # Slightly increased style for warmer, friendlier tone
+                "use_speaker_boost": False # DISABLED: This was causing loud, aggressive voice
+            },
+            "output_format": "mp3_22050_32", # Lower bitrate for softer audio quality
+            "optimize_streaming_latency": True # Faster processing for real-time calls
         }
         
         # OPTIMIZED: Reduced timeout for faster failure
