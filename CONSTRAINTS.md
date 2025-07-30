@@ -6,6 +6,31 @@
 4. Always mirror each log update to the file REQUEST_HISTORY.md.
 5. Logs should be ordered from newest to oldest in the dashboard view.
 
+## 🛡️ AUTOMATIC CALL LOGGING SYSTEM PROTECTION - Added: July 30, 2025 at 2:48 PM ET
+
+**CRITICAL CONSTRAINT**: The automatic logging system that connects live call processing to logs_persistent.json MUST NEVER be disabled, removed, or modified.
+
+### Protected Components:
+1. **Auto-logging Integration**: Lines 1871-1885 in fixed_conversation_app.py - automatic call interaction logging
+2. **Call Type Detection**: Intelligent categorization system (maintenance vs general calls)
+3. **Silent Operation**: Error-only logging to prevent console spam during normal operation
+4. **Persistent Storage**: Real-time updates to logs_persistent.json for every call interaction
+5. **Automatic Timestamping**: Eastern Time integration with proper formatting
+
+### Protected Functions:
+- Auto-logging code block in handle_speech function that triggers on speech_result > 2 characters
+- auto_log_request() function calls with live call data
+- Call type detection logic using keyword matching
+- Persistent storage integration that saves logs automatically
+
+### User Confirmation:
+User explicitly requested "add this fix to constraint rule" after confirming the automatic logging system works perfectly.
+
+### Rationale:
+This logging system provides critical visibility into live call operations at (888) 641-1102. Every call interaction is automatically tracked without manual intervention, ensuring complete operational transparency.
+
+**ABSOLUTE PROTECTION**: Any attempt to disable, modify, or remove the automatic logging integration is STRICTLY PROHIBITED.
+
 ## CRITICAL PROTECTION: AUTOMATIC LOGGING SYSTEM (ABSOLUTE CONSTRAINT)
 
 **AUTOMATIC REQUEST LOGGING SYSTEM - DO NOT REMOVE OR DISABLE**
