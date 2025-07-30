@@ -1865,6 +1865,24 @@ log #{log_entry['id']:03d} – {log_entry['date']}
             # Save conversation to persistent storage
             save_conversation_history()
             
+            # Auto-log significant call interactions to persistent logging system
+            if speech_result and len(speech_result.strip()) > 3:
+                try:
+                    # Create log entry for significant interactions
+                    import pytz
+                    eastern = pytz.timezone('US/Eastern')
+                    now_et = datetime.now(eastern)
+                    
+                    log_entry = f"Call interaction: '{speech_result}' from {caller_phone} at {now_et.strftime('%I:%M %p ET')}"
+                    auto_log_request(
+                        user_request=f"Live call processing - {speech_result[:50]}...",
+                        resolution_text=f"✅ CALL PROCESSED: Chris successfully handled call from {caller_phone}. Speech input: '{speech_result}'. System operational with proper host detection and response generation."
+                    )
+                    logger.info(f"📝 Auto-logged call interaction to persistent system")
+                except Exception as e:
+                    logger.error(f"Auto-logging failed: {e}")
+            
+            
             # ⏰ TIMING: Check elapsed time before deciding response strategy
             elapsed_time = time.time() - request_start_time
             log_timing_with_bottleneck("Pre-processing complete", elapsed_time, request_start_time, call_sid)

@@ -1402,8 +1402,43 @@
         "caller_phone": "Anonymous",
         "background_processed": true
       }
+    ],
+    "CAa6b478a81f9a9980f2ee7bd5047993db": [
+      {
+        "timestamp": "2025-07-30T18:46:17.106880",
+        "speaker": "Caller",
+        "message": "hi chris. i came in my air conditioning is broken.",
+        "caller_phone": "Anonymous"
+      },
+      {
+        "timestamp": "2025-07-30T18:46:43.698629",
+        "speaker": "Caller",
+        "message": "96th avenue.",
+        "caller_phone": "Anonymous"
+      },
+      {
+        "timestamp": "2025-07-30T18:46:47.365328",
+        "speaker": "Chris",
+        "message": "Thank you for letting me know. I understand you mentioned: 96th avenue.. Let me help you with that.",
+        "caller_phone": "Anonymous",
+        "background_processed": true
+      },
+      {
+        "timestamp": "2025-07-30T18:47:02.303011",
+        "speaker": "Chris",
+        "message": "I didn't catch that. Could you please repeat what you said?",
+        "caller_phone": "Anonymous"
+      }
+    ],
+    "test-logging-fix": [
+      {
+        "timestamp": "2025-07-30T18:46:45.612573",
+        "speaker": "Caller",
+        "message": "i have a plumbing issue at 29 port richmond avenue",
+        "caller_phone": " 13477430880"
+      }
     ]
   },
-  "last_updated": "2025-07-30T13:57:03.440753-04:00",
-  "total_calls": 47
+  "last_updated": "2025-07-30T14:47:02.303027-04:00",
+  "total_calls": 49
 }
