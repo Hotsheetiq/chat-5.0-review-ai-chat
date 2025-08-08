@@ -1728,8 +1728,162 @@
         "message": "my stove isn't working properly",
         "caller_phone": "+15551234567"
       }
+    ],
+    "CA90e64be005af1b67876cf939a43cda84": [
+      {
+        "timestamp": "2025-08-08T23:16:42.853877",
+        "speaker": "Caller",
+        "message": "having a problem with my stove.",
+        "caller_phone": "Anonymous"
+      },
+      {
+        "timestamp": "2025-08-08T23:16:51.846467",
+        "speaker": "Caller",
+        "message": "a 32 port richmond avenue.",
+        "caller_phone": "Anonymous"
+      },
+      {
+        "timestamp": "2025-08-08T23:16:58.648412",
+        "speaker": "Caller",
+        "message": "it, it doesn't start.",
+        "caller_phone": "Anonymous"
+      },
+      {
+        "timestamp": "2025-08-08T23:17:13.038660",
+        "speaker": "Chris",
+        "message": "I didn't catch that. Could you please repeat what you said?",
+        "caller_phone": "Anonymous"
+      },
+      {
+        "timestamp": "2025-08-08T23:17:23.509461",
+        "speaker": "Caller",
+        "message": "when they're coming.",
+        "caller_phone": "Anonymous"
+      },
+      {
+        "timestamp": "2025-08-08T23:17:31.058048",
+        "speaker": "Caller",
+        "message": "sure.",
+        "caller_phone": "Anonymous"
+      },
+      {
+        "timestamp": "2025-08-08T23:17:43.011591",
+        "speaker": "Caller",
+        "message": "are you guys open tomorrow?",
+        "caller_phone": "Anonymous"
+      },
+      {
+        "timestamp": "2025-08-08T23:17:51.744766",
+        "speaker": "Caller",
+        "message": "and what day is tomorrow?",
+        "caller_phone": "Anonymous"
+      },
+      {
+        "timestamp": "2025-08-08T23:18:00.943523",
+        "speaker": "Caller",
+        "message": "know today is friday tomorrow saturday",
+        "caller_phone": "Anonymous"
+      },
+      {
+        "timestamp": "2025-08-08T23:18:15.453150",
+        "speaker": "Caller",
+        "message": "yes.",
+        "caller_phone": "Anonymous"
+      },
+      {
+        "timestamp": "2025-08-08T23:18:27.251971",
+        "speaker": "Caller",
+        "message": "yes.",
+        "caller_phone": "Anonymous"
+      },
+      {
+        "timestamp": "2025-08-08T23:18:42.365003",
+        "speaker": "Chris",
+        "message": "I didn't catch that. Could you please repeat what you said?",
+        "caller_phone": "Anonymous"
+      },
+      {
+        "timestamp": "2025-08-08T23:18:54.841607",
+        "speaker": "Caller",
+        "message": "can you text me? a copy of the complaint?",
+        "caller_phone": "Anonymous"
+      },
+      {
+        "timestamp": "2025-08-08T23:19:08.553264",
+        "speaker": "Caller",
+        "message": "it as a broker open house at gmail.com.",
+        "caller_phone": "Anonymous"
+      },
+      {
+        "timestamp": "2025-08-08T23:19:20.367204",
+        "speaker": "Caller",
+        "message": "okay, thank you very much.",
+        "caller_phone": "Anonymous"
+      },
+      {
+        "timestamp": "2025-08-08T23:19:26.143032",
+        "speaker": "Chris",
+        "message": "I didn't catch that. Could you please repeat what you said?",
+        "caller_phone": "Anonymous"
+      }
+    ],
+    "VOICE_SCHEDULE_001": [
+      {
+        "timestamp": "2025-08-08T23:19:57.997874",
+        "speaker": "Caller",
+        "message": "when can someone come fix my heating?",
+        "caller_phone": "+15551234567"
+      },
+      {
+        "timestamp": "2025-08-08T23:20:49.803167",
+        "speaker": "Caller",
+        "message": "when can someone come fix my heating?",
+        "caller_phone": "+15551234567"
+      }
+    ],
+    "VOICE_SCHEDULE_002": [
+      {
+        "timestamp": "2025-08-08T23:19:59.864375",
+        "speaker": "Caller",
+        "message": "what day is today?",
+        "caller_phone": "+15551234567"
+      },
+      {
+        "timestamp": "2025-08-08T23:20:51.757730",
+        "speaker": "Caller",
+        "message": "what day is today?",
+        "caller_phone": "+15551234567"
+      }
+    ],
+    "VOICE_SCHEDULE_003": [
+      {
+        "timestamp": "2025-08-08T23:20:01.442578",
+        "speaker": "Caller",
+        "message": "can you send someone on monday?",
+        "caller_phone": "+15551234567"
+      },
+      {
+        "timestamp": "2025-08-08T23:20:53.381507",
+        "speaker": "Caller",
+        "message": "can you send someone on monday?",
+        "caller_phone": "+15551234567"
+      }
+    ],
+    "VOICE_SCHEDULE_004": [
+      {
+        "timestamp": "2025-08-08T23:20:03.373973",
+        "speaker": "Caller",
+        "message": "are you guys open today?",
+        "caller_phone": "+15551234567"
+      },
+      {
+        "timestamp": "2025-08-08T23:20:55.095895",
+        "speaker": "Caller",
+        "message": "are you guys open today?",
+        "caller_phone": "+15551234567"
+      }
     ]
   },
-  "last_updated": "2025-08-08T19:15:23.080525-04:00",
-  "total_calls": 62
+  "last_updated": "2025-08-08T19:20:55.095909-04:00",
+  "total_calls": 67
 }

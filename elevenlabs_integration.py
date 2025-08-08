@@ -64,15 +64,15 @@ def generate_elevenlabs_audio(text: str, voice_id: str = None, voice_name: str =
         
         data = {
             "text": text,
-            "model_id": "eleven_turbo_v2_5",  # Fastest model for real-time
+            "model_id": "eleven_flash_v2_5",  # Flash model for more natural, conversational speech
             "voice_settings": {
-                "stability": 0.75,        # Reduced stability for softer, more natural tone
-                "similarity_boost": 0.75, # Reduced boost for gentler voice projection
-                "style": 0.2,            # Slightly increased style for warmer, friendlier tone
-                "use_speaker_boost": False # DISABLED: This was causing loud, aggressive voice
+                "stability": 0.5,         # Lower stability for more natural variation
+                "similarity_boost": 0.8,  # Higher similarity for consistent voice character
+                "style": 0.4,            # More style for natural conversation flow
+                "use_speaker_boost": True  # Enabled for clearer, more engaging speech
             },
-            "output_format": "mp3_22050_32", # Lower bitrate for softer audio quality
-            "optimize_streaming_latency": True # Faster processing for real-time calls
+            "output_format": "mp3_44100_128", # Higher quality for better voice clarity
+            "optimize_streaming_latency": 4   # Balance between quality and speed
         }
         
         # OPTIMIZED: Reduced timeout for faster failure

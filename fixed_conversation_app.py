@@ -1764,6 +1764,8 @@ log #{log_entry['id']:03d} – {log_entry['date']}
             # Generate ElevenLabs audio for Chris greeting with time-appropriate greeting
             dynamic_greeting = get_time_based_greeting()
             
+            logger.info(f"🎙️ Using ElevenLabs Flash model for natural voice: '{dynamic_greeting}'")
+            
             # Try ElevenLabs first, fallback to reliable system if needed
             try:
                 # Generate audio URL for Twilio

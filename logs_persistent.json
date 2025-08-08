@@ -1,5 +1,173 @@
 [
   {
+    "id": 161,
+    "date": "August 08, 2025",
+    "time": "7:20 PM ET",
+    "request": "\ud83d\udcde LIVE CALL - GENERAL: are you guys open today?",
+    "resolution": "\u2705 CALL LOG: Chris processed general call from +15551234567. Caller said: 'are you guys open today?'. System operational with auto-response generation and logging.",
+    "constraint_note": "Rule #2 followed as required (appended new entry). Rule #4 followed as required (mirrored to REQUEST_HISTORY.md)."
+  },
+  {
+    "id": 160,
+    "date": "August 08, 2025",
+    "time": "7:20 PM ET",
+    "request": "\ud83d\udcde LIVE CALL - GENERAL: can you send someone on monday?",
+    "resolution": "\u2705 CALL LOG: Chris processed general call from +15551234567. Caller said: 'can you send someone on monday?'. System operational with auto-response generation and logging.",
+    "constraint_note": "Rule #2 followed as required (appended new entry). Rule #4 followed as required (mirrored to REQUEST_HISTORY.md)."
+  },
+  {
+    "id": 159,
+    "date": "August 08, 2025",
+    "time": "7:20 PM ET",
+    "request": "\ud83d\udcde LIVE CALL - GENERAL: what day is today?",
+    "resolution": "\u2705 CALL LOG: Chris processed general call from +15551234567. Caller said: 'what day is today?'. System operational with auto-response generation and logging.",
+    "constraint_note": "Rule #2 followed as required (appended new entry). Rule #4 followed as required (mirrored to REQUEST_HISTORY.md)."
+  },
+  {
+    "id": 158,
+    "date": "August 08, 2025",
+    "time": "7:20 PM ET",
+    "request": "\ud83d\udcde LIVE CALL - MAINTENANCE: when can someone come fix my heating?",
+    "resolution": "\u2705 CALL LOG: Chris processed maintenance call from +15551234567. Caller said: 'when can someone come fix my heating?'. System operational with auto-response generation and logging.",
+    "constraint_note": "Rule #2 followed as required (appended new entry). Rule #4 followed as required (mirrored to REQUEST_HISTORY.md)."
+  },
+  {
+    "id": 157,
+    "date": "August 08, 2025",
+    "time": "7:20 PM ET",
+    "request": "\ud83d\udcde LIVE CALL - GENERAL: are you guys open today?",
+    "resolution": "\u2705 CALL LOG: Chris processed general call from +15551234567. Caller said: 'are you guys open today?'. System operational with auto-response generation and logging.",
+    "constraint_note": "Rule #2 followed as required (appended new entry). Rule #4 followed as required (mirrored to REQUEST_HISTORY.md)."
+  },
+  {
+    "id": 156,
+    "date": "August 08, 2025",
+    "time": "7:20 PM ET",
+    "request": "\ud83d\udcde LIVE CALL - GENERAL: can you send someone on monday?",
+    "resolution": "\u2705 CALL LOG: Chris processed general call from +15551234567. Caller said: 'can you send someone on monday?'. System operational with auto-response generation and logging.",
+    "constraint_note": "Rule #2 followed as required (appended new entry). Rule #4 followed as required (mirrored to REQUEST_HISTORY.md)."
+  },
+  {
+    "id": 155,
+    "date": "August 08, 2025",
+    "time": "7:19 PM ET",
+    "request": "\ud83d\udcde LIVE CALL - GENERAL: what day is today?",
+    "resolution": "\u2705 CALL LOG: Chris processed general call from +15551234567. Caller said: 'what day is today?'. System operational with auto-response generation and logging.",
+    "constraint_note": "Rule #2 followed as required (appended new entry). Rule #4 followed as required (mirrored to REQUEST_HISTORY.md)."
+  },
+  {
+    "id": 154,
+    "date": "August 08, 2025",
+    "time": "7:19 PM ET",
+    "request": "\ud83d\udcde LIVE CALL - MAINTENANCE: when can someone come fix my heating?",
+    "resolution": "\u2705 CALL LOG: Chris processed maintenance call from +15551234567. Caller said: 'when can someone come fix my heating?'. System operational with auto-response generation and logging.",
+    "constraint_note": "Rule #2 followed as required (appended new entry). Rule #4 followed as required (mirrored to REQUEST_HISTORY.md)."
+  },
+  {
+    "id": 153,
+    "date": "August 08, 2025",
+    "time": "7:19 PM ET",
+    "request": "\ud83d\udcde LIVE CALL - GENERAL: okay, thank you very much.",
+    "resolution": "\u2705 CALL LOG: Chris processed general call from Anonymous. Caller said: 'okay, thank you very much.'. System operational with auto-response generation and logging.",
+    "constraint_note": "Rule #2 followed as required (appended new entry). Rule #4 followed as required (mirrored to REQUEST_HISTORY.md)."
+  },
+  {
+    "id": 152,
+    "date": "August 08, 2025",
+    "time": "7:19 PM ET",
+    "request": "\ud83d\udcde LIVE CALL - GENERAL: it as a broker open house at gmail.com.",
+    "resolution": "\u2705 CALL LOG: Chris processed general call from Anonymous. Caller said: 'it as a broker open house at gmail.com.'. System operational with auto-response generation and logging.",
+    "constraint_note": "Rule #2 followed as required (appended new entry). Rule #4 followed as required (mirrored to REQUEST_HISTORY.md)."
+  },
+  {
+    "id": 151,
+    "date": "August 08, 2025",
+    "time": "7:18 PM ET",
+    "request": "\ud83d\udcde LIVE CALL - GENERAL: can you text me? a copy of the complaint?",
+    "resolution": "\u2705 CALL LOG: Chris processed general call from Anonymous. Caller said: 'can you text me? a copy of the complaint?'. System operational with auto-response generation and logging.",
+    "constraint_note": "Rule #2 followed as required (appended new entry). Rule #4 followed as required (mirrored to REQUEST_HISTORY.md)."
+  },
+  {
+    "id": 150,
+    "date": "August 08, 2025",
+    "time": "7:18 PM ET",
+    "request": "\ud83d\udcde LIVE CALL - GENERAL: yes.",
+    "resolution": "\u2705 CALL LOG: Chris processed general call from Anonymous. Caller said: 'yes.'. System operational with auto-response generation and logging.",
+    "constraint_note": "Rule #2 followed as required (appended new entry). Rule #4 followed as required (mirrored to REQUEST_HISTORY.md)."
+  },
+  {
+    "id": 149,
+    "date": "August 08, 2025",
+    "time": "7:18 PM ET",
+    "request": "\ud83d\udcde LIVE CALL - GENERAL: yes.",
+    "resolution": "\u2705 CALL LOG: Chris processed general call from Anonymous. Caller said: 'yes.'. System operational with auto-response generation and logging.",
+    "constraint_note": "Rule #2 followed as required (appended new entry). Rule #4 followed as required (mirrored to REQUEST_HISTORY.md)."
+  },
+  {
+    "id": 148,
+    "date": "August 08, 2025",
+    "time": "7:18 PM ET",
+    "request": "\ud83d\udcde LIVE CALL - GENERAL: know today is friday tomorrow saturday",
+    "resolution": "\u2705 CALL LOG: Chris processed general call from Anonymous. Caller said: 'know today is friday tomorrow saturday'. System operational with auto-response generation and logging.",
+    "constraint_note": "Rule #2 followed as required (appended new entry). Rule #4 followed as required (mirrored to REQUEST_HISTORY.md)."
+  },
+  {
+    "id": 147,
+    "date": "August 08, 2025",
+    "time": "7:17 PM ET",
+    "request": "\ud83d\udcde LIVE CALL - GENERAL: and what day is tomorrow?",
+    "resolution": "\u2705 CALL LOG: Chris processed general call from Anonymous. Caller said: 'and what day is tomorrow?'. System operational with auto-response generation and logging.",
+    "constraint_note": "Rule #2 followed as required (appended new entry). Rule #4 followed as required (mirrored to REQUEST_HISTORY.md)."
+  },
+  {
+    "id": 146,
+    "date": "August 08, 2025",
+    "time": "7:17 PM ET",
+    "request": "\ud83d\udcde LIVE CALL - GENERAL: are you guys open tomorrow?",
+    "resolution": "\u2705 CALL LOG: Chris processed general call from Anonymous. Caller said: 'are you guys open tomorrow?'. System operational with auto-response generation and logging.",
+    "constraint_note": "Rule #2 followed as required (appended new entry). Rule #4 followed as required (mirrored to REQUEST_HISTORY.md)."
+  },
+  {
+    "id": 145,
+    "date": "August 08, 2025",
+    "time": "7:17 PM ET",
+    "request": "\ud83d\udcde LIVE CALL - GENERAL: sure.",
+    "resolution": "\u2705 CALL LOG: Chris processed general call from Anonymous. Caller said: 'sure.'. System operational with auto-response generation and logging.",
+    "constraint_note": "Rule #2 followed as required (appended new entry). Rule #4 followed as required (mirrored to REQUEST_HISTORY.md)."
+  },
+  {
+    "id": 144,
+    "date": "August 08, 2025",
+    "time": "7:17 PM ET",
+    "request": "\ud83d\udcde LIVE CALL - GENERAL: when they're coming.",
+    "resolution": "\u2705 CALL LOG: Chris processed general call from Anonymous. Caller said: 'when they're coming.'. System operational with auto-response generation and logging.",
+    "constraint_note": "Rule #2 followed as required (appended new entry). Rule #4 followed as required (mirrored to REQUEST_HISTORY.md)."
+  },
+  {
+    "id": 143,
+    "date": "August 08, 2025",
+    "time": "7:16 PM ET",
+    "request": "\ud83d\udcde LIVE CALL - GENERAL: it, it doesn't start.",
+    "resolution": "\u2705 CALL LOG: Chris processed general call from Anonymous. Caller said: 'it, it doesn't start.'. System operational with auto-response generation and logging.",
+    "constraint_note": "Rule #2 followed as required (appended new entry). Rule #4 followed as required (mirrored to REQUEST_HISTORY.md)."
+  },
+  {
+    "id": 142,
+    "date": "August 08, 2025",
+    "time": "7:16 PM ET",
+    "request": "\ud83d\udcde LIVE CALL - GENERAL: a 32 port richmond avenue.",
+    "resolution": "\u2705 CALL LOG: Chris processed general call from Anonymous. Caller said: 'a 32 port richmond avenue.'. System operational with auto-response generation and logging.",
+    "constraint_note": "Rule #2 followed as required (appended new entry). Rule #4 followed as required (mirrored to REQUEST_HISTORY.md)."
+  },
+  {
+    "id": 141,
+    "date": "August 08, 2025",
+    "time": "7:16 PM ET",
+    "request": "\ud83d\udcde LIVE CALL - MAINTENANCE: having a problem with my stove.",
+    "resolution": "\u2705 CALL LOG: Chris processed maintenance call from Anonymous. Caller said: 'having a problem with my stove.'. System operational with auto-response generation and logging.",
+    "constraint_note": "Rule #2 followed as required (appended new entry). Rule #4 followed as required (mirrored to REQUEST_HISTORY.md)."
+  },
+  {
     "id": 140,
     "date": "August 08, 2025",
     "time": "7:15 PM ET",
