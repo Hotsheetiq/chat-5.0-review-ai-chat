@@ -1624,6 +1624,48 @@ log #{log_entry['id']:03d} – {log_entry['date']}
                 'message': f'Error: {str(e)}'
             }), 500
 
+    @app.route("/api/call-history", methods=["GET"])
+    def api_call_history():
+        """API endpoint for call history data"""
+        try:
+            # Return the real call records from conversation history
+            call_data = []
+            
+            for call_sid, messages in conversation_history.items():
+                if messages and len(messages) > 0:
+                    # Extract call information
+                    first_message = messages[0] if messages else {}
+                    caller_phone = first_message.get('caller_phone', 'Unknown')
+                    timestamp = first_message.get('timestamp', datetime.now().isoformat())
+                    
+                    # Build conversation transcript
+                    transcript = ""
+                    for msg in messages:
+                        speaker = msg.get('speaker', 'Unknown')
+                        message = msg.get('message', '')
+                        timestamp_part = msg.get('timestamp', '')[:19]
+                        transcript += f"[{timestamp_part[-8:]}] {speaker}: {message}\n"
+                    
+                    call_data.append({
+                        'call_sid': call_sid,
+                        'caller_phone': caller_phone,
+                        'timestamp': timestamp,
+                        'message_count': len(messages),
+                        'transcript': transcript.strip(),
+                        'duration': 'Live Call',
+                        'status': 'Completed'
+                    })
+            
+            # Sort by timestamp (most recent first)
+            call_data.sort(key=lambda x: x['timestamp'], reverse=True)
+            
+            logger.info(f"Returning {len(call_data)} real call records from conversation history (sorted by most recent)")
+            return jsonify(call_data)
+            
+        except Exception as e:
+            logger.error(f"Error fetching call history: {e}")
+            return jsonify({"error": "Failed to fetch call history"}), 500
+
     @app.route("/api/unified-logs", methods=["GET"])
     def get_unified_logs():
         """API endpoint for unified logs with hardened structure"""
