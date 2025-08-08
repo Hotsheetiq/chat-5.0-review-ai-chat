@@ -1,5 +1,13 @@
 [
   {
+    "id": 120,
+    "date": "August 08, 2025",
+    "time": "7:03 PM ET",
+    "request": "Test dashboard data visibility for today's date",
+    "resolution": "Testing that new logs show today's date correctly",
+    "constraint_note": "Rule #2 followed as required (appended new entry). Rule #4 followed as required (mirrored to REQUEST_HISTORY.md)."
+  },
+  {
     "id": 119,
     "date": "July 08, 2025",
     "time": "6:47 PM ET",

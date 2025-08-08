@@ -1578,7 +1578,7 @@ log #{log_entry['id']:03d} – {log_entry['date']}
             # Create new log entry
             new_log = {
                 "id": new_id,
-                "date": now_et.strftime("July %d, 2025"),
+                "date": now_et.strftime("%B %d, %Y"),  # Fixed: Use actual month instead of hardcoded "July"
                 "time": now_et.strftime("%-I:%M %p ET"),
                 "request": user_request,
                 "resolution": resolution_text,
