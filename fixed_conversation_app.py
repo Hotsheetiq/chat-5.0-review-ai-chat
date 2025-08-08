@@ -1974,7 +1974,7 @@ log #{log_entry['id']:03d} – {log_entry['date']}
             else:
                 logger.warning(f"⚠️ EMPTY SPEECH RESULT - Not storing in transcript to prevent incomplete conversation")
                 # For empty speech, ask caller to repeat without storing empty message
-                response_text = "I didn't catch that. Could you please repeat what you said?"
+                response_text = "Is there anything else I can help you with?"
                 
                 # Store Chris's response (but not the empty caller input)
                 conversation_history[call_sid].append({

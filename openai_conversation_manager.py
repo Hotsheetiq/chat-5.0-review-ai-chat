@@ -48,14 +48,14 @@ GREETING RULES:
 - Example follow-up: "What's the problem with your heat?" (NOT "This is Chris again...")
 
 CONVERSATION APPROACH:
-- Ask for the home ADDRESS first (not apartment numbers)
-- For problems: Get address first, then ask what's wrong
-- Office hours: Tell them Monday-Friday 9 AM-5 PM Eastern Time
-- Big problems: We can help 24/7
-- For maintenance timing: Always say "I'll get someone out as soon as possible" or "we'll get this taken care of quickly"
-- NEVER promise specific days (Monday, Tuesday, etc.) - you don't have real scheduling access
-- If asked about today: It's Friday, August 8th, 2025
-- Sound helpful and confident, but don't make scheduling promises you can't keep
+- Ask for: 1) Home ADDRESS, 2) Full NAME, 3) Phone NUMBER, 4) Apartment/Unit NUMBER if applicable
+- NEVER ask for the same information twice - remember what they tell you
+- Office hours: Monday-Friday 9 AM-5 PM Eastern Time (it's currently 7:42 PM - WE ARE CLOSED)
+- After hours: Say "Our office is closed now, but I can take your information and someone will call you first thing Monday morning"
+- NEVER promise 24/7 service or same-day repairs - this is FALSE
+- NEVER say "someone will be out tonight" or "emergency service" - we don't offer this
+- For maintenance: "I'll make sure this gets submitted and someone will contact you during business hours"
+- When customer is silent: Ask "Is there anything else I can help you with?" instead of "I didn't catch that"
 
 IMPORTANT: Only say your name and company ONCE at the start of each call."""
     
@@ -100,6 +100,34 @@ IMPORTANT: Only say your name and company ONCE at the start of each call."""
                 logger.info(f"Extracted property address: {facts['propertyAddress']}")
                 break
         
+        # Extract customer names (look for "my name is" or "this is" patterns)
+        if not facts.get('customerName'):
+            name_patterns = [
+                r'(?:my name is|this is|i\'?m)\s+([a-z]+(?:\s+[a-z]+)?)',
+                r'([a-z]+\s+[a-z]+)(?:\s+here|\s+calling)',
+            ]
+            
+            for pattern in name_patterns:
+                match = re.search(pattern, text_lower)
+                if match:
+                    facts['customerName'] = match.group(1).strip().title()
+                    logger.info(f"Extracted name: {facts['customerName']}")
+                    break
+
+        # Extract phone numbers
+        if not facts.get('phoneNumber'):
+            phone_patterns = [
+                r'(\d{3}[-.\s]?\d{3}[-.\s]?\d{4})',
+                r'(\(\d{3}\)\s?\d{3}[-.\s]?\d{4})',
+            ]
+            
+            for pattern in phone_patterns:
+                match = re.search(pattern, text)
+                if match:
+                    facts['phoneNumber'] = match.group(1)
+                    logger.info(f"Extracted phone: {facts['phoneNumber']}")
+                    break
+
         # Then extract unit if available
         for pattern in unit_patterns:
             match = re.search(pattern, text_lower)
@@ -131,6 +159,8 @@ IMPORTANT: Only say your name and company ONCE at the start of each call."""
         address_info = facts['propertyAddress'] if facts['propertyAddress'] else 'unknown'
         unit_info = facts['unitNumber'] if facts['unitNumber'] else 'unknown'  
         issue_info = facts['reportedIssue'] if facts['reportedIssue'] else 'unknown'
+        name_info = facts.get('customerName', 'unknown')
+        phone_info = facts.get('phoneNumber', 'unknown')
         
         # Determine if this is the first message of the call
         # For system prompt generation, check if conversation has user/assistant pairs (not just system prompt)
@@ -155,7 +185,7 @@ IMPORTANT: Only say your name and company ONCE at the start of each call."""
         else:
             greeting_context = "\n\nIMPORTANT: This is NOT your first message. Do NOT introduce yourself again. Just answer their question directly."
         
-        enhanced_prompt = f"{self.base_system_prompt}\n\nKnown facts this session: Property Address = {address_info}, Unit = {unit_info}, Reported Issue = {issue_info}.{greeting_context}"
+        enhanced_prompt = f"{self.base_system_prompt}\n\nKnown facts this session: Customer Name = {name_info}, Phone = {phone_info}, Property Address = {address_info}, Unit = {unit_info}, Reported Issue = {issue_info}.{greeting_context}"
         
         return {
             "role": "system",

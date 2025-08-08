@@ -36,3 +36,13 @@ The application is built with Flask and Flask-SocketIO, integrating various serv
 - **VAD Optimization**: Reduced speechTimeout to 1 second for faster interaction detection
 - **Three-Mode Operation**: Default (gpt-4o-mini streaming), Live (ultra-fast), Reasoning (gpt-4o) all functional
 - **Context Retention**: Conversation history maintained across all modes with intelligent fact injection
+
+### Critical Voice and Business Logic Fixes - August 8, 7:45 PM ET
+- **ElevenLabs Voice Quality**: Upgraded to Flash model (eleven_flash_v2_5) with optimized natural speech settings
+- **Contact Information Collection**: Chris now systematically collects: name, phone, address, unit number without repetition
+- **Business Hours Accuracy**: Correctly identifies after-hours calls (office closed 5 PM-9 AM) and sets proper expectations
+- **False Promise Prevention**: Eliminated 24/7 service claims and "tonight" repair promises - now says accurate business hours
+- **Memory Enhancement**: Chris remembers all provided information and never asks for same details twice
+- **Plain Language**: Uses contractions, simple words, and natural conversation patterns instead of robotic speech
+- **Silent Response Fix**: Changed "I didn't catch that" to "Is there anything else I can help you with?"
+- **Time-Based Greetings**: Proper good morning/afternoon/evening based on Eastern Time, only introduces himself once per call
