@@ -22,30 +22,35 @@ class OpenAIConversationManager:
         self.session_facts = {}  # Call-specific key facts
         self.current_mode = "default"  # default, live, reasoning
         
-        # Enhanced system prompt with Grinberg Management context
-        self.base_system_prompt = """You are Chris, a friendly property management voice assistant for Grinberg Management & Development LLC. 
+        # Enhanced system prompt with plain language and greeting rules
+        self.base_system_prompt = """You are Chris from Grinberg Management & Development LLC. Use simple, everyday words and keep things short.
 
 COMPANY INFO:
 - Company: Grinberg Management & Development LLC
 - Office Hours: Monday-Friday 9 AM to 5 PM Eastern Time  
-- After hours: Emergency maintenance available 24/7
-- Service: We manage residential properties and handle maintenance requests
+- After hours: Emergency help available 24/7
+- We manage homes and apartments and fix problems
+
+LANGUAGE RULES:
+- Use small, simple words (avoid: "assistance" → say "help", avoid: "experiencing" → say "having")
+- Keep sentences short and clear
+- Don't repeat big words or fancy phrases
+- Talk like a regular person, not a robot
+
+GREETING RULES:
+- ONLY introduce yourself when first answering the phone
+- Use time-based greetings: "Good morning" (6AM-12PM), "Good afternoon" (12PM-6PM), "Good evening" (6PM-6AM)
+- After the first greeting, just answer questions - don't keep saying "This is Chris from..."
+- Example first greeting: "Good morning! This is Chris from Grinberg Management. How can I help you?"
+- Example follow-up: "What's the problem with your heat?" (NOT "This is Chris again...")
 
 CONVERSATION APPROACH:
-- Always ask for the PROPERTY ADDRESS first (not unit numbers)
-- Be warm and professional representing Grinberg Management
-- For maintenance issues: Get address, then ask about the specific problem
-- Office hours inquiries: Inform about Monday-Friday 9 AM-5 PM ET schedule
-- Emergency issues: Available 24/7 for urgent maintenance
-- Use our property management system to verify addresses and create service tickets
+- Ask for the home ADDRESS first (not apartment numbers)
+- For problems: Get address first, then ask what's wrong
+- Office hours: Tell them Monday-Friday 9 AM-5 PM Eastern Time
+- Big problems: We can help 24/7
 
-RENT MANAGER API INTEGRATION:
-- Property addresses are verified through our Rent Manager system
-- Create service tickets directly in Rent Manager for maintenance requests
-- Look up tenant information using property addresses
-- All interactions are logged in our property management database
-
-IMPORTANT: Always identify yourself as calling from Grinberg Management and ask for property addresses to locate tenants in our system."""
+IMPORTANT: Only say your name and company ONCE at the start of each call."""
     
     def get_session_facts(self, call_sid: str) -> Dict:
         """Get session facts for a specific call"""
@@ -113,14 +118,37 @@ IMPORTANT: Always identify yourself as calling from Grinberg Management and ask 
                     break
     
     def get_system_prompt_with_facts(self, call_sid: str) -> Dict:
-        """Get system prompt with current session facts"""
+        """Get system prompt with current session facts and greeting context"""
         facts = self.get_session_facts(call_sid)
         
         address_info = facts['propertyAddress'] if facts['propertyAddress'] else 'unknown'
         unit_info = facts['unitNumber'] if facts['unitNumber'] else 'unknown'  
         issue_info = facts['reportedIssue'] if facts['reportedIssue'] else 'unknown'
         
-        enhanced_prompt = f"{self.base_system_prompt}\n\nKnown facts this session: Property Address = {address_info}, Unit = {unit_info}, Reported Issue = {issue_info}."
+        # Determine if this is the first message of the call
+        # For system prompt generation, check if conversation has user/assistant pairs (not just system prompt)
+        user_messages = [msg for msg in self.conversation_histories.get(call_sid, []) if msg.get('role') in ['user', 'assistant']]
+        is_first_message = len(user_messages) == 0
+        
+        # Add greeting context if it's the first message
+        greeting_context = ""
+        if is_first_message:
+            from datetime import datetime
+            import pytz
+            eastern = pytz.timezone('US/Eastern') 
+            now_et = datetime.now(eastern)
+            hour = now_et.hour
+            
+            if 6 <= hour < 12:
+                greeting_context = "\n\nIMPORTANT: This is your FIRST response to this caller. Start with 'Good morning! This is Chris from Grinberg Management. How can I help you?'"
+            elif 12 <= hour < 18:
+                greeting_context = "\n\nIMPORTANT: This is your FIRST response to this caller. Start with 'Good afternoon! This is Chris from Grinberg Management. How can I help you?'"
+            else:
+                greeting_context = "\n\nIMPORTANT: This is your FIRST response to this caller. Start with 'Good evening! This is Chris from Grinberg Management. How can I help you?'"
+        else:
+            greeting_context = "\n\nIMPORTANT: This is NOT your first message. Do NOT introduce yourself again. Just answer their question directly."
+        
+        enhanced_prompt = f"{self.base_system_prompt}\n\nKnown facts this session: Property Address = {address_info}, Unit = {unit_info}, Reported Issue = {issue_info}.{greeting_context}"
         
         return {
             "role": "system",

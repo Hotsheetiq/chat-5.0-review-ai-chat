@@ -338,11 +338,29 @@ complaint_tracker = {
     ]
 }
 
-def get_dynamic_happy_greeting():
-    """Generate dynamic, happy greetings that vary for each caller"""
-    import random
+def get_time_based_greeting():
+    """Generate time-appropriate greeting for first phone answer"""
+    from datetime import datetime
+    import pytz
     
-    # Happy, enthusiastic greeting variations
+    eastern = pytz.timezone('US/Eastern')
+    now_et = datetime.now(eastern)
+    hour = now_et.hour
+    
+    if 6 <= hour < 12:
+        return "Good morning! This is Chris from Grinberg Management. How can I help you?"
+    elif 12 <= hour < 18:
+        return "Good afternoon! This is Chris from Grinberg Management. How can I help you?"  
+    else:
+        return "Good evening! This is Chris from Grinberg Management. How can I help you?"
+
+def get_dynamic_happy_greeting():
+    """Generate dynamic, happy greetings that vary for each caller - LEGACY function"""
+    # This function kept for compatibility but should use get_time_based_greeting() instead
+    return get_time_based_greeting()
+
+def get_old_dynamic_greetings():
+    """Old greeting variations - kept for reference"""
     greetings = [
         "Hey there! This is Chris from Grinberg Management, and I'm having a great day! What's going on?",
         "Hi! Chris here from Grinberg Management, hope you're doing awesome today! How can I help?",
@@ -1743,8 +1761,8 @@ log #{log_entry['id']:03d} – {log_entry['date']}
             if call_sid not in conversation_history:
                 conversation_history[call_sid] = []
             
-            # Generate ElevenLabs audio for Chris greeting
-            dynamic_greeting = get_dynamic_happy_greeting()
+            # Generate ElevenLabs audio for Chris greeting with time-appropriate greeting
+            dynamic_greeting = get_time_based_greeting()
             
             # Try ElevenLabs first, fallback to reliable system if needed
             try:
