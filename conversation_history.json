@@ -2022,8 +2022,92 @@
         "message": "do you guys offer 24/7 service?",
         "caller_phone": "+15551234567"
       }
+    ],
+    "EMERGENCY_HEAT_001": [
+      {
+        "timestamp": "2025-08-08T23:52:08.830928",
+        "speaker": "Caller",
+        "message": "i have no heat in my apartment",
+        "caller_phone": "+15551234567"
+      },
+      {
+        "timestamp": "2025-08-08T23:52:37.384310",
+        "speaker": "Caller",
+        "message": "i have no heat in my apartment",
+        "caller_phone": "+15551234567"
+      }
+    ],
+    "EMERGENCY_SEWER_001": [
+      {
+        "timestamp": "2025-08-08T23:52:11.367214",
+        "speaker": "Caller",
+        "message": "my toilet is completely clogged and overflowing",
+        "caller_phone": "+15551234567"
+      },
+      {
+        "timestamp": "2025-08-08T23:52:39.967131",
+        "speaker": "Caller",
+        "message": "my toilet is completely clogged and overflowing",
+        "caller_phone": "+15551234567"
+      }
+    ],
+    "NON_EMERGENCY_001": [
+      {
+        "timestamp": "2025-08-08T23:52:13.724533",
+        "speaker": "Caller",
+        "message": "my kitchen sink is leaking a little bit",
+        "caller_phone": "+15551234567"
+      },
+      {
+        "timestamp": "2025-08-08T23:52:42.137444",
+        "speaker": "Caller",
+        "message": "my kitchen sink is leaking a little bit",
+        "caller_phone": "+15551234567"
+      }
+    ],
+    "PROMISE_REQUEST_001": [
+      {
+        "timestamp": "2025-08-08T23:52:15.954041",
+        "speaker": "Caller",
+        "message": "can you guarantee someone will be here by noon tomorrow?",
+        "caller_phone": "+15551234567"
+      },
+      {
+        "timestamp": "2025-08-08T23:52:44.223377",
+        "speaker": "Caller",
+        "message": "can you guarantee someone will be here by noon tomorrow?",
+        "caller_phone": "+15551234567"
+      }
+    ],
+    "UNKNOWN_QUESTION_001": [
+      {
+        "timestamp": "2025-08-08T23:52:18.363159",
+        "speaker": "Caller",
+        "message": "when will someone arrive to fix my dishwasher?",
+        "caller_phone": "+15551234567"
+      },
+      {
+        "timestamp": "2025-08-08T23:52:46.551346",
+        "speaker": "Caller",
+        "message": "when will someone arrive to fix my dishwasher?",
+        "caller_phone": "+15551234567"
+      }
+    ],
+    "LIFE_THREAT_001": [
+      {
+        "timestamp": "2025-08-08T23:52:20.934242",
+        "speaker": "Caller",
+        "message": "there's a fire in my building!",
+        "caller_phone": "+15551234567"
+      },
+      {
+        "timestamp": "2025-08-08T23:52:49.190953",
+        "speaker": "Caller",
+        "message": "there's a fire in my building!",
+        "caller_phone": "+15551234567"
+      }
     ]
   },
-  "last_updated": "2025-08-08T19:45:27.999130-04:00",
-  "total_calls": 71
+  "last_updated": "2025-08-08T19:52:49.190971-04:00",
+  "total_calls": 77
 }

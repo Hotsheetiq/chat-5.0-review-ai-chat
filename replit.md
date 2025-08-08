@@ -46,3 +46,12 @@ The application is built with Flask and Flask-SocketIO, integrating various serv
 - **Plain Language**: Uses contractions, simple words, and natural conversation patterns instead of robotic speech
 - **Silent Response Fix**: Changed "I didn't catch that" to "Is there anything else I can help you with?"
 - **Time-Based Greetings**: Proper good morning/afternoon/evening based on Eastern Time, only introduces himself once per call
+
+### Official Business Rules Integration - August 8, 11:52 PM ET
+- **Authoritative Policies**: Chris now follows only verified business rules from official company document
+- **Emergency Detection**: Correctly identifies true emergencies (no heat, flooding, sewer backup) for 24/7 handling
+- **Life-Threatening Protocol**: Immediately directs callers to call 911 for fire or life-threatening situations
+- **Non-Emergency Handling**: Uses proper after-hours script for non-emergency issues during closed hours
+- **Refusal Template**: Uses official company language when unable to make promises about services or timelines
+- **Memory Fields**: Tracks unitNumber, reportedIssue, contactName, callbackNumber, and accessInstructions per business rules
+- **No Unauthorized Promises**: Prevents Chris from making service commitments beyond authorized policies

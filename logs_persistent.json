@@ -1,5 +1,101 @@
 [
   {
+    "id": 190,
+    "date": "August 08, 2025",
+    "time": "7:52 PM ET",
+    "request": "\ud83d\udcde LIVE CALL - GENERAL: there's a fire in my building!",
+    "resolution": "\u2705 CALL LOG: Chris processed general call from +15551234567. Caller said: 'there's a fire in my building!'. System operational with auto-response generation and logging.",
+    "constraint_note": "Rule #2 followed as required (appended new entry). Rule #4 followed as required (mirrored to REQUEST_HISTORY.md)."
+  },
+  {
+    "id": 189,
+    "date": "August 08, 2025",
+    "time": "7:52 PM ET",
+    "request": "\ud83d\udcde LIVE CALL - MAINTENANCE: when will someone arrive to fix my dishwasher?",
+    "resolution": "\u2705 CALL LOG: Chris processed maintenance call from +15551234567. Caller said: 'when will someone arrive to fix my dishwasher?'. System operational with auto-response generation and logging.",
+    "constraint_note": "Rule #2 followed as required (appended new entry). Rule #4 followed as required (mirrored to REQUEST_HISTORY.md)."
+  },
+  {
+    "id": 188,
+    "date": "August 08, 2025",
+    "time": "7:52 PM ET",
+    "request": "\ud83d\udcde LIVE CALL - GENERAL: can you guarantee someone will be here by noon tomorrow?",
+    "resolution": "\u2705 CALL LOG: Chris processed general call from +15551234567. Caller said: 'can you guarantee someone will be here by noon tomorrow?'. System operational with auto-response generation and logging.",
+    "constraint_note": "Rule #2 followed as required (appended new entry). Rule #4 followed as required (mirrored to REQUEST_HISTORY.md)."
+  },
+  {
+    "id": 187,
+    "date": "August 08, 2025",
+    "time": "7:52 PM ET",
+    "request": "\ud83d\udcde LIVE CALL - GENERAL: my kitchen sink is leaking a little bit",
+    "resolution": "\u2705 CALL LOG: Chris processed general call from +15551234567. Caller said: 'my kitchen sink is leaking a little bit'. System operational with auto-response generation and logging.",
+    "constraint_note": "Rule #2 followed as required (appended new entry). Rule #4 followed as required (mirrored to REQUEST_HISTORY.md)."
+  },
+  {
+    "id": 186,
+    "date": "August 08, 2025",
+    "time": "7:52 PM ET",
+    "request": "\ud83d\udcde LIVE CALL - GENERAL: my toilet is completely clogged and overflowing",
+    "resolution": "\u2705 CALL LOG: Chris processed general call from +15551234567. Caller said: 'my toilet is completely clogged and overflowing'. System operational with auto-response generation and logging.",
+    "constraint_note": "Rule #2 followed as required (appended new entry). Rule #4 followed as required (mirrored to REQUEST_HISTORY.md)."
+  },
+  {
+    "id": 185,
+    "date": "August 08, 2025",
+    "time": "7:52 PM ET",
+    "request": "\ud83d\udcde LIVE CALL - GENERAL: i have no heat in my apartment",
+    "resolution": "\u2705 CALL LOG: Chris processed general call from +15551234567. Caller said: 'i have no heat in my apartment'. System operational with auto-response generation and logging.",
+    "constraint_note": "Rule #2 followed as required (appended new entry). Rule #4 followed as required (mirrored to REQUEST_HISTORY.md)."
+  },
+  {
+    "id": 184,
+    "date": "August 08, 2025",
+    "time": "7:52 PM ET",
+    "request": "\ud83d\udcde LIVE CALL - GENERAL: there's a fire in my building!",
+    "resolution": "\u2705 CALL LOG: Chris processed general call from +15551234567. Caller said: 'there's a fire in my building!'. System operational with auto-response generation and logging.",
+    "constraint_note": "Rule #2 followed as required (appended new entry). Rule #4 followed as required (mirrored to REQUEST_HISTORY.md)."
+  },
+  {
+    "id": 183,
+    "date": "August 08, 2025",
+    "time": "7:52 PM ET",
+    "request": "\ud83d\udcde LIVE CALL - MAINTENANCE: when will someone arrive to fix my dishwasher?",
+    "resolution": "\u2705 CALL LOG: Chris processed maintenance call from +15551234567. Caller said: 'when will someone arrive to fix my dishwasher?'. System operational with auto-response generation and logging.",
+    "constraint_note": "Rule #2 followed as required (appended new entry). Rule #4 followed as required (mirrored to REQUEST_HISTORY.md)."
+  },
+  {
+    "id": 182,
+    "date": "August 08, 2025",
+    "time": "7:52 PM ET",
+    "request": "\ud83d\udcde LIVE CALL - GENERAL: can you guarantee someone will be here by noon tomorrow?",
+    "resolution": "\u2705 CALL LOG: Chris processed general call from +15551234567. Caller said: 'can you guarantee someone will be here by noon tomorrow?'. System operational with auto-response generation and logging.",
+    "constraint_note": "Rule #2 followed as required (appended new entry). Rule #4 followed as required (mirrored to REQUEST_HISTORY.md)."
+  },
+  {
+    "id": 181,
+    "date": "August 08, 2025",
+    "time": "7:52 PM ET",
+    "request": "\ud83d\udcde LIVE CALL - GENERAL: my kitchen sink is leaking a little bit",
+    "resolution": "\u2705 CALL LOG: Chris processed general call from +15551234567. Caller said: 'my kitchen sink is leaking a little bit'. System operational with auto-response generation and logging.",
+    "constraint_note": "Rule #2 followed as required (appended new entry). Rule #4 followed as required (mirrored to REQUEST_HISTORY.md)."
+  },
+  {
+    "id": 180,
+    "date": "August 08, 2025",
+    "time": "7:52 PM ET",
+    "request": "\ud83d\udcde LIVE CALL - GENERAL: my toilet is completely clogged and overflowing",
+    "resolution": "\u2705 CALL LOG: Chris processed general call from +15551234567. Caller said: 'my toilet is completely clogged and overflowing'. System operational with auto-response generation and logging.",
+    "constraint_note": "Rule #2 followed as required (appended new entry). Rule #4 followed as required (mirrored to REQUEST_HISTORY.md)."
+  },
+  {
+    "id": 179,
+    "date": "August 08, 2025",
+    "time": "7:52 PM ET",
+    "request": "\ud83d\udcde LIVE CALL - GENERAL: i have no heat in my apartment",
+    "resolution": "\u2705 CALL LOG: Chris processed general call from +15551234567. Caller said: 'i have no heat in my apartment'. System operational with auto-response generation and logging.",
+    "constraint_note": "Rule #2 followed as required (appended new entry). Rule #4 followed as required (mirrored to REQUEST_HISTORY.md)."
+  },
+  {
     "id": 178,
     "date": "August 08, 2025",
     "time": "7:45 PM ET",

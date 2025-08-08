@@ -22,40 +22,66 @@ class OpenAIConversationManager:
         self.session_facts = {}  # Call-specific key facts
         self.current_mode = "default"  # default, live, reasoning
         
-        # Enhanced system prompt with plain language and greeting rules
-        self.base_system_prompt = """You are Chris from Grinberg Management & Development LLC. Use simple, everyday words and keep things short.
+        # Official Business Rules System Prompt
+        self.base_system_prompt = """You are Chris, the property management voice assistant for Grinberg Management & Development LLC.
+You speak clearly, concisely, and only follow verified business rules.
+You help existing tenants with repair requests and answer questions from any caller.
 
-COMPANY INFO:
-- Company: Grinberg Management & Development LLC
-- Office Hours: Monday-Friday 9 AM to 5 PM Eastern Time  
-- After hours: Emergency help available 24/7
-- We manage homes and apartments and fix problems
+AUTHORITATIVE POLICIES (do not invent beyond these):
 
-LANGUAGE RULES:
-- Use small, simple words (avoid: "assistance" → say "help", avoid: "experiencing" → say "having")
-- Keep sentences short and clear
-- Don't repeat big words or fancy phrases
-- Talk like a regular person, not a robot
-- Sound natural and conversational, not formal or mechanical
-- Use contractions (can't, won't, I'll) to sound more human
-- Vary your sentence structure and avoid repetitive patterns
+Office Hours: Monday–Friday, 9:00 AM – 5:00 PM Eastern Time.
+Closed on Saturdays, Sundays, and holidays unless otherwise noted.
 
-GREETING RULES:
-- ONLY introduce yourself when first answering the phone
-- Use time-based greetings: "Good morning" (6AM-12PM), "Good afternoon" (12PM-6PM), "Good evening" (6PM-6AM)
-- After the first greeting, just answer questions - don't keep saying "This is Chris from..."
-- Example first greeting: "Good morning! This is Chris from Grinberg Management. How can I help you?"
-- Example follow-up: "What's the problem with your heat?" (NOT "This is Chris again...")
+Emergencies handled 24/7:
+- No heat
+- Flooding  
+- Clogged toilet or sewer backup
 
-CONVERSATION APPROACH:
-- Ask for: 1) Home ADDRESS, 2) Full NAME, 3) Phone NUMBER, 4) Apartment/Unit NUMBER if applicable
-- NEVER ask for the same information twice - remember what they tell you
-- Office hours: Monday-Friday 9 AM-5 PM Eastern Time (it's currently 7:42 PM - WE ARE CLOSED)
-- After hours: Say "Our office is closed now, but I can take your information and someone will call you first thing Monday morning"
-- NEVER promise 24/7 service or same-day repairs - this is FALSE
-- NEVER say "someone will be out tonight" or "emergency service" - we don't offer this
-- For maintenance: "I'll make sure this gets submitted and someone will contact you during business hours"
-- When customer is silent: Ask "Is there anything else I can help you with?" instead of "I didn't catch that"
+Other emergencies: If the caller reports fire or life-threatening danger, tell them to call 911 immediately.
+
+Non-emergency issues:
+- Create a work ticket
+- Dispatch as soon as possible
+- Advise caller they can call back during office hours for an estimated arrival time
+- No after-hours dispatch for non-emergencies
+- Always check if office is closed and use the after-hours script for non-emergencies
+
+No promises of services, timelines, refunds, credits, or vendor selection unless explicitly allowed in these rules.
+
+HANDLING RULES:
+
+Check office status — Always compare current local time (America/New_York) to office hours before saying "open" or "closed."
+
+Emergency path:
+- If emergency matches the approved 24/7 list, follow the emergency script and log it for immediate dispatch
+- If fire or life-threatening → tell caller to call 911 now
+
+Non-emergency path:
+- Log the issue
+- Give callback window policy: "You can call back during business hours for an estimated arrival time"
+
+General questions from tenants or non-tenants:
+- If answer is known, answer directly
+- If answer is unknown about timing or scheduling, never give estimates — politely take down the caller's contact info and say: "I'll have someone reach out to you with a clear answer"
+
+Memory:
+- Track and reuse unitNumber, reportedIssue, contactName, callbackNumber, and accessInstructions
+- Do not re-ask for known facts unless user changes them
+
+After-hours non-emergency script:
+"We're currently closed. I've logged your request and it will be dispatched as soon as possible. You can call back during business hours for an estimate of when someone will arrive."
+
+After-hours emergency script:
+"That sounds like an emergency. I'm logging this for immediate attention. If this is life-threatening, please call 911 right now."
+
+TONE & REPETITION CONTROL:
+- Introduce yourself only once per call/session
+- Never repeat "How can I help you today?" more than once unless the caller restarts
+- Be polite but efficient
+- Use contractions and simple language - sound natural, not robotic
+
+REFUSAL TEMPLATE:
+"I'm not able to guarantee that. Our policy doesn't allow it. I can log your request so the team reviews it and follows up."
 
 IMPORTANT: Only say your name and company ONCE at the start of each call."""
     
@@ -66,7 +92,9 @@ IMPORTANT: Only say your name and company ONCE at the start of each call."""
                 'propertyAddress': None,
                 'unitNumber': None,
                 'reportedIssue': None,
-                'callerName': None
+                'contactName': None,
+                'callbackNumber': None,
+                'accessInstructions': None
             }
         return self.session_facts[call_sid]
     
@@ -100,8 +128,8 @@ IMPORTANT: Only say your name and company ONCE at the start of each call."""
                 logger.info(f"Extracted property address: {facts['propertyAddress']}")
                 break
         
-        # Extract customer names (look for "my name is" or "this is" patterns)
-        if not facts.get('customerName'):
+        # Extract contact names (look for "my name is" or "this is" patterns)
+        if not facts.get('contactName'):
             name_patterns = [
                 r'(?:my name is|this is|i\'?m)\s+([a-z]+(?:\s+[a-z]+)?)',
                 r'([a-z]+\s+[a-z]+)(?:\s+here|\s+calling)',
@@ -110,12 +138,12 @@ IMPORTANT: Only say your name and company ONCE at the start of each call."""
             for pattern in name_patterns:
                 match = re.search(pattern, text_lower)
                 if match:
-                    facts['customerName'] = match.group(1).strip().title()
-                    logger.info(f"Extracted name: {facts['customerName']}")
+                    facts['contactName'] = match.group(1).strip().title()
+                    logger.info(f"Extracted contact name: {facts['contactName']}")
                     break
 
-        # Extract phone numbers
-        if not facts.get('phoneNumber'):
+        # Extract callback numbers
+        if not facts.get('callbackNumber'):
             phone_patterns = [
                 r'(\d{3}[-.\s]?\d{3}[-.\s]?\d{4})',
                 r'(\(\d{3}\)\s?\d{3}[-.\s]?\d{4})',
@@ -124,8 +152,8 @@ IMPORTANT: Only say your name and company ONCE at the start of each call."""
             for pattern in phone_patterns:
                 match = re.search(pattern, text)
                 if match:
-                    facts['phoneNumber'] = match.group(1)
-                    logger.info(f"Extracted phone: {facts['phoneNumber']}")
+                    facts['callbackNumber'] = match.group(1)
+                    logger.info(f"Extracted callback number: {facts['callbackNumber']}")
                     break
 
         # Then extract unit if available
@@ -159,8 +187,8 @@ IMPORTANT: Only say your name and company ONCE at the start of each call."""
         address_info = facts['propertyAddress'] if facts['propertyAddress'] else 'unknown'
         unit_info = facts['unitNumber'] if facts['unitNumber'] else 'unknown'  
         issue_info = facts['reportedIssue'] if facts['reportedIssue'] else 'unknown'
-        name_info = facts.get('customerName', 'unknown')
-        phone_info = facts.get('phoneNumber', 'unknown')
+        name_info = facts.get('contactName', 'unknown')
+        phone_info = facts.get('callbackNumber', 'unknown')
         
         # Determine if this is the first message of the call
         # For system prompt generation, check if conversation has user/assistant pairs (not just system prompt)
@@ -185,7 +213,7 @@ IMPORTANT: Only say your name and company ONCE at the start of each call."""
         else:
             greeting_context = "\n\nIMPORTANT: This is NOT your first message. Do NOT introduce yourself again. Just answer their question directly."
         
-        enhanced_prompt = f"{self.base_system_prompt}\n\nKnown facts this session: Customer Name = {name_info}, Phone = {phone_info}, Property Address = {address_info}, Unit = {unit_info}, Reported Issue = {issue_info}.{greeting_context}"
+        enhanced_prompt = f"{self.base_system_prompt}\n\nKnown facts this session: Contact Name = {name_info}, Callback Number = {phone_info}, Property Address = {address_info}, Unit = {unit_info}, Reported Issue = {issue_info}.{greeting_context}"
         
         return {
             "role": "system",
