@@ -2106,8 +2106,98 @@
         "message": "there's a fire in my building!",
         "caller_phone": "+15551234567"
       }
+    ],
+    "EMAIL_TEST_EMERGENCY_001": [
+      {
+        "timestamp": "2025-08-08T23:57:58.280312",
+        "speaker": "Caller",
+        "message": "i have no heat in my apartment at 123 main street unit 4b",
+        "caller_phone": "+15551234567"
+      },
+      {
+        "timestamp": "2025-08-08T23:58:00.269339",
+        "speaker": "Caller",
+        "message": "my name is john smith and my number is 555-1234",
+        "caller_phone": "+15551234567"
+      },
+      {
+        "timestamp": "2025-08-08T23:58:32.279779",
+        "speaker": "Caller",
+        "message": "i have no heat in my apartment at 123 main street unit 4b",
+        "caller_phone": "+15551234567"
+      },
+      {
+        "timestamp": "2025-08-08T23:58:34.467203",
+        "speaker": "Caller",
+        "message": "my name is john smith and my number is 555-1234",
+        "caller_phone": "+15551234567"
+      }
+    ],
+    "EMAIL_TEST_STANDARD_001": [
+      {
+        "timestamp": "2025-08-08T23:58:05.056715",
+        "speaker": "Caller",
+        "message": "my kitchen sink is leaking",
+        "caller_phone": "+15551234567"
+      },
+      {
+        "timestamp": "2025-08-08T23:58:07.192381",
+        "speaker": "Caller",
+        "message": "i'm at 456 oak ave, my name is jane doe, 555-5678",
+        "caller_phone": "+15551234567"
+      },
+      {
+        "timestamp": "2025-08-08T23:58:40.504121",
+        "speaker": "Caller",
+        "message": "my kitchen sink is leaking",
+        "caller_phone": "+15551234567"
+      },
+      {
+        "timestamp": "2025-08-08T23:58:42.566489",
+        "speaker": "Caller",
+        "message": "i'm at 456 oak ave, my name is jane doe, 555-5678",
+        "caller_phone": "+15551234567"
+      }
+    ],
+    "EMAIL_TEST_URGENT_001": [
+      {
+        "timestamp": "2025-08-08T23:58:12.495062",
+        "speaker": "Caller",
+        "message": "i have an urgent electrical problem",
+        "caller_phone": "+15551234567"
+      },
+      {
+        "timestamp": "2025-08-08T23:58:14.453171",
+        "speaker": "Caller",
+        "message": "the outlet is sparking. this is urgent!",
+        "caller_phone": "+15551234567"
+      },
+      {
+        "timestamp": "2025-08-08T23:58:16.269163",
+        "speaker": "Caller",
+        "message": "my address is 789 pine street, bob wilson, 555-9999",
+        "caller_phone": "+15551234567"
+      },
+      {
+        "timestamp": "2025-08-08T23:58:47.842696",
+        "speaker": "Caller",
+        "message": "i have an urgent electrical problem",
+        "caller_phone": "+15551234567"
+      },
+      {
+        "timestamp": "2025-08-08T23:58:50.001455",
+        "speaker": "Caller",
+        "message": "the outlet is sparking. this is urgent!",
+        "caller_phone": "+15551234567"
+      },
+      {
+        "timestamp": "2025-08-08T23:58:51.792425",
+        "speaker": "Caller",
+        "message": "my address is 789 pine street, bob wilson, 555-9999",
+        "caller_phone": "+15551234567"
+      }
     ]
   },
-  "last_updated": "2025-08-08T19:52:49.190971-04:00",
-  "total_calls": 77
+  "last_updated": "2025-08-08T19:58:51.792440-04:00",
+  "total_calls": 80
 }

@@ -63,6 +63,16 @@ conversation_history = load_conversation_history()
 # Email tracking to prevent duplicates
 email_sent_calls = set()
 
+# Import email summary system
+try:
+    from email_call_summary import email_summary_system
+    from call_end_handler import send_call_summary_on_end
+    logger.info("Email call summary system loaded successfully")
+except ImportError as e:
+    logger.error(f"Failed to load email summary system: {e}")
+    email_summary_system = None
+    send_call_summary_on_end = None
+
 # Enhanced timing functions with bottleneck detection
 def log_timing_with_bottleneck(stage, duration, request_start_time, call_sid=None):
     """Log timing with bottleneck detection and elapsed time from request start"""
@@ -3105,6 +3115,33 @@ log #{log_entry['id']:03d} – {log_entry['date']}
                 "email_function_exists": callable(send_call_transcript_email),
                 "sendgrid_available": os.environ.get('SENDGRID_API_KEY') is not None
             }
+
+    # Twilio Call End Webhook - Triggers email summary
+    @app.route('/call-end/<call_sid>', methods=['POST'])
+    def handle_call_end(call_sid):
+        """Handle call end event from Twilio and send email summary"""
+        try:
+            logger.info(f"📞 CALL ENDED: {call_sid} - Triggering email summary")
+            
+            # Send call summary email
+            if send_call_summary_on_end and email_summary_system:
+                # Import the conversation manager instance
+                from openai_conversation_manager import OpenAIConversationManager
+                conversation_manager = OpenAIConversationManager()
+                success = send_call_summary_on_end(call_sid, conversation_history, conversation_manager, email_summary_system)
+                if success:
+                    logger.info(f"✅ Call summary email sent for {call_sid}")
+                else:
+                    logger.error(f"❌ EMAIL SEND FAILED for {call_sid}")
+            else:
+                logger.warning("Email summary system not available")
+            
+            # Return simple success response
+            return "OK", 200
+            
+        except Exception as e:
+            logger.error(f"Error handling call end for {call_sid}: {str(e)}")
+            return "Error", 500
 
     return app
 

@@ -55,3 +55,12 @@ The application is built with Flask and Flask-SocketIO, integrating various serv
 - **Refusal Template**: Uses official company language when unable to make promises about services or timelines
 - **Memory Fields**: Tracks unitNumber, reportedIssue, contactName, callbackNumber, and accessInstructions per business rules
 - **No Unauthorized Promises**: Prevents Chris from making service commitments beyond authorized policies
+
+### Automated Email Call Summaries - August 8, 11:58 PM ET
+- **Call End Detection**: Automatically sends comprehensive email summaries when calls end via Twilio webhook
+- **Priority Classification**: Intelligently labels calls as EMERGENCY, URGENT, or STANDARD based on reported issues
+- **Comprehensive Details**: Includes caller info, property details, issue description, business hours context, and conversation transcript
+- **Emergency Alerts**: Sends immediate alerts for true emergencies (no heat, flooding, sewer backup) with 🚨 priority marking
+- **Professional Format**: Uses structured email format with sections for quick management review and follow-up actions
+- **Truthful Reporting**: Only includes confirmed data, marks unknown fields as "unknown" rather than guessing
+- **SendGrid Integration**: Reliable email delivery with proper error handling and logging
