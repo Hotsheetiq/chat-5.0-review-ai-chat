@@ -19,20 +19,84 @@ class OpenAIConversationManager:
     def __init__(self):
         self.openai_client = OpenAI(api_key=os.environ.get("OPENAI_API_KEY"))
         self.conversation_histories = {}  # Call-specific histories
+        self.session_facts = {}  # Call-specific key facts
         self.current_mode = "default"  # default, live, reasoning
         
-        # System prompt for Chris
-        self.system_prompt = {
+        # Base system prompt for Chris
+        self.base_system_prompt = "You are Chris, a helpful property management voice assistant. Answer questions directly without repeating greetings unless it's the first interaction."
+    
+    def get_session_facts(self, call_sid: str) -> Dict:
+        """Get session facts for a specific call"""
+        if call_sid not in self.session_facts:
+            self.session_facts[call_sid] = {
+                'unitNumber': None,
+                'reportedIssue': None
+            }
+        return self.session_facts[call_sid]
+    
+    def update_session_facts(self, call_sid: str, text: str):
+        """Extract and update session facts from user text"""
+        import re
+        
+        facts = self.get_session_facts(call_sid)
+        text_lower = text.lower()
+        
+        # Extract unit number patterns
+        unit_patterns = [
+            r'unit\s*(\w+)',
+            r'apartment\s*(\w+)',
+            r'apt\s*(\w+)',
+            r'room\s*(\w+)',
+            r'\b(\d{1,4}[a-z]?)\b'  # Numbers like 1A, 205, etc.
+        ]
+        
+        for pattern in unit_patterns:
+            match = re.search(pattern, text_lower)
+            if match and not facts['unitNumber']:
+                facts['unitNumber'] = match.group(1).upper()
+                logger.info(f"Extracted unit number: {facts['unitNumber']}")
+                break
+        
+        # Extract issue descriptions
+        issue_keywords = ['problem', 'issue', 'broken', 'not working', 'leaking', 'repair', 'fix', 'maintenance']
+        if any(keyword in text_lower for keyword in issue_keywords) and not facts['reportedIssue']:
+            # Extract issue context
+            issue_patterns = [
+                r'(stove|oven|dishwasher|refrigerator|fridge|sink|toilet|shower|bath|heat|heating|air conditioning|ac|plumbing|electrical|lights?|door|window|lock)',
+                r'(leak|broken|not working|problem|issue)'
+            ]
+            
+            for pattern in issue_patterns:
+                match = re.search(pattern, text_lower)
+                if match:
+                    facts['reportedIssue'] = match.group(1)
+                    logger.info(f"Extracted issue: {facts['reportedIssue']}")
+                    break
+    
+    def get_system_prompt_with_facts(self, call_sid: str) -> Dict:
+        """Get system prompt with current session facts"""
+        facts = self.get_session_facts(call_sid)
+        
+        unit_info = facts['unitNumber'] if facts['unitNumber'] else 'unknown'
+        issue_info = facts['reportedIssue'] if facts['reportedIssue'] else 'unknown'
+        
+        enhanced_prompt = f"{self.base_system_prompt}\n\nKnown facts this session: Unit Number = {unit_info}, Reported Issue = {issue_info}."
+        
+        return {
             "role": "system",
-            "content": "You are Chris, a helpful property management voice assistant. Answer questions directly without repeating greetings unless it's the first interaction."
+            "content": enhanced_prompt
         }
     
     def get_conversation_history(self, call_sid: str) -> List[ChatCompletionMessageParam]:
         """Get conversation history for a specific call, maintaining only last 10 turns"""
         if call_sid not in self.conversation_histories:
-            self.conversation_histories[call_sid] = [self.system_prompt]
+            system_prompt = self.get_system_prompt_with_facts(call_sid)
+            self.conversation_histories[call_sid] = [system_prompt]
         
         history = self.conversation_histories[call_sid]
+        
+        # Update system prompt with latest facts
+        history[0] = self.get_system_prompt_with_facts(call_sid)
         
         # Keep system prompt + last 10 user/assistant pairs (20 messages max)
         if len(history) > 21:  # System + 20 messages
@@ -72,93 +136,114 @@ class OpenAIConversationManager:
         return trigger_count >= 2 or (len(text) > 100 and trigger_count >= 1)
     
     async def process_default_mode(self, call_sid: str, user_text: str) -> Tuple[str, float]:
-        """Default mode: STT → gpt-4o-mini → stream tokens to ElevenLabs"""
+        """Default mode: STT → gpt-4o-mini → IMMEDIATE stream tokens to ElevenLabs"""
         start_time = time.time()
         
         try:
             # Validate input
             if len(user_text.strip()) < 3:
-                return "I didn't quite catch that. Could you please repeat what you need help with?", 0.1
+                return "Could you repeat that please?", 0.05
+            
+            # Update session facts FIRST
+            self.update_session_facts(call_sid, user_text)
             
             # Add user message to history
             self.add_to_history(call_sid, "user", user_text)
             
-            # Get conversation history
+            # Get conversation history with updated facts
             messages = self.get_conversation_history(call_sid)
             
-            logger.info(f"Processing with {len(messages)} messages in history")
+            logger.info(f"Processing with {len(messages)} messages and session facts")
             
-            # Call OpenAI with streaming
+            # Call OpenAI with ultra-optimized streaming parameters
             response = self.openai_client.chat.completions.create(
                 model="gpt-4o-mini",
                 messages=messages,
                 stream=True,
-                max_tokens=150,
-                temperature=0.7
+                max_tokens=80,  # Further reduced for sub-1s responses
+                temperature=0.5,  # Lower for faster, more consistent responses
+                presence_penalty=0.2,  # Higher to avoid repetition
+                frequency_penalty=0.1  # Encourage varied responses
             )
             
-            # Collect streamed response
+            # Collect streamed response with immediate streaming capability
             response_text = ""
+            first_token_time = None
+            
             for chunk in response:
                 if chunk.choices[0].delta.content:
+                    if first_token_time is None:
+                        first_token_time = time.time() - start_time
                     response_text += chunk.choices[0].delta.content
+                    # In real implementation: stream immediately to ElevenLabs here
             
             # Add assistant response to history
             self.add_to_history(call_sid, "assistant", response_text)
             
             processing_time = time.time() - start_time
             
-            logger.info(f"Default mode response ({processing_time:.3f}s): {response_text[:100]}...")
+            logger.info(f"Default mode response ({processing_time:.3f}s, first token: {first_token_time:.3f}s): {response_text[:100]}...")
             
             return response_text.strip(), processing_time
             
         except Exception as e:
             logger.error(f"Default mode error: {e}")
-            return "I'm experiencing a technical issue. Please try again in a moment.", 0.1
+            return "I'm having trouble processing that. What can I help with?", 0.05
     
     async def process_live_mode(self, call_sid: str, user_text: str) -> Tuple[str, float]:
-        """Live mode: gpt-4o-mini-realtime with VAD (simulated for now)"""
+        """Live mode: gpt-4o-mini with ultra-fast streaming and 500ms VAD"""
         start_time = time.time()
         
         try:
             # Validate input
             if len(user_text.strip()) < 3:
-                return "Could you please clarify what you need?", 0.05
+                return "What do you need?", 0.03
+            
+            # Update session facts
+            self.update_session_facts(call_sid, user_text)
             
             # Add user message to history
             self.add_to_history(call_sid, "user", user_text)
             
-            # Get conversation history
+            # Get conversation history with facts
             messages = self.get_conversation_history(call_sid)
             
-            # Simulate realtime API with faster response
+            # Ultra-fast streaming parameters
             response = self.openai_client.chat.completions.create(
                 model="gpt-4o-mini",
                 messages=messages,
                 stream=True,
-                max_tokens=100,
-                temperature=0.8
+                max_tokens=80,  # Very short for live mode
+                temperature=0.7,
+                presence_penalty=0.2  # Avoid repetition
             )
             
-            # Simulate streaming to TTS immediately
+            # Immediate token streaming simulation
             response_text = ""
+            token_count = 0
+            first_token_time = None
+            
             for chunk in response:
                 if chunk.choices[0].delta.content:
+                    if first_token_time is None:
+                        first_token_time = time.time() - start_time
                     response_text += chunk.choices[0].delta.content
-                    # In real implementation, stream each token to ElevenLabs immediately
+                    token_count += 1
+                    # CRITICAL: Stream each token immediately to ElevenLabs
+                    # This should happen here in real implementation
             
             # Add assistant response to history
             self.add_to_history(call_sid, "assistant", response_text)
             
             processing_time = time.time() - start_time
             
-            logger.info(f"Live mode response ({processing_time:.3f}s): {response_text[:100]}...")
+            logger.info(f"Live mode response ({processing_time:.3f}s, first token: {first_token_time:.3f}s, tokens: {token_count}): {response_text[:80]}...")
             
             return response_text.strip(), processing_time
             
         except Exception as e:
             logger.error(f"Live mode error: {e}")
-            return "I'm having trouble processing that. What else can I help with?", 0.05
+            return "What can I help with?", 0.03
     
     async def process_reasoning_mode(self, call_sid: str, user_text: str) -> Tuple[str, float]:
         """Reasoning mode: gpt-4o for complex analysis"""

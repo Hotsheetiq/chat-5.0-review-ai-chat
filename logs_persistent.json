@@ -1,5 +1,69 @@
 [
   {
+    "id": 119,
+    "date": "July 08, 2025",
+    "time": "6:47 PM ET",
+    "request": "\ud83d\udcde LIVE CALL - GENERAL: what was my unit number again?",
+    "resolution": "\u2705 CALL LOG: Chris processed general call from +15551234567. Caller said: 'what was my unit number again?'. System operational with auto-response generation and logging.",
+    "constraint_note": "Rule #2 followed as required (appended new entry). Rule #4 followed as required (mirrored to REQUEST_HISTORY.md)."
+  },
+  {
+    "id": 118,
+    "date": "July 08, 2025",
+    "time": "6:47 PM ET",
+    "request": "\ud83d\udcde LIVE CALL - GENERAL: can you create a service request?",
+    "resolution": "\u2705 CALL LOG: Chris processed general call from +15551234567. Caller said: 'can you create a service request?'. System operational with auto-response generation and logging.",
+    "constraint_note": "Rule #2 followed as required (appended new entry). Rule #4 followed as required (mirrored to REQUEST_HISTORY.md)."
+  },
+  {
+    "id": 117,
+    "date": "July 08, 2025",
+    "time": "6:47 PM ET",
+    "request": "\ud83d\udcde LIVE CALL - GENERAL: it won't heat up when i turn it on",
+    "resolution": "\u2705 CALL LOG: Chris processed general call from +15551234567. Caller said: 'it won't heat up when i turn it on'. System operational with auto-response generation and logging.",
+    "constraint_note": "Rule #2 followed as required (appended new entry). Rule #4 followed as required (mirrored to REQUEST_HISTORY.md)."
+  },
+  {
+    "id": 116,
+    "date": "July 08, 2025",
+    "time": "6:47 PM ET",
+    "request": "\ud83d\udcde LIVE CALL - GENERAL: i'm in unit 205a",
+    "resolution": "\u2705 CALL LOG: Chris processed general call from +15551234567. Caller said: 'i'm in unit 205a'. System operational with auto-response generation and logging.",
+    "constraint_note": "Rule #2 followed as required (appended new entry). Rule #4 followed as required (mirrored to REQUEST_HISTORY.md)."
+  },
+  {
+    "id": 115,
+    "date": "July 08, 2025",
+    "time": "6:47 PM ET",
+    "request": "\ud83d\udcde LIVE CALL - MAINTENANCE: hi, i'm having a problem with my stove",
+    "resolution": "\u2705 CALL LOG: Chris processed maintenance call from +15551234567. Caller said: 'hi, i'm having a problem with my stove'. System operational with auto-response generation and logging.",
+    "constraint_note": "Rule #2 followed as required (appended new entry). Rule #4 followed as required (mirrored to REQUEST_HISTORY.md)."
+  },
+  {
+    "id": 114,
+    "date": "July 08, 2025",
+    "time": "6:42 PM ET",
+    "request": "\ud83d\udcde LIVE CALL - GENERAL: yes.",
+    "resolution": "\u2705 CALL LOG: Chris processed general call from Anonymous. Caller said: 'yes.'. System operational with auto-response generation and logging.",
+    "constraint_note": "Rule #2 followed as required (appended new entry). Rule #4 followed as required (mirrored to REQUEST_HISTORY.md)."
+  },
+  {
+    "id": 113,
+    "date": "July 08, 2025",
+    "time": "6:41 PM ET",
+    "request": "\ud83d\udcde LIVE CALL - MAINTENANCE: see, it's not working. doesn't turn on.",
+    "resolution": "\u2705 CALL LOG: Chris processed maintenance call from Anonymous. Caller said: 'see, it's not working. doesn't turn on.'. System operational with auto-response generation and logging.",
+    "constraint_note": "Rule #2 followed as required (appended new entry). Rule #4 followed as required (mirrored to REQUEST_HISTORY.md)."
+  },
+  {
+    "id": 112,
+    "date": "July 08, 2025",
+    "time": "6:41 PM ET",
+    "request": "\ud83d\udcde LIVE CALL - GENERAL: i'm calling because my stove is important.",
+    "resolution": "\u2705 CALL LOG: Chris processed general call from Anonymous. Caller said: 'i'm calling because my stove is important.'. System operational with auto-response generation and logging.",
+    "constraint_note": "Rule #2 followed as required (appended new entry). Rule #4 followed as required (mirrored to REQUEST_HISTORY.md)."
+  },
+  {
     "id": 111,
     "date": "July 08, 2025",
     "time": "6:37 PM ET",
