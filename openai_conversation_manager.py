@@ -22,15 +22,39 @@ class OpenAIConversationManager:
         self.session_facts = {}  # Call-specific key facts
         self.current_mode = "default"  # default, live, reasoning
         
-        # Base system prompt for Chris
-        self.base_system_prompt = "You are Chris, a helpful property management voice assistant. Answer questions directly without repeating greetings unless it's the first interaction."
+        # Enhanced system prompt with Grinberg Management context
+        self.base_system_prompt = """You are Chris, a friendly property management voice assistant for Grinberg Management & Development LLC. 
+
+COMPANY INFO:
+- Company: Grinberg Management & Development LLC
+- Office Hours: Monday-Friday 9 AM to 5 PM Eastern Time  
+- After hours: Emergency maintenance available 24/7
+- Service: We manage residential properties and handle maintenance requests
+
+CONVERSATION APPROACH:
+- Always ask for the PROPERTY ADDRESS first (not unit numbers)
+- Be warm and professional representing Grinberg Management
+- For maintenance issues: Get address, then ask about the specific problem
+- Office hours inquiries: Inform about Monday-Friday 9 AM-5 PM ET schedule
+- Emergency issues: Available 24/7 for urgent maintenance
+- Use our property management system to verify addresses and create service tickets
+
+RENT MANAGER API INTEGRATION:
+- Property addresses are verified through our Rent Manager system
+- Create service tickets directly in Rent Manager for maintenance requests
+- Look up tenant information using property addresses
+- All interactions are logged in our property management database
+
+IMPORTANT: Always identify yourself as calling from Grinberg Management and ask for property addresses to locate tenants in our system."""
     
     def get_session_facts(self, call_sid: str) -> Dict:
         """Get session facts for a specific call"""
         if call_sid not in self.session_facts:
             self.session_facts[call_sid] = {
+                'propertyAddress': None,
                 'unitNumber': None,
-                'reportedIssue': None
+                'reportedIssue': None,
+                'callerName': None
             }
         return self.session_facts[call_sid]
     
@@ -41,7 +65,13 @@ class OpenAIConversationManager:
         facts = self.get_session_facts(call_sid)
         text_lower = text.lower()
         
-        # Extract unit number patterns
+        # Extract ADDRESS patterns (prioritize over unit numbers)
+        address_patterns = [
+            r'(\d+\s+[a-zA-Z\s]+(?:street|avenue|ave|road|rd|drive|dr|lane|ln|place|pl|court|ct|way))',
+            r'(\d+\s+[a-zA-Z\s]+)',  # General street address
+        ]
+        
+        # Extract unit numbers as secondary info
         unit_patterns = [
             r'unit\s*(\w+)',
             r'apartment\s*(\w+)',
@@ -50,6 +80,15 @@ class OpenAIConversationManager:
             r'\b(\d{1,4}[a-z]?)\b'  # Numbers like 1A, 205, etc.
         ]
         
+        # First try to extract address
+        for pattern in address_patterns:
+            match = re.search(pattern, text_lower, re.IGNORECASE)
+            if match and not facts.get('propertyAddress'):
+                facts['propertyAddress'] = match.group(1).title()
+                logger.info(f"Extracted property address: {facts['propertyAddress']}")
+                break
+        
+        # Then extract unit if available
         for pattern in unit_patterns:
             match = re.search(pattern, text_lower)
             if match and not facts['unitNumber']:
@@ -77,10 +116,11 @@ class OpenAIConversationManager:
         """Get system prompt with current session facts"""
         facts = self.get_session_facts(call_sid)
         
-        unit_info = facts['unitNumber'] if facts['unitNumber'] else 'unknown'
+        address_info = facts['propertyAddress'] if facts['propertyAddress'] else 'unknown'
+        unit_info = facts['unitNumber'] if facts['unitNumber'] else 'unknown'  
         issue_info = facts['reportedIssue'] if facts['reportedIssue'] else 'unknown'
         
-        enhanced_prompt = f"{self.base_system_prompt}\n\nKnown facts this session: Unit Number = {unit_info}, Reported Issue = {issue_info}."
+        enhanced_prompt = f"{self.base_system_prompt}\n\nKnown facts this session: Property Address = {address_info}, Unit = {unit_info}, Reported Issue = {issue_info}."
         
         return {
             "role": "system",
