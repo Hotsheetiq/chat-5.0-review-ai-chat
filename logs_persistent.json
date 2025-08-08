@@ -1,5 +1,37 @@
 [
   {
+    "id": 111,
+    "date": "July 08, 2025",
+    "time": "6:37 PM ET",
+    "request": "\ud83d\udcde LIVE CALL - GENERAL: hello, my dishwasher is leaking",
+    "resolution": "\u2705 CALL LOG: Chris processed general call from +15551234567. Caller said: 'hello, my dishwasher is leaking'. System operational with auto-response generation and logging.",
+    "constraint_note": "Rule #2 followed as required (appended new entry). Rule #4 followed as required (mirrored to REQUEST_HISTORY.md)."
+  },
+  {
+    "id": 110,
+    "date": "July 08, 2025",
+    "time": "6:36 PM ET",
+    "request": "\ud83d\udcde LIVE CALL - MAINTENANCE: hi, i'm having problem with my stove",
+    "resolution": "\u2705 CALL LOG: Chris processed maintenance call from +15551234567. Caller said: 'hi, i'm having problem with my stove'. System operational with auto-response generation and logging.",
+    "constraint_note": "Rule #2 followed as required (appended new entry). Rule #4 followed as required (mirrored to REQUEST_HISTORY.md)."
+  },
+  {
+    "id": 109,
+    "date": "July 08, 2025",
+    "time": "6:30 PM ET",
+    "request": "\ud83d\udcde LIVE CALL - MAINTENANCE: i'm having a problem with my stove.",
+    "resolution": "\u2705 CALL LOG: Chris processed maintenance call from Anonymous. Caller said: 'i'm having a problem with my stove.'. System operational with auto-response generation and logging.",
+    "constraint_note": "Rule #2 followed as required (appended new entry). Rule #4 followed as required (mirrored to REQUEST_HISTORY.md)."
+  },
+  {
+    "id": 108,
+    "date": "July 08, 2025",
+    "time": "6:30 PM ET",
+    "request": "\ud83d\udcde LIVE CALL - MAINTENANCE: hi, i'm having problem with my stove.",
+    "resolution": "\u2705 CALL LOG: Chris processed maintenance call from Anonymous. Caller said: 'hi, i'm having problem with my stove.'. System operational with auto-response generation and logging.",
+    "constraint_note": "Rule #2 followed as required (appended new entry). Rule #4 followed as required (mirrored to REQUEST_HISTORY.md)."
+  },
+  {
     "id": 107,
     "date": "July 30, 2025",
     "time": "3:41 PM ET",

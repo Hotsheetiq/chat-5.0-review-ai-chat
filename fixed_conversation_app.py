@@ -1966,17 +1966,19 @@ log #{log_entry['id']:03d} – {log_entry['date']}
             # DIRECT PROCESSING: Simplified processing to prevent application errors
             logger.info("🚀 DIRECT PROCESSING: Using fast AI processing to prevent delays and errors")
             
-            # Generate OpenAI streaming response with real-time capabilities
+            # Generate OpenAI streaming response with new conversation manager
             try:
-                logger.info("🤖 Using OpenAI real-time assistant for conversation processing")
+                logger.info("🤖 Using OpenAI conversation manager for processing")
                 
-                # Use the new OpenAI assistant in default mode (using asyncio.run for sync context)
+                # Import improved conversation manager with three-mode system
+                from openai_conversation_manager import conversation_manager
                 import asyncio
-                response_text = asyncio.run(openai_assistant.process_default_mode(
-                    user_input=speech_result,
-                    conversation_history=conversation_history.get(call_sid, []),
-                    call_sid=call_sid
-                ))
+                
+                response_text, mode_used, processing_time = asyncio.run(
+                    conversation_manager.process_user_input(call_sid, speech_result)
+                )
+                
+                logger.info(f"Used {mode_used} mode, processing time: {processing_time:.3f}s")
                 
                 if not response_text or len(response_text.strip()) < 5:
                     response_text = "I'm here to help. What can I do for you?"
