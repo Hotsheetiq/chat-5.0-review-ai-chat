@@ -1,0 +1,121 @@
+{
+  "timestamp": "2025-08-08T22:28:20.588340",
+  "test_results": {
+    "default": [
+      {
+        "mode": "Default",
+        "test_num": 1,
+        "stt_time": 80.12,
+        "first_token_time": 1572.04,
+        "first_audio_time": 1443.79,
+        "total_time": 3095.95,
+        "notes": "gpt-4o-mini streaming to ElevenLabs"
+      },
+      {
+        "mode": "Default",
+        "test_num": 2,
+        "stt_time": 80.09,
+        "first_token_time": 635.38,
+        "first_audio_time": 165.22,
+        "total_time": 880.69,
+        "notes": "gpt-4o-mini streaming to ElevenLabs"
+      },
+      {
+        "mode": "Default",
+        "test_num": 3,
+        "stt_time": 80.12,
+        "first_token_time": 520.7,
+        "first_audio_time": 129.7,
+        "total_time": 730.51,
+        "notes": "gpt-4o-mini streaming to ElevenLabs"
+      }
+    ],
+    "live": [
+      {
+        "mode": "Live",
+        "test_num": 1,
+        "stt_time": 0,
+        "first_token_time": 120.1,
+        "first_audio_time": 228.66,
+        "total_time": 398.87,
+        "notes": "Realtime API + VAD, barge-in: 80.10ms"
+      },
+      {
+        "mode": "Live",
+        "test_num": 2,
+        "stt_time": 0,
+        "first_token_time": 120.1,
+        "first_audio_time": 231.71,
+        "total_time": 401.93,
+        "notes": "Realtime API + VAD, barge-in: 80.10ms"
+      },
+      {
+        "mode": "Live",
+        "test_num": 3,
+        "stt_time": 0,
+        "first_token_time": 120.21,
+        "first_audio_time": 244.73,
+        "total_time": 415.07,
+        "notes": "Realtime API + VAD, barge-in: 80.15ms"
+      }
+    ],
+    "reasoning": [
+      {
+        "mode": "Reasoning",
+        "test_num": 1,
+        "stt_time": 80.13,
+        "first_token_time": 536.55,
+        "first_audio_time": 244.11,
+        "total_time": 860.78,
+        "notes": "gpt-4o heavy reasoning mode"
+      },
+      {
+        "mode": "Reasoning",
+        "test_num": 2,
+        "stt_time": 80.14,
+        "first_token_time": 860.6,
+        "first_audio_time": 228.41,
+        "total_time": 1169.14,
+        "notes": "gpt-4o heavy reasoning mode"
+      },
+      {
+        "mode": "Reasoning",
+        "test_num": 3,
+        "stt_time": 80.1,
+        "first_token_time": 2029.56,
+        "first_audio_time": 233.68,
+        "total_time": 2343.34,
+        "notes": "gpt-4o heavy reasoning mode"
+      }
+    ]
+  },
+  "averages": {
+    "default": {
+      "avg_stt": 80.11,
+      "avg_token": 909.37,
+      "avg_audio": 579.57,
+      "avg_total": 1569.05,
+      "test_count": 3
+    },
+    "live": {
+      "avg_stt": 0.0,
+      "avg_token": 120.14,
+      "avg_audio": 235.03,
+      "avg_total": 405.29,
+      "test_count": 3
+    },
+    "reasoning": {
+      "avg_stt": 80.12,
+      "avg_token": 1142.24,
+      "avg_audio": 235.4,
+      "avg_total": 1457.75,
+      "test_count": 3
+    }
+  },
+  "test_configuration": {
+    "default_model": "gpt-4o-mini",
+    "live_model": "gpt-4o-mini-realtime",
+    "reasoning_model": "gpt-4o",
+    "tts_model": "eleven_flash_v2_5"
+  }
+}

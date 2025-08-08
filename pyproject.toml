@@ -25,4 +25,6 @@ dependencies = [
     "sendgrid>=6.12.4",
     "sqlalchemy>=2.0.41",
     "numpy>=2.3.2",
+    "websocket-client>=1.8.0",
+    "websocket>=0.2.1",
 ]
