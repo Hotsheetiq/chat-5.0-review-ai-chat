@@ -364,8 +364,17 @@ def get_dynamic_happy_greeting():
     return random.choice(greetings)
 
 def create_app():
+    """Create and configure Flask app with OpenAI real-time integration"""
     app = Flask(__name__)
     app.secret_key = os.environ.get("SESSION_SECRET", "dev-secret-key")
+    
+    # Initialize Flask-SocketIO for real-time WebSocket communication
+    from flask_socketio import SocketIO
+    socketio = SocketIO(app, cors_allowed_origins="*", async_mode='threading')
+    
+    # Register OpenAI real-time routes
+    from realtime_voice_routes import register_realtime_routes
+    register_realtime_routes(app, socketio)
     
     def get_eastern_time():
         """Get current Eastern Time"""
@@ -399,7 +408,7 @@ def create_app():
                     <div class="col-12">
                         <header class="py-4">
                             <h1 class="text-center mb-0">🏢 Chris Voice Assistant Dashboard</h1>
-                            <p class="text-center text-muted">Grinberg Management - Real-time Property Management System</p>
+                            <p class="text-center text-muted">Grinberg Management - OpenAI Real-time Property Management System</p>
                             <div class="text-center">
                                 <span class="time-display" id="current-time">{{ current_eastern.strftime('%I:%M:%S %p Eastern') }}</span>
                             </div>
@@ -506,6 +515,74 @@ def create_app():
                     document.getElementById('current-time').textContent = now + ' Eastern';
                 }
                 setInterval(updateTime, 1000);
+
+                // OpenAI Voice Assistant Status Monitoring
+                let currentVoiceMode = 'default';
+                
+                function updateVoiceStatus() {
+                    fetch('/voice-status')
+                        .then(response => response.json())
+                        .then(data => {
+                            const modeDescription = document.getElementById('mode-description');
+                            if (modeDescription) {
+                                // Update mode description
+                                const descriptions = {
+                                    'default': 'Fast streaming with gpt-4o-mini',
+                                    'live': 'Realtime API with voice activity detection',
+                                    'reasoning': 'Heavy thinking with gpt-4.1/gpt-5.0'
+                                };
+                                
+                                currentVoiceMode = data.openai_status?.current_mode || 'default';
+                                modeDescription.textContent = descriptions[currentVoiceMode];
+                                
+                                // Update select to match current mode
+                                const modeSelect = document.getElementById('voice-mode-select');
+                                if (modeSelect) {
+                                    modeSelect.value = currentVoiceMode;
+                                }
+                            }
+                        })
+                        .catch(error => {
+                            console.error('Voice status check failed:', error);
+                        });
+                }
+                
+                function changeVoiceMode() {
+                    const select = document.getElementById('voice-mode-select');
+                    if (!select) return;
+                    
+                    const newMode = select.value;
+                    
+                    fetch(`/voice-mode/${newMode}`, { method: 'POST' })
+                        .then(response => response.json())
+                        .then(data => {
+                            if (data.success) {
+                                currentVoiceMode = newMode;
+                                showAlert(`Voice mode switched to ${newMode}`, 'success');
+                                updateVoiceStatus();
+                            } else {
+                                showAlert('Failed to switch voice mode', 'error');
+                            }
+                        })
+                        .catch(error => {
+                            console.error('Mode switch failed:', error);
+                            showAlert('Error switching voice mode', 'error');
+                        });
+                }
+                
+                function showAlert(message, type) {
+                    const alertDiv = document.createElement('div');
+                    alertDiv.className = `alert alert-${type === 'error' ? 'danger' : 'success'} alert-dismissible fade show`;
+                    alertDiv.innerHTML = `
+                        ${message}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    `;
+                    document.querySelector('.container-fluid').prepend(alertDiv);
+                    
+                    setTimeout(() => {
+                        alertDiv.remove();
+                    }, 5000);
+                }
 
                 // Load unified logs with proper numbering
                 function loadUnifiedLogs() {
@@ -1889,18 +1966,23 @@ log #{log_entry['id']:03d} – {log_entry['date']}
             # DIRECT PROCESSING: Simplified processing to prevent application errors
             logger.info("🚀 DIRECT PROCESSING: Using fast AI processing to prevent delays and errors")
             
-            # Generate fast AI response with reduced timeouts to prevent application errors
+            # Generate OpenAI streaming response with real-time capabilities
             try:
-                response_text = grok_ai.generate_response(
-                    messages=enhanced_context,
-                    max_tokens=40,      # REDUCED: For ultra-fast responses
-                    temperature=0.6,
-                    timeout=1.0         # REDUCED: 1 second max to prevent delays
-                )
+                logger.info("🤖 Using OpenAI real-time assistant for conversation processing")
+                
+                # Use the new OpenAI assistant in default mode (using asyncio.run for sync context)
+                import asyncio
+                response_text = asyncio.run(openai_assistant.process_default_mode(
+                    user_input=speech_result,
+                    conversation_history=conversation_history.get(call_sid, []),
+                    call_sid=call_sid
+                ))
+                
                 if not response_text or len(response_text.strip()) < 5:
                     response_text = "I'm here to help. What can I do for you?"
+                    
             except Exception as e:
-                logger.error(f"❌ Fast AI error: {e}")
+                logger.error(f"❌ OpenAI processing error: {e}")
                 response_text = "How can I help you today?"
             
             # Return immediate response with optimized audio
@@ -2152,8 +2234,8 @@ log #{log_entry['id']:03d} – {log_entry['date']}
             # Generate intelligent AI response using Grok (only for verified addresses)
             try:
                 # Import Grok AI
-                from grok_integration import GrokAI
-                grok_ai = GrokAI()
+                # Import new OpenAI real-time integration
+                from openai_realtime_integration import openai_assistant
                 
                 # Build conversation context with full history for intelligent responses
                 conversation_context = ""

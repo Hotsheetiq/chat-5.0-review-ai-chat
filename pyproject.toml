@@ -24,4 +24,5 @@ dependencies = [
     "asyncio>=3.4.3",
     "sendgrid>=6.12.4",
     "sqlalchemy>=2.0.41",
+    "numpy>=2.3.2",
 ]
