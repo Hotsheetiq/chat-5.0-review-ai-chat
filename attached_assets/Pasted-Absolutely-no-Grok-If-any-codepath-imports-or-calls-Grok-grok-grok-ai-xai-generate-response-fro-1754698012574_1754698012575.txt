@@ -1,0 +1,104 @@
+Absolutely no Grok.
+If any codepath imports or calls Grok (grok, grok_ai, xai, generate_response from Grok), stop and raise:
+“Grok usage detected — migrate to OpenAI before continuing.”
+
+Models & modes (OpenAI only):
+
+Default: gpt-4o-mini via Responses API with streaming (text only).
+
+Live: gpt-4o-mini-realtime via Realtime API (barge-in/VAD).
+
+Reasoning turns (rare): temporarily escalate to a reasoning model (then return to 4o-mini).
+
+Streaming rule (latency):
+
+As soon as OpenAI emits text tokens, immediately forward them to ElevenLabs Streaming TTS.
+
+Do not wait for a full completion.
+
+If still on Twilio <Gather>, set timeout=4 and speechTimeout="auto"; target <1s to first audio.
+
+Prefer Twilio Media Streams for true live audio (ideal).
+
+Business hours & emergencies (company policy):
+
+Open: Mon–Fri 9:00 AM–5:00 PM ET. Closed Sat/Sun/holidays.
+
+24/7 emergencies: no heat, flooding, clogged toilet or sewer backup.
+
+Fire or life-threatening: tell caller to call 911 immediately.
+
+Non-emergency after hours: log ticket, no ETA promises, advise caller to phone during hours for estimates.
+
+Introduce yourself once per call; no repeated greetings.
+
+Rent Manager (RM) = single source of truth:
+
+Do not say “address confirmed,” “ticket created,” “scheduled,” or give an ETA unless RM returns real IDs/objects.
+
+Address/Unit verify flow: collect address + unit → query RM →
+
+one exact match ⇒ confirmed (store propertyId, unitId, tenantId).
+
+multiple ⇒ ask a clarifying question.
+
+none ⇒ ask to spell street letter-by-letter or offer nearby matches; do not claim confirmed.
+
+Ticket creation: only say “ticket created” if RM returns a ticket/work-order ID; read it back.
+
+Memory strategy:
+
+Keep rolling conversationHistory (last 10 turns) + a sessionFacts object.
+
+sessionFacts keys: unitNumber, reportedIssue, propertyId, unitId, tenantId, callbackName, callbackNumber, accessInstructions, priority, ticketId.
+
+Inject known facts into every OpenAI call:
+“Known facts: Unit=[X or unknown], Issue=[Y or unknown], Callback=[Z or unknown].”
+
+Don’t re-ask known facts unless the caller corrects them.
+
+Classification & priority:
+
+Classify issues: Heating / Plumbing / Electrical / Pest / General.
+
+Priority = Emergency only if (no heat OR flooding OR clogged toilet/sewer) or caller states an emergency. Otherwise Standard.
+
+Never invent “urgent.” Only mark urgent if caller explicitly requests urgent help.
+
+After-hours scripts:
+
+Non-emergency: “We’re currently closed. I’ve logged your request and it will be dispatched as soon as possible. You can call during business hours for an ETA.”
+
+Emergency: “That sounds like an emergency. I’m logging this for immediate attention. If this is life-threatening, please call 911 right now.”
+
+Unknown answers / general callers:
+
+If unsure, do not guess. Collect name, number, (and email if offered) and say:
+“I’ll have someone reach out with a clear answer.”
+
+Email summaries (OWNER_EMAIL already configured):
+
+Send exactly one full summary on call end with subject:
+[EMERGENCY|URGENT|STANDARD] <Address or “Address Unknown”> — <Short Issue> — <Ticket <ID> or “No Ticket”>
+
+Also send an immediate alert right after an Emergency ticket is created (or fails).
+
+Include in body: datetime (ET), mode (Default/Live/Reasoning), office status (Open/Closed), priority label, caller/contact, address/unit + RM IDs, issue summary, access notes, ticket status/ID, next actions, and a short transcript snippet.
+
+Only include confirmed RM data. If unknown, label “unknown.”
+
+Never claim “email sent” unless the email API returns success.
+
+Anti-repetition & tone:
+
+Vary wording; don’t repeat the same phrase in a call.
+
+Be concise, policy-accurate, and move the conversation forward.
+
+Runtime guard & logs:
+
+If any Grok reference is detected at runtime, stop and report the error text above.
+
+After each model call, log: model=gpt-4o-mini first_token_ms=<X> total_ms=<Y>.
+
+Target first audio < 1s after user stops speaking.

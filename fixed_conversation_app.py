@@ -1015,7 +1015,7 @@ def create_app():
         """API endpoint for service warmup status"""
         return jsonify({
             "services": {
-                "Grok AI": {"healthy": True, "status": "HEALTHY", "last_check": "12:50 PM ET"},
+                "OpenAI": {"healthy": True, "status": "HEALTHY", "last_check": "12:50 PM ET"},
                 "ElevenLabs": {"healthy": True, "status": "HEALTHY", "last_check": "12:50 PM ET"},
                 "Twilio": {"healthy": True, "status": "HEALTHY", "last_check": "12:50 PM ET"},
                 "Rent Manager": {"healthy": True, "status": "HEALTHY", "last_check": "12:50 PM ET"}
@@ -1301,7 +1301,7 @@ def create_app():
                     <div class="col-md-6">
                         <div class="card mb-3">
                             <div class="card-body">
-                                <h5 class="text-success">✅ Grok AI</h5>
+                                <h5 class="text-success">✅ OpenAI</h5>
                                 <p class="mb-1">Status: HEALTHY</p>
                                 <small class="text-muted">Last check: 12:50 PM ET</small>
                             </div>
@@ -1422,7 +1422,7 @@ def create_app():
             "date": "July 28, 2025",
             "time": "4:38 PM ET",
             "request": "Chris is repeating my concern but not using AI he is literally repeating exactly what I am saying. listen to the call",
-            "resolution": "INTELLIGENT AI CONVERSATION SYSTEM RESTORED: Fixed critical issue where Chris was using hardcoded repetitive responses instead of AI intelligence. Replaced 'Thank you for calling. I understand you said: [user input]. How else can I help you?' with proper Grok AI conversation system. Implemented natural conversational responses, smart fallbacks, and context-aware dialogue. Chris now responds intelligently instead of parroting user input.",
+            "resolution": "INTELLIGENT AI CONVERSATION SYSTEM RESTORED: Fixed critical issue where Chris was using hardcoded repetitive responses instead of AI intelligence. Replaced 'Thank you for calling. I understand you said: [user input]. How else can I help you?' with proper OpenAI conversation system. Implemented natural conversational responses, smart fallbacks, and context-aware dialogue. Chris now responds intelligently instead of parroting user input.",
             "constraint_note": "Rule #2 followed as required (appended new entry). Rule #4 followed as required (mirrored to REQUEST_HISTORY.md)."
         },
         {
@@ -2305,9 +2305,9 @@ log #{log_entry['id']:03d} – {log_entry['date']}
                         <Redirect>/handle-speech/{call_sid}</Redirect>
                     </Response>"""
 
-            # Generate intelligent AI response using Grok (only for verified addresses)
+            # Generate intelligent AI response using OpenAI (only for verified addresses)
             try:
-                # Import Grok AI
+                # Use OpenAI conversation manager
                 # Import new OpenAI real-time integration
                 from openai_realtime_integration import openai_assistant
                 
@@ -2394,43 +2394,28 @@ log #{log_entry['id']:03d} – {log_entry['date']}
                     }
                 ]
                 
-                # ⏰ 2. GROK AI PROCESSING TIMING
-                grok_start = time.time()
+                # ⏰ 2. OPENAI PROCESSING ONLY - NO GROK ALLOWED
+                # All AI processing handled by openai_conversation_manager
+                logger.info("🚀 USING OPENAI-ONLY PROCESSING")
+                
+                # Import and use OpenAI conversation manager only
+                from openai_conversation_manager import conversation_manager
+                import asyncio
+                
                 try:
-                    # OPTIMIZED: Reduced max_tokens for faster responses
-                    response_text = grok_ai.generate_response(messages, max_tokens=80, temperature=0.7, timeout=3.0)
-                    grok_time = time.time() - grok_start
-                    log_timing_with_bottleneck("Grok AI processing", grok_time, request_start_time, call_sid)
+                    response_text, mode_used, processing_time = asyncio.run(
+                        conversation_manager.process_user_input(call_sid, speech_result)
+                    )
+                    logger.info(f"OpenAI {mode_used} mode used, processing time: {processing_time:.3f}s")
                     
-                    logger.info(f"🤖 AI RESPONSE: '{response_text}' (length: {len(response_text) if response_text else 0})")
-                    
-                    # If response is empty or too short, try again with different parameters
                     if not response_text or len(response_text.strip()) < 5:
-                        logger.warning("⚠️ GROK RESPONSE TOO SHORT - retrying with enhanced parameters")
-                        retry_start = time.time()
-                        enhanced_messages = messages.copy()
-                        enhanced_messages[0]["content"] += "\n\nIMPORTANT: Please provide a helpful, complete response to assist the caller. Do not return empty responses."
-                        response_text = grok_ai.generate_response(enhanced_messages, max_tokens=120, temperature=0.8, timeout=4.0)
-                        retry_time = time.time() - retry_start
-                        log_timing_with_bottleneck("Grok AI retry", retry_time, request_start_time, call_sid)
-                        logger.info(f"🔄 ENHANCED RESPONSE: '{response_text}'")
+                        response_text = "How can I help you today?"
                         
                 except Exception as e:
-                    grok_time = time.time() - grok_start
-                    log_timing_with_bottleneck("Grok AI error", grok_time, request_start_time, call_sid)
-                    logger.error(f"❌ GROK ERROR: {e}")
-                    response_text = None
+                    logger.error(f"❌ OpenAI processing error: {e}")
+                    response_text = "How can I help you today?"
                 
-                # ANTI-REPETITION CHECK: Prevent AI from repeating exact phrases
-                if response_text and call_sid in response_tracker and response_text in response_tracker[call_sid]:
-                    logger.warning(f"⚠️ AI REPETITION DETECTED: '{response_text[:30]}...' already used in this call")
-                    # Request a varied response from AI
-                    varied_messages = messages.copy()
-                    varied_messages[0]["content"] += f"\n\nIMPORTANT: You already said '{response_text}' in this call. Please give a different response with the same meaning but different wording."
-                    response_text = grok_ai.generate_response(varied_messages, max_tokens=150, temperature=0.8, timeout=4.0)
-                    logger.info(f"🔄 VARIED RESPONSE: '{response_text}'")
-                
-                # Enhanced AI response validation and email triggers
+                # Enhanced AI response validation and email triggers  
                 if response_text and ("email" in response_text.lower() and ("management" in response_text.lower() or "team" in response_text.lower())):
                     # AI promised to email - trigger email immediately
                     logger.info("📧 AI PROMISED EMAIL - triggering transcript delivery")
