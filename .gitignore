@@ -33,3 +33,4 @@ audio/
 .cache/
 dist/
 build/
+property_backup.json
