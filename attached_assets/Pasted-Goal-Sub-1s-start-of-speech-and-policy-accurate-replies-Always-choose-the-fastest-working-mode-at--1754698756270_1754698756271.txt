@@ -1,0 +1,113 @@
+Goal: Sub-1s start-of-speech and policy-accurate replies. Always choose the fastest working mode at runtime:
+
+Mode selection (auto)
+Try Full Streaming
+
+Twilio Media Streams (<Connect><Stream url="wss://HOST/twilio-media?...">).
+
+Server: raw WebSocket, not Socket.IO.
+
+Pipeline: STT (streaming) → OpenAI text (streaming) → ElevenLabs TTS (streaming) → Twilio stream.
+
+Target: <1s to first audio.
+
+If full streaming isn’t available, use Sentence-Chunk Interim
+
+Twilio Gather (speech).
+
+timeout="4", speechTimeout="auto".
+
+STT → OpenAI Responses streaming (text) → buffer by sentence (., ?, !) → send each sentence to ElevenLabs low-latency endpoint immediately (don’t wait for entire reply).
+
+Target: <1.5s to first audio.
+
+Models & APIs (OpenAI only)
+Default turns: gpt-4o-mini via Responses API with streaming.
+
+Live barge-in calls: gpt-4o-mini-realtime via Realtime API (if you keep full streaming).
+
+Heavy reasoning (rare): escalate a single turn to a reasoning tier, then return to 4o-mini.
+
+Never import or call Grok/XAI. If detected, stop with: “Grok usage detected — migrate to OpenAI.”
+
+STT with N-best (accuracy + speed)
+If your STT supports N-best hypotheses, collect them (e.g., top 3).
+
+Choose top hypothesis by confidence; if an alternate contains emergency keywords (no heat, flooding, clogged toilet, sewer backup, fire), prefer that alternate.
+
+When address intent is detected but confidence is low, ask for letter-by-letter spelling (street name) and digit-by-digit house number.
+
+ElevenLabs output (fast)
+Full streaming mode: forward OpenAI tokens to the ElevenLabs Streaming TTS socket as they arrive.
+
+Sentence-chunk mode: as soon as you buffer a full sentence, call ElevenLabs (low-latency/“Flash”) and play that audio while you keep generating the next sentence.
+
+Business hours & emergency policy (enforced)
+Open: Mon–Fri 9:00 AM–5:00 PM ET. Closed Sat/Sun/holidays.
+
+24/7 emergencies: no heat, flooding, clogged toilet or sewer backup.
+
+Fire/life-threatening: tell caller to call 911 immediately.
+
+Non-emergency after hours: log ticket, no ETA promises; advise caller to call during hours for an estimate.
+
+Introduce yourself once per call; avoid repeated greetings; keep answers concise.
+
+Rent Manager = single source of truth
+Do not say “address confirmed,” “ticket created,” “scheduled,” or give an ETA unless the Rent Manager API returned real IDs/objects.
+
+Address verify flow: collect address + unit → query RM →
+
+1 match ⇒ confirmed; store propertyId, unitId, tenantId.
+
+>1 ⇒ ask clarifying question (building name, cross street, account name).
+
+0 ⇒ ask for letter-by-letter spelling or offer nearby suggestions; do not claim confirmed.
+
+Work-order creation: only say “ticket created” if RM returns a ticketId. Read it back to caller.
+
+Memory (don’t re-ask)
+Keep rolling conversationHistory (last 10 turns) + sessionFacts object.
+
+sessionFacts keys: unitNumber, reportedIssue, propertyId, unitId, tenantId, callbackName, callbackNumber, accessInstructions, priority, ticketId.
+
+Inject into every OpenAI call:
+“Known facts: Unit=[X or unknown], Issue=[Y or unknown], Callback=[Z or unknown].”
+
+Classification & priority
+Classify: Heating / Plumbing / Electrical / Pest / General.
+
+Priority = Emergency only if (no heat OR flooding OR clogged toilet/sewer) or caller explicitly states emergency. Otherwise Standard.
+
+Only mark Urgent if caller asks for urgent help.
+
+Unknown answers / general callers
+If unsure, don’t guess. Collect name + number (+ email if offered) and say: “I’ll have someone reach out with a clear answer.”
+
+Email summaries (OWNER_EMAIL configured)
+Send exactly one full summary on call end with subject:
+[EMERGENCY|URGENT|STANDARD] <Address or "Address Unknown"> — <Short Issue> — <Ticket <ID> or "No Ticket">
+
+Also send an immediate alert right after an Emergency ticket is created (or fails).
+
+Body: datetime (ET), mode (Full-Streaming/Sentence-Chunk), office status, priority label, caller/contact, address/unit + RM IDs, issue summary, access notes, ticket status/ID, next actions, transcript snippet.
+
+Only include confirmed RM data; label unknowns as “unknown.” Never claim “email sent” unless the mail API returns success.
+
+Latency targets & timeouts
+First audio: <1s (Full Streaming) / <1.5s (Sentence-Chunk).
+
+<Gather> fallback: timeout="4", speechTimeout="auto".
+
+VAD end-silence: 500–700 ms.
+
+Log per turn: stt_ms, first_token_ms, first_audio_ms, mode.
+
+Anti-repetition & tone
+Vary wording; don’t repeat the same sentence in a call.
+
+Be concise, policy-accurate, and always move the conversation forward.
+
+Runtime guard
+If any Grok/XAI reference is detected, stop and report: “Grok usage detected — migrate to OpenAI.”
+

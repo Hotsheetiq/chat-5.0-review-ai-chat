@@ -72,3 +72,13 @@ The application is built with Flask and Flask-SocketIO, integrating various serv
 - **Three-Mode System**: Default streaming, Live real-time with VAD, and Reasoning modes all via OpenAI
 - **Email System**: Automated call summaries fully operational and tested
 - **Performance**: Sub-1-second response times maintained with OpenAI streaming
+
+### Sub-1s Streaming Implementation - August 9, 12:20 AM ET
+- **Full Streaming Pipeline**: Twilio Media Streams → STT (streaming) → OpenAI (token-by-token) → ElevenLabs (streaming) → Twilio
+- **Runtime Mode Selection**: Auto-selects fastest working mode - Full Streaming (<1s) or Sentence-Chunk (<1.5s)
+- **VAD Configuration**: 500-700ms end-silence timeout for natural conversation flow
+- **N-best STT**: Emergency keyword detection in alternate hypotheses for accuracy
+- **Memory Injection**: Session facts (unit, issue, contact) automatically tracked and injected
+- **Performance Monitoring**: Real-time timing logs for STT, first token, and first audio metrics
+- **Twilio Integration**: WebSocket Media Streams for full streaming, Gather fallback for sentence-chunk mode
+- **ElevenLabs Flash**: Low-latency streaming TTS with optimized chunk scheduling

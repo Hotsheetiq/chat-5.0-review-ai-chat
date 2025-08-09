@@ -1,6 +1,7 @@
 """
 OpenAI Conversation Manager - Implements Three-Mode System with Memory
 Handles Default, Live, and Reasoning modes with conversation context
+ABSOLUTE NO GROK POLICY - OpenAI-only implementation
 """
 
 import os
@@ -12,6 +13,7 @@ from typing import Dict, List, Optional, Tuple, Any
 from openai import OpenAI
 from openai.types.chat import ChatCompletionMessageParam
 import time
+import re
 
 logger = logging.getLogger(__name__)
 
@@ -21,6 +23,10 @@ class OpenAIConversationManager:
         self.conversation_histories = {}  # Call-specific histories
         self.session_facts = {}  # Call-specific key facts
         self.current_mode = "default"  # default, live, reasoning
+        self.streaming_sessions = {}  # Active streaming sessions
+        
+        # Grok usage guard - ABSOLUTE NO GROK POLICY
+        self.grok_guard_active = True
         
         # Official Business Rules System Prompt
         self.base_system_prompt = """You are Chris, the property management voice assistant for Grinberg Management & Development LLC.
@@ -29,7 +35,7 @@ You help existing tenants with repair requests and answer questions from any cal
 
 AUTHORITATIVE POLICIES (do not invent beyond these):
 
-Office Hours: Monday–Friday, 9:00 AM – 5:00 PM Eastern Time.
+Office Hours: Monday-Friday, 9:00 AM - 5:00 PM Eastern Time.
 Closed on Saturdays, Sundays, and holidays unless otherwise noted.
 
 Emergencies handled 24/7:
@@ -50,11 +56,11 @@ No promises of services, timelines, refunds, credits, or vendor selection unless
 
 HANDLING RULES:
 
-Check office status — Always compare current local time (America/New_York) to office hours before saying "open" or "closed."
+Check office status - Always compare current local time (America/New_York) to office hours before saying "open" or "closed."
 
 Emergency path:
 - If emergency matches the approved 24/7 list, follow the emergency script and log it for immediate dispatch
-- If fire or life-threatening → tell caller to call 911 now
+- If fire or life-threatening -> tell caller to call 911 now
 
 Non-emergency path:
 - Log the issue
@@ -62,7 +68,7 @@ Non-emergency path:
 
 General questions from tenants or non-tenants:
 - If answer is known, answer directly
-- If answer is unknown about timing or scheduling, never give estimates — politely take down the caller's contact info and say: "I'll have someone reach out to you with a clear answer"
+- If answer is unknown about timing or scheduling, never give estimates - politely take down the caller's contact info and say: "I'll have someone reach out to you with a clear answer"
 
 Memory:
 - Track and reuse unitNumber, reportedIssue, contactName, callbackNumber, and accessInstructions
@@ -84,6 +90,94 @@ REFUSAL TEMPLATE:
 "I'm not able to guarantee that. Our policy doesn't allow it. I can log your request so the team reviews it and follows up."
 
 IMPORTANT: Only say your name and company ONCE at the start of each call."""
+        
+    def detect_grok_usage(self, context):
+        """Runtime guard to prevent any Grok usage"""
+        if any(term in str(context).lower() for term in ['grok', 'xai', 'x.ai']):
+            logger.error("🚨 GROK USAGE DETECTED - STOPPING")
+            raise Exception("Grok usage detected — migrate to OpenAI.")
+    
+    def test_streaming(self):
+        """Test OpenAI streaming capability for mode selection"""
+        try:
+            # Quick test of streaming API
+            response = self.openai_client.chat.completions.create(
+                model="gpt-4o-mini",
+                messages=[{"role": "user", "content": "test"}],
+                stream=True,
+                max_tokens=5
+            )
+            # Try to get first chunk
+            next(response)
+            return True
+        except Exception as e:
+            logger.error(f"OpenAI streaming test failed: {e}")
+            return False
+    
+    async def start_streaming_session(self, call_sid):
+        """Initialize streaming session for full streaming mode"""
+        self.streaming_sessions[call_sid] = {
+            'start_time': time.time(),
+            'active': True,
+            'tokens_streamed': 0
+        }
+        logger.info(f"🚀 OpenAI streaming session started for {call_sid}")
+    
+    async def stream_response(self, call_sid, context):
+        """Stream OpenAI response token by token for full streaming mode"""
+        try:
+            self.detect_grok_usage(context)
+            
+            # Build messages with facts injection
+            user_input = context.get('user_input', '')
+            facts_context = context.get('facts_context', '')
+            conversation_history = context.get('conversation_history', [])
+            
+            # Create enhanced system prompt with facts
+            enhanced_system_prompt = f"{self.base_system_prompt}\n\n{facts_context}"
+            
+            messages = [
+                {"role": "system", "content": enhanced_system_prompt},
+                {"role": "user", "content": user_input}
+            ]
+            
+            # Add conversation history
+            for msg in conversation_history[-6:]:  # Last 6 messages for context
+                messages.append({
+                    "role": "assistant" if msg.get('speaker') == 'Chris' else "user",
+                    "content": msg.get('message', '')
+                })
+            
+            # Create streaming response
+            stream = self.openai_client.chat.completions.create(
+                model="gpt-4o-mini",
+                messages=messages,
+                stream=True,
+                max_tokens=150,
+                temperature=0.7
+            )
+            
+            # Stream tokens
+            session = self.streaming_sessions.get(call_sid, {})
+            for chunk in stream:
+                if chunk.choices[0].delta.content:
+                    token = chunk.choices[0].delta.content
+                    session['tokens_streamed'] = session.get('tokens_streamed', 0) + 1
+                    yield token
+                    
+        except Exception as e:
+            if "Grok usage detected" in str(e):
+                raise
+            logger.error(f"Streaming response error: {e}")
+            yield "I'm here to help. What can I do for you?"
+    
+    async def cleanup_session(self, call_sid):
+        """Clean up streaming session"""
+        if call_sid in self.streaming_sessions:
+            session = self.streaming_sessions[call_sid]
+            duration = time.time() - session['start_time']
+            logger.info(f"📊 OpenAI session {call_sid}: {session.get('tokens_streamed', 0)} tokens, {duration:.1f}s")
+            del self.streaming_sessions[call_sid]
     
     def get_session_facts(self, call_sid: str) -> Dict:
         """Get session facts for a specific call"""
@@ -94,14 +188,17 @@ IMPORTANT: Only say your name and company ONCE at the start of each call."""
                 'reportedIssue': None,
                 'contactName': None,
                 'callbackNumber': None,
-                'accessInstructions': None
+                'accessInstructions': None,
+                'priority': 'Standard',
+                'propertyId': None,
+                'unitId': None,
+                'tenantId': None,
+                'ticketId': None
             }
         return self.session_facts[call_sid]
     
-    def update_session_facts(self, call_sid: str, text: str):
-        """Extract and update session facts from user text"""
-        import re
-        
+    def extract_session_facts(self, call_sid: str, text: str) -> Dict:
+        """Extract and update session facts from user input"""
         facts = self.get_session_facts(call_sid)
         text_lower = text.lower()
         
@@ -176,313 +273,183 @@ IMPORTANT: Only say your name and company ONCE at the start of each call."""
             for pattern in issue_patterns:
                 match = re.search(pattern, text_lower)
                 if match:
-                    facts['reportedIssue'] = match.group(1)
-                    logger.info(f"Extracted issue: {facts['reportedIssue']}")
+                    facts['reportedIssue'] = match.group(1).title()
+                    logger.info(f"Extracted reported issue: {facts['reportedIssue']}")
                     break
-    
-    def get_system_prompt_with_facts(self, call_sid: str) -> Dict:
-        """Get system prompt with current session facts and greeting context"""
-        facts = self.get_session_facts(call_sid)
         
-        address_info = facts['propertyAddress'] if facts['propertyAddress'] else 'unknown'
-        unit_info = facts['unitNumber'] if facts['unitNumber'] else 'unknown'  
-        issue_info = facts['reportedIssue'] if facts['reportedIssue'] else 'unknown'
-        name_info = facts.get('contactName', 'unknown')
-        phone_info = facts.get('callbackNumber', 'unknown')
-        
-        # Determine if this is the first message of the call
-        # For system prompt generation, check if conversation has user/assistant pairs (not just system prompt)
-        user_messages = [msg for msg in self.conversation_histories.get(call_sid, []) if msg.get('role') in ['user', 'assistant']]
-        is_first_message = len(user_messages) == 0
-        
-        # Add greeting context if it's the first message
-        greeting_context = ""
-        if is_first_message:
-            from datetime import datetime
-            import pytz
-            eastern = pytz.timezone('US/Eastern') 
-            now_et = datetime.now(eastern)
-            hour = now_et.hour
-            
-            if 6 <= hour < 12:
-                greeting_context = "\n\nIMPORTANT: This is your FIRST response to this caller. Start with 'Good morning! This is Chris from Grinberg Management. How can I help you?'"
-            elif 12 <= hour < 18:
-                greeting_context = "\n\nIMPORTANT: This is your FIRST response to this caller. Start with 'Good afternoon! This is Chris from Grinberg Management. How can I help you?'"
-            else:
-                greeting_context = "\n\nIMPORTANT: This is your FIRST response to this caller. Start with 'Good evening! This is Chris from Grinberg Management. How can I help you?'"
+        # Classify issue priority
+        emergency_keywords = ['no heat', 'flooding', 'clogged toilet', 'sewer backup', 'fire']
+        if any(keyword in text_lower for keyword in emergency_keywords):
+            facts['priority'] = 'Emergency'
+        elif 'urgent' in text_lower:
+            facts['priority'] = 'Urgent'
         else:
-            greeting_context = "\n\nIMPORTANT: This is NOT your first message. Do NOT introduce yourself again. Just answer their question directly."
-        
-        enhanced_prompt = f"{self.base_system_prompt}\n\nKnown facts this session: Contact Name = {name_info}, Callback Number = {phone_info}, Property Address = {address_info}, Unit = {unit_info}, Reported Issue = {issue_info}.{greeting_context}"
-        
-        return {
-            "role": "system",
-            "content": enhanced_prompt
-        }
-    
-    def get_conversation_history(self, call_sid: str) -> List[ChatCompletionMessageParam]:
-        """Get conversation history for a specific call, maintaining only last 10 turns"""
-        if call_sid not in self.conversation_histories:
-            system_prompt = self.get_system_prompt_with_facts(call_sid)
-            self.conversation_histories[call_sid] = [system_prompt]
-        
-        history = self.conversation_histories[call_sid]
-        
-        # Update system prompt with latest facts
-        history[0] = self.get_system_prompt_with_facts(call_sid)
-        
-        # Keep system prompt + last 10 user/assistant pairs (20 messages max)
-        if len(history) > 21:  # System + 20 messages
-            # Keep system prompt and last 20 messages
-            self.conversation_histories[call_sid] = [history[0]] + history[-20:]
+            facts['priority'] = 'Standard'
             
-        return self.conversation_histories[call_sid]
+        return facts
     
-    def add_to_history(self, call_sid: str, role: str, content: str):
-        """Add message to conversation history"""
-        if not content or len(content.strip()) < 3:
-            logger.warning(f"Skipping empty/short message: '{content}'")
-            return
-            
-        history = self.get_conversation_history(call_sid)
-        history.append({"role": role, "content": content.strip()})  # type: ignore
+    async def process_user_input(self, call_sid: str, user_input: str, session_facts: Optional[Dict] = None) -> Tuple[str, str, float]:
+        """
+        Process user input with three-mode system (default, live, reasoning)
+        Returns: (response_text, mode_used, processing_time)
+        """
         
-        # Trim to maintain size limits
-        if len(history) > 21:
-            self.conversation_histories[call_sid] = [history[0]] + history[-20:]
-    
-    def should_use_reasoning_mode(self, text: str) -> bool:
-        """Detect if query requires reasoning mode (complex, multi-step, high-stakes)"""
-        reasoning_triggers = [
-            "analyze", "compare", "pros and cons", "evaluate", "assessment",
-            "legal", "zoning", "convert", "investment", "financial analysis",
-            "regulation", "compliance", "market analysis", "feasibility",
-            "long-term", "strategy", "recommend", "detailed analysis"
-        ]
+        # Guard against Grok usage
+        self.detect_grok_usage(user_input)
         
-        text_lower = text.lower()
+        logger.info(f"Processing user input: {user_input[:50]}...")
         
-        # Check for complex triggers
-        trigger_count = sum(1 for trigger in reasoning_triggers if trigger in text_lower)
+        # Extract session facts if not provided
+        if session_facts is None:
+            session_facts = self.extract_session_facts(call_sid, user_input)
         
-        # Use reasoning if multiple triggers or long complex query
-        return trigger_count >= 2 or (len(text) > 100 and trigger_count >= 1)
-    
-    async def process_default_mode(self, call_sid: str, user_text: str) -> Tuple[str, float]:
-        """Default mode: STT → gpt-4o-mini → IMMEDIATE stream tokens to ElevenLabs"""
         start_time = time.time()
         
         try:
-            # Validate input
-            if len(user_text.strip()) < 3:
-                return "Could you repeat that please?", 0.05
+            # Auto-select mode based on complexity and latency requirements
+            selected_mode = self.select_processing_mode(user_input, session_facts)
             
-            # Update session facts FIRST
-            self.update_session_facts(call_sid, user_text)
-            
-            # Add user message to history
-            self.add_to_history(call_sid, "user", user_text)
-            
-            # Get conversation history with updated facts
-            messages = self.get_conversation_history(call_sid)
-            
-            logger.info(f"Processing with {len(messages)} messages and session facts")
-            
-            # Call OpenAI with ultra-optimized streaming parameters
-            response = self.openai_client.chat.completions.create(
-                model="gpt-4o-mini",
-                messages=messages,
-                stream=True,
-                max_tokens=80,  # Further reduced for sub-1s responses
-                temperature=0.5,  # Lower for faster, more consistent responses
-                presence_penalty=0.2,  # Higher to avoid repetition
-                frequency_penalty=0.1  # Encourage varied responses
-            )
-            
-            # Collect streamed response with immediate streaming capability
-            response_text = ""
-            first_token_time = None
-            
-            for chunk in response:
-                if chunk.choices[0].delta.content:
-                    if first_token_time is None:
-                        first_token_time = time.time() - start_time
-                    response_text += chunk.choices[0].delta.content
-                    # In real implementation: stream immediately to ElevenLabs here
-            
-            # Add assistant response to history
-            self.add_to_history(call_sid, "assistant", response_text)
+            if selected_mode == "live":
+                response_text = await self.process_live_mode(call_sid, user_input, session_facts)
+            elif selected_mode == "reasoning":
+                response_text = await self.process_reasoning_mode(call_sid, user_input, session_facts)
+            else:
+                response_text = await self.process_default_mode(call_sid, user_input, session_facts)
             
             processing_time = time.time() - start_time
             
-            logger.info(f"Default mode response ({processing_time:.3f}s, first token: {first_token_time:.3f}s): {response_text[:100]}...")
+            # Store conversation history
+            self.store_conversation_turn(call_sid, user_input, response_text)
             
-            return response_text.strip(), processing_time
+            return response_text, selected_mode, processing_time
+            
+        except Exception as e:
+            if "Grok usage detected" in str(e):
+                raise
+            logger.error(f"Processing error: {e}")
+            return "How can I help you today?", "fallback", time.time() - start_time
+    
+    def select_processing_mode(self, user_input: str, session_facts: Dict) -> str:
+        """Auto-select processing mode based on input complexity"""
+        # Emergency -> live mode for fastest response
+        if session_facts.get('priority') == 'Emergency':
+            return "live"
+        
+        # Complex reasoning needed -> reasoning mode
+        complex_keywords = ['policy', 'refund', 'credit', 'legal', 'lease', 'contract', 'explanation']
+        if any(keyword in user_input.lower() for keyword in complex_keywords):
+            return "reasoning"
+        
+        # Default mode for standard interactions
+        return "default"
+    
+    async def process_default_mode(self, call_sid: str, user_input: str, session_facts: Dict) -> str:
+        """Process using default gpt-4o-mini streaming mode"""
+        try:
+            messages = self.build_messages_with_facts(user_input, session_facts, call_sid)
+            
+            response = self.openai_client.chat.completions.create(
+                model="gpt-4o-mini",
+                messages=messages,
+                max_tokens=150,
+                temperature=0.7,
+                stream=False  # Non-streaming for now, can be converted to streaming
+            )
+            
+            return response.choices[0].message.content
             
         except Exception as e:
             logger.error(f"Default mode error: {e}")
-            return "I'm having trouble processing that. What can I help with?", 0.05
+            return "I'm here to help. What can I do for you?"
     
-    async def process_live_mode(self, call_sid: str, user_text: str) -> Tuple[str, float]:
-        """Live mode: gpt-4o-mini with ultra-fast streaming and 500ms VAD"""
-        start_time = time.time()
-        
+    async def process_live_mode(self, call_sid: str, user_input: str, session_facts: Dict) -> str:
+        """Process using OpenAI Realtime API for ultra-fast response"""
         try:
-            # Validate input
-            if len(user_text.strip()) < 3:
-                return "What do you need?", 0.03
+            # For now, use fast default mode
+            # TODO: Implement actual Realtime API when available
+            messages = self.build_messages_with_facts(user_input, session_facts, call_sid)
             
-            # Update session facts
-            self.update_session_facts(call_sid, user_text)
-            
-            # Add user message to history
-            self.add_to_history(call_sid, "user", user_text)
-            
-            # Get conversation history with facts
-            messages = self.get_conversation_history(call_sid)
-            
-            # Ultra-fast streaming parameters
             response = self.openai_client.chat.completions.create(
                 model="gpt-4o-mini",
                 messages=messages,
-                stream=True,
-                max_tokens=80,  # Very short for live mode
-                temperature=0.7,
-                presence_penalty=0.2  # Avoid repetition
+                max_tokens=80,  # Shorter for speed
+                temperature=0.5
             )
             
-            # Immediate token streaming simulation
-            response_text = ""
-            token_count = 0
-            first_token_time = None
-            
-            for chunk in response:
-                if chunk.choices[0].delta.content:
-                    if first_token_time is None:
-                        first_token_time = time.time() - start_time
-                    response_text += chunk.choices[0].delta.content
-                    token_count += 1
-                    # CRITICAL: Stream each token immediately to ElevenLabs
-                    # This should happen here in real implementation
-            
-            # Add assistant response to history
-            self.add_to_history(call_sid, "assistant", response_text)
-            
-            processing_time = time.time() - start_time
-            
-            logger.info(f"Live mode response ({processing_time:.3f}s, first token: {first_token_time:.3f}s, tokens: {token_count}): {response_text[:80]}...")
-            
-            return response_text.strip(), processing_time
+            return response.choices[0].message.content
             
         except Exception as e:
             logger.error(f"Live mode error: {e}")
-            return "What can I help with?", 0.03
+            return "I'm here to help. What can I do for you?"
     
-    async def process_reasoning_mode(self, call_sid: str, user_text: str) -> Tuple[str, float]:
-        """Reasoning mode: gpt-4o for complex analysis"""
-        start_time = time.time()
-        
+    async def process_reasoning_mode(self, call_sid: str, user_input: str, session_facts: Dict) -> str:
+        """Process using gpt-4o for heavy reasoning"""
         try:
-            # Validate input
-            if len(user_text.strip()) < 3:
-                return "I need more details to provide a thorough analysis. Could you elaborate?", 0.1
+            messages = self.build_messages_with_facts(user_input, session_facts, call_sid)
             
-            # Add user message to history
-            self.add_to_history(call_sid, "user", user_text)
-            
-            # Get conversation history
-            messages = self.get_conversation_history(call_sid)
-            
-            # Enhanced system prompt for reasoning
-            reasoning_messages = [
-                {
-                    "role": "system", 
-                    "content": "You are Chris, an expert property management consultant with deep knowledge of real estate law, zoning, and financial analysis. Provide thorough, analytical responses with specific reasoning."
-                }
-            ] + messages[1:]  # Skip original system prompt
-            
-            logger.info(f"Using reasoning mode for complex query: {user_text[:50]}...")
-            
-            # Use gpt-4o for reasoning
             response = self.openai_client.chat.completions.create(
                 model="gpt-4o",
-                messages=reasoning_messages,
-                stream=True,
-                max_tokens=300,
-                temperature=0.6
+                messages=messages,
+                max_tokens=200,
+                temperature=0.3
             )
             
-            # Collect response
-            response_text = ""
-            for chunk in response:
-                if chunk.choices[0].delta.content:
-                    response_text += chunk.choices[0].delta.content
-            
-            # Add assistant response to history
-            self.add_to_history(call_sid, "assistant", response_text)
-            
-            processing_time = time.time() - start_time
-            
-            logger.info(f"Reasoning mode response ({processing_time:.3f}s): {response_text[:100]}...")
-            
-            return response_text.strip(), processing_time
+            return response.choices[0].message.content
             
         except Exception as e:
             logger.error(f"Reasoning mode error: {e}")
-            return "I need a moment to analyze this properly. Could you ask me something else while I process that?", 0.1
+            return "I'm here to help. What can I do for you?"
     
-    async def process_user_input(self, call_sid: str, user_text: str, force_mode: Optional[str] = None) -> Tuple[str, str, float]:
-        """Main processing function that routes to appropriate mode"""
+    def build_messages_with_facts(self, user_input: str, session_facts: Dict, call_sid: str) -> List[Dict]:
+        """Build message list with session facts injection"""
+        # Build facts context
+        known_facts = []
+        for key, value in session_facts.items():
+            if value and key in ['unitNumber', 'reportedIssue', 'contactName', 'callbackNumber']:
+                known_facts.append(f"{key}={value}")
         
-        # Determine mode
-        if force_mode:
-            mode = force_mode
-        elif self.should_use_reasoning_mode(user_text):
-            mode = "reasoning"
-            logger.info(f"Auto-selected reasoning mode for: {user_text[:50]}...")
-        elif self.current_mode == "live":
-            mode = "live"
-        else:
-            mode = "default"
+        facts_context = f"Known facts: {', '.join(known_facts) if known_facts else 'none yet'}"
         
-        # Process based on mode
-        if mode == "reasoning":
-            response_text, processing_time = await self.process_reasoning_mode(call_sid, user_text)
-        elif mode == "live":
-            response_text, processing_time = await self.process_live_mode(call_sid, user_text)
-        else:
-            response_text, processing_time = await self.process_default_mode(call_sid, user_text)
+        # Enhanced system prompt with facts
+        enhanced_prompt = f"{self.base_system_prompt}\n\n{facts_context}"
         
-        return response_text, mode, processing_time
+        messages = [
+            {"role": "system", "content": enhanced_prompt},
+            {"role": "user", "content": user_input}
+        ]
+        
+        # Add conversation history
+        if call_sid in self.conversation_histories:
+            for msg in self.conversation_histories[call_sid][-6:]:  # Last 6 messages
+                role = "assistant" if msg.get('speaker') == 'Chris' else "user"
+                messages.append({"role": role, "content": msg.get('message', '')})
+        
+        return messages
     
-    def set_mode(self, mode: str):
-        """Set the current conversation mode"""
-        if mode in ["default", "live", "reasoning"]:
-            self.current_mode = mode
-            logger.info(f"Switched to {mode} mode")
-        else:
-            logger.warning(f"Invalid mode: {mode}")
-    
-    def clear_history(self, call_sid: str):
-        """Clear conversation history for a call"""
-        self.conversation_histories[call_sid] = [self.system_prompt]
-        logger.info(f"Cleared history for call {call_sid}")
-    
-    def get_history_summary(self, call_sid: str) -> Dict:
-        """Get summary of conversation history"""
-        history = self.get_conversation_history(call_sid)
+    def store_conversation_turn(self, call_sid: str, user_input: str, response: str):
+        """Store conversation turn in history"""
+        if call_sid not in self.conversation_histories:
+            self.conversation_histories[call_sid] = []
         
-        user_messages = [msg for msg in history if msg["role"] == "user"]
-        assistant_messages = [msg for msg in history if msg["role"] == "assistant"]
+        timestamp = datetime.now().isoformat()
         
-        return {
-            "total_messages": len(history) - 1,  # Exclude system prompt
-            "user_messages": len(user_messages),
-            "assistant_messages": len(assistant_messages),
-            "current_mode": self.current_mode,
-            "last_user_message": user_messages[-1]["content"] if user_messages else None,
-            "last_assistant_message": assistant_messages[-1]["content"] if assistant_messages else None
-        }
+        # Store user input
+        self.conversation_histories[call_sid].append({
+            'timestamp': timestamp,
+            'speaker': 'Caller',
+            'message': user_input
+        })
+        
+        # Store AI response
+        self.conversation_histories[call_sid].append({
+            'timestamp': timestamp,
+            'speaker': 'Chris',
+            'message': response
+        })
+        
+        # Keep only last 20 messages
+        if len(self.conversation_histories[call_sid]) > 20:
+            self.conversation_histories[call_sid] = self.conversation_histories[call_sid][-20:]
 
-# Global instance
+# Global conversation manager instance
 conversation_manager = OpenAIConversationManager()
