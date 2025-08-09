@@ -1,0 +1,24 @@
+# main.py — single entrypoint for Gunicorn
+# Prefer the low-latency streaming app; fall back to app.py if needed.
+
+try:
+    from sub_1s_streaming_app import app
+except Exception as e:
+    from app import app
+
+# --- Health check ---
+@app.route('/health')
+def health():
+    return {'status': 'healthy', 'message': 'Property Management Voice Assistant is running'}
+
+# --- Minimal Twilio-compatible test endpoint ---
+@app.route('/incoming-call', methods=['GET','POST'])
+def incoming_call():
+    try:
+        from twilio.twiml.voice_response import VoiceResponse
+        vr = VoiceResponse()
+        vr.say("Your webhook is connected. This is a test response.", voice="Polly.Matthew-Neural")
+        return str(vr)
+    except Exception:
+        # Plain TwiML if Twilio lib isn't available
+        return '<?xml version="1.0" encoding="UTF-8"?><Response><Say>Your webhook is connected. Test response.</Say></Response>'

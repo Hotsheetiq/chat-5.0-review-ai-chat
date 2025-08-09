@@ -34,6 +34,66 @@ class TwilioMediaStreamHandler:
         
         # Grok usage guard
         self.grok_guard_active = True
+        self.call_sessions = {}  # Track call metadata
+    
+    def initialize_call_session(self, call_sid: str, caller_number: str):
+        """Initialize a new call session with metadata"""
+        from datetime import datetime
+        import pytz
+        
+        self.call_sessions[call_sid] = {
+            'caller_number': caller_number,
+            'start_time': datetime.now(pytz.timezone('America/New_York')),
+            'office_hours': self._is_office_hours(),
+            'conversation_turns': 0,
+            'emergency_detected': False,
+            'ticket_created': False,
+            'email_sent': False
+        }
+        
+        # Initialize session facts
+        self.session_facts[call_sid] = {
+            'propertyAddress': None,
+            'unitNumber': None,
+            'reportedIssue': None,
+            'contactName': None,
+            'callbackNumber': caller_number,
+            'accessInstructions': None,
+            'priority': 'Standard',
+            'propertyId': None,
+            'unitId': None,
+            'tenantId': None,
+            'ticketId': None,
+            'verified_property': False
+        }
+        
+        logger.info(f"📞 Call session initialized: {call_sid} from {caller_number}")
+    
+    def cleanup_call_session(self, call_sid: str):
+        """Clean up call session data"""
+        if call_sid in self.call_sessions:
+            del self.call_sessions[call_sid]
+        if call_sid in self.session_facts:
+            del self.session_facts[call_sid]
+        if call_sid in self.conversation_memory:
+            del self.conversation_memory[call_sid]
+        if call_sid in self.active_streams:
+            del self.active_streams[call_sid]
+        if call_sid in self.timing_data:
+            del self.timing_data[call_sid]
+        
+        logger.info(f"🧹 Call session cleaned up: {call_sid}")
+    
+    def _is_office_hours(self):
+        """Check if current time is within business hours"""
+        from datetime import datetime
+        import pytz
+        
+        et_time = datetime.now(pytz.timezone('America/New_York'))
+        return (
+            et_time.weekday() < 5 and  # Monday-Friday
+            9 <= et_time.hour < 17     # 9 AM - 5 PM
+        )
         
     def detect_grok_usage(self, context):
         """Runtime guard to detect any Grok usage"""

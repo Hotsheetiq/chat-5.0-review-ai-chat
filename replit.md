@@ -82,3 +82,13 @@ The application is built with Flask and Flask-SocketIO, integrating various serv
 - **Performance Monitoring**: Real-time timing logs for STT, first token, and first audio metrics
 - **Twilio Integration**: WebSocket Media Streams for full streaming, Gather fallback for sentence-chunk mode
 - **ElevenLabs Flash**: Low-latency streaming TTS with optimized chunk scheduling
+
+### Production Phone Agent Configuration - August 9, 2:15 AM ET
+- **Production Main Entry**: main.py configured as Gunicorn entry point (main:app) with production routes
+- **Twilio Webhook**: /incoming-call implements full call flow with business rules and streaming pipeline
+- **Rent Manager Truth Gate**: verify_property() and create_ticket() functions prevent hallucination, require RM verification
+- **Business Rules Compliance**: Office hours (Mon-Fri 9-5 ET), 24/7 emergencies (no heat, flooding, sewer backup), proper escalation
+- **Production Email System**: Automated call summaries with priority-based subjects (EMERGENCY/URGENT/SUMMARY), de-duplication
+- **Self-Test Endpoint**: /self-test validates all critical functionality and environment configuration
+- **Memory & Anti-Repetition**: Conversation tracking, session facts persistence, no repeated greetings or questions
+- **Emergency Detection**: Auto-classification and proper routing based on keywords and office hours

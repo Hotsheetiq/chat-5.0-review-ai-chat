@@ -377,7 +377,38 @@ def get_call_status(call_sid):
 # Register all route modules
 register_media_stream_routes(app)
 register_elevenlabs_routes(app)
-# register_email_routes(app)  # Will be added later
+
+# Add call end webhook for email summaries
+@app.route('/call-end/<call_sid>', methods=['POST'])
+def handle_call_end(call_sid):
+    """Handle call end webhook and send email summary"""
+    try:
+        from production_email_system import send_call_summary_on_end
+        
+        # Get session data
+        session_data = {
+            'session_facts': media_stream_handler.session_facts.get(call_sid, {}),
+            'conversation_history': media_stream_handler.conversation_memory.get(call_sid, []),
+            'call_session': media_stream_handler.call_sessions.get(call_sid, {})
+        }
+        
+        # Send email summary
+        email_sent = send_call_summary_on_end(call_sid, session_data)
+        
+        # Clean up session data
+        media_stream_handler.cleanup_call_session(call_sid)
+        
+        logger.info(f"📞 Call {call_sid} ended, email sent: {email_sent}")
+        
+        return jsonify({
+            'status': 'success',
+            'call_sid': call_sid,
+            'email_sent': email_sent
+        })
+        
+    except Exception as e:
+        logger.error(f"Call end handler error: {e}")
+        return jsonify({'error': str(e)}), 500
 
 # Add Grok compliance endpoint
 @app.route("/compliance-check", methods=["GET"])

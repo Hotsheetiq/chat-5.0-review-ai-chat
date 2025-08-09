@@ -1,0 +1,169 @@
+You are configuring a production phone agent called Chris for Grinberg Management. The app is running on Replit behind Gunicorn with main:app. Do the following exactly:
+
+0) Entry + sanity
+Keep main.py as the entrypoint (.replit already points Gunicorn to main:app).
+
+Ensure main.py imports the fast streaming Flask app:
+
+from sub_1s_streaming_app import app (fallback to from app import app if import fails).
+
+Keep the two routes in main.py:
+
+GET /health → return {status:"healthy", message:"Property Management Voice Assistant is running"}
+
+GET|POST /incoming-call → Replace test TwiML with the full call flow described below.
+
+1) Policies Chris must follow (business rules)
+Office hours: Mon–Fri 9:00 AM–5:00 PM (ET).
+
+Emergencies handled 24/7: no heat, flooding, clogged toilet or sewer backup.
+
+Other emergencies (e.g., fire) → instruct caller to call 911.
+
+Non-emergency after hours → create a ticket and inform caller they can call back during office hours for an ETA. Do not promise after-hours dispatch.
+
+If Chris is unsure about an answer → collect caller’s name, phone, and topic and say someone will follow up.
+
+Chris handles all callers (tenants + general inquiries), not just maintenance.
+
+2) Rent Manager “truth gate” (no hallucinations)
+Use rent_manager.py (or the RM adapter in the repo) to:
+
+Verify address against Rent Manager before confirming anything.
+
+Create tickets only via Rent Manager and only if RM returns a valid ticketId.
+
+Never say “address confirmed” unless RM returns a property match (ID/name).
+
+Never say “ticket created” unless RM returns a ticketId. If it fails, say:
+“I couldn’t confirm that in our system yet. I’ve logged your details and someone will follow up shortly.”
+
+If address can’t be verified:
+
+Ask for letter-by-letter street spelling and house number digit by digit.
+
+Offer suggestions when close matches exist (never assume).
+
+If still unverified: capture contact info + details and escalate.
+
+3) Low-latency voice pipeline (nbest + streaming)
+Pipeline: Twilio → STT (Replit can choose) with N-best hypotheses → OpenAI (gpt-4o-mini via Responses API, stream=true) → ElevenLabs streaming TTS to caller.
+
+As OpenAI tokens arrive, stream partial text to ElevenLabs (sentence or chunk). If streaming fails, fallback to sentence-chunk buffering.
+
+Target latency: <1.5s first audio, continuous playback.
+
+Implement barge-in/turn-taking if using Realtime: pause TTS on user speech (VAD), resume after model yields next turn.
+
+4) Model selection logic (simple & cheap by default)
+Default: gpt-4o-mini (Responses API, stream: true).
+
+Live mode (optional): gpt-4o-mini-realtime for barge-in (emit text chunks → ElevenLabs streaming).
+
+Heavy reasoning turns only: temporarily escalate to gpt-4.1 (or latest reasoning tier), then drop back to 4o-mini.
+
+5) Conversation memory & anti-repetition
+Maintain last 10 turns per call in memory (in-RAM dict by call_sid).
+
+Do not repeat greetings or identical prompts. Rotate phrasings.
+
+Look back to remember issue (e.g., “stove not working”) so Chris doesn’t ask the same question again.
+
+Keep replies short (≤25 words) and progressive (each turn advances toward resolution).
+
+6) Emergency & hours router (server-side)
+Parse user text for emergency keywords:
+
+Emergency set: {“no heat”, “flood”, “flooding”, “clogged toilet”, “sewer backup”}.
+
+If emergency → create emergency ticket immediately (RM), acknowledge, and dispatch (according to policy).
+
+Determine current ET. If after hours and not emergency → create standard ticket; no ETA promised; advise to call during hours for estimate.
+
+7) Email summaries (one per call) + subject rules
+After each call (or on /call-end/<call_sid> webhook):
+
+Send summary email to the configured address (Replit already has it).
+
+Subject format:
+
+EMERGENCY – <IssueType> – <Address or “Unverified”> – <CallSid> if emergency
+
+URGENT – <IssueType> – <Address or “Unverified”> – <CallSid> if urgent but not emergency (e.g., electrical hazard)
+
+SUMMARY – <IssueType> – <Address or “Unverified”> – <CallSid> for standard
+
+Body: full transcript, issue type detected, address status (Verified / Unverified / Spelling requested), and ticketId if created.
+
+De-dupe: only send once per call_sid. If the model “promises an email,” send immediately (but still prevent duplicates).
+
+8) /incoming-call route (replace test TwiML with real flow)
+Implement the following:
+
+Start call session; allocate call_sid; init memory.
+
+Start STT with N-best and pass top hypotheses to the prompt.
+
+Call OpenAI (gpt-4o-mini, stream=true) with a system prompt encoding the policies above.
+
+As text arrives → pipe to ElevenLabs streaming TTS (WebSocket/Fetch stream).
+
+Apply hours/emergency router + Rent Manager truth gate:
+
+Verify property via RM before acknowledging.
+
+Create ticket only via RM; read back ticket number if present.
+
+Track transcript (timestamp, speaker, message, issue type guess, address status flags).
+
+On call end (Twilio status webhook or explicit end), trigger email summary once.
+
+9) Environment & secrets
+Read from Replit Secrets (env):
+
+OPENAI_API_KEY
+
+XI_API_KEY (ElevenLabs)
+
+RENT_MANAGER_API_KEY (+ any RM tenant/account config in rent_manager.py)
+
+SENDGRID_API_KEY (or your email provider key)
+
+TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN if needed for callbacks
+
+10) Acceptance tests (agent must self-test)
+Add /self-test that simulates these and returns JSON pass/fail:
+
+Business hours test: Non-emergency during 10:00 ET returns standard ticket, no ETA promise.
+
+After hours non-emergency: Logged for next business day; no ETA promise.
+
+Emergency after hours: Marked emergency; immediate dispatch path; emergency email subject.
+
+RM truth gate: Unverified address triggers spelling/suggestions; verified address returns propertyId; ticket confirmation only if ticketId present.
+
+Email de-dupe: Only one summary email per callSid.
+
+Latency: First audio <1.5s (recorded in logs).
+
+No repetition: Same greeting not repeated; varied clarifications.
+
+11) What to edit (specific files)
+main.py: point to sub_1s_streaming_app and implement the real /incoming-call (replace the TwiML test). Keep /health.
+
+sub_1s_streaming_app.py: ensure it exposes the streaming pipeline hooks that /incoming-call uses.
+
+elevenlabs_streaming.py: confirm streaming endpoint usage and sentence-chunk fallback.
+
+openai_conversation_manager.py or equivalent: Responses API streaming (gpt-4o-mini) + optional escalation to gpt-4.1.
+
+rent_manager.py: expose verify_property(address) → returns {propertyId, name} or None; and create_ticket(propertyId, data) → returns {ticketId}.
+
+email_call_summary.py: export send_call_transcript_email(...) and send_call_summary_on_end(...) supporting the subject rules above.
+
+Ensure no Grok/XAI codepaths are used at runtime; remove any lingering imports/calls.
+
+12) What to return when done
+A short “Done” summary of changes, plus the exact path(s) I should set as the Twilio webhook (/incoming-call) and health (/health).
+
+Any warnings if an env var is missing.
